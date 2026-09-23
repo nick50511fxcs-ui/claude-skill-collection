@@ -9,6 +9,7 @@
 | 이름 | 종류 | 설명 | 설치 방식 |
 |---|---|---|---|
 | `task-observer` | 스킬 (`skills/`) | 반복 작업을 기록하고 스킬로 만들라고 제안하는 관찰자 ([원본](https://github.com/rebelytics/one-skill-to-rule-them-all), CC BY 4.0) | `skill-collection` 플러그인에 포함 |
+| `skill-intake` | 스킬 (`skills/`) | GitHub 링크를 이 저장소에 추가·정리하는 절차 (원본 확인 → 비용 측정 → 빈 환경 설치 검증 → PR) | `skill-collection` 플러그인에 포함 |
 | `task` | 단축 명령 (`skills/`) | `/task` 로 task-observer 켜기. `/task 할 일` 처럼 요청을 바로 이어 써도 됨. 직접 입력할 때만 동작해서 평소 토큰 소모 없음 | `skill-collection` 플러그인에 포함 (플러그인 설치 시 이름은 `/skill-collection:task`) |
 | `claude-code-setup` | 공식 플러그인 | 프로젝트를 스캔해 훅·스킬·MCP 등을 추천 (앤트로픽 공식) | 기본 설치 |
 | `claude-mem` | 외부 플러그인 | 세션이 바뀌어도 기억하는 메모리 ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | 선택 설치 (`--with-claude-mem`) |
@@ -72,10 +73,18 @@ cd claude-skill-collection; .\install.ps1                   # -WithClaudeMem -Wi
 cd skills && zip -r task-observer.zip task-observer
 ```
 
+## 스킬 개수 상한: 50개
+
+스킬은 이름·설명이 매 세션 읽혀서 많을수록 토큰이 늘고 선택 정확도가 떨어집니다.
+`scripts/check-skills.sh` 가 50개를 넘으면 실패하고, GitHub Actions(`check-skills`)가 모든 PR에서 이를 검사합니다.
+상한은 환경 변수 `MAX_SKILLS` 로 바꿀 수 있습니다.
+
 ## 새 스킬 추가하기
 
+Claude에게 링크와 함께 "이 스킬 저장소에 추가해줘"라고 하면 `skill-intake` 스킬이 아래 절차를 따릅니다.
+
 1. `skills/<스킬이름>/SKILL.md` (필요하면 `references/`, `scripts/` 등)를 넣습니다.
-2. `claude plugin validate .` 로 확인 후 커밋·푸시합니다.
+2. `bash scripts/check-skills.sh` 로 확인 후 커밋·푸시합니다.
 3. 다른 PC에서는 `bash install.sh` 를 다시 실행하거나, Claude Code 안에서 아래 두 줄을 입력한 뒤 재시작하면 반영됩니다.
    ```
    /plugin marketplace update claude-skill-collection
