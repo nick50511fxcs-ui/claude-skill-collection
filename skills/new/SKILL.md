@@ -1,61 +1,63 @@
 ---
 name: new
-description: 대화가 길어졌을 때 지금까지의 내용을 짧은 인수인계 메모로 저장소에 저장하고, 새 세션에서 이어갈 시작 문장을 알려줍니다.
+description: Saves a short handoff note to the repo when a conversation gets long, then prints a one-line starter for continuing in a new session.
 disable-model-invocation: true
-argument-hint: "[메모에 꼭 남길 내용 (선택)]"
+argument-hint: "[anything the note must include (optional)]"
 ---
 
-# /new — 인수인계 메모 저장 후 새 세션으로
+# /new — save a handoff note, continue in a new session
 
-긴 대화는 답할 때마다 전체를 다시 읽어 토큰이 늘어난다. 핵심만 짧게 저장해 두고
-새 세션은 그 메모만 읽고 이어간다.
+Every reply re-reads the whole conversation, so long sessions get expensive.
+Save only the essentials, and let the new session read just the note.
 
-## 1. 메모 작성
+## 1. Write the note
 
-현재 작업 중인 git 저장소 루트의 `.claude/handoff.md` 를 **덮어쓴다** (이어 붙이지 않음).
-50줄 이내, 사용자의 언어로, 대화 기록이 아니라 결과만 적는다.
+**Overwrite** (never append to) `HANDOFF.md` at the root of the current git
+repository (not under `.claude/`, which needs extra write approval). Keep it under 50 lines, in English, recording outcomes rather
+than the conversation.
 
 ```markdown
-# 인수인계 메모 (YYYY-MM-DD)
+# Handoff (YYYY-MM-DD)
 
-## 목표
-- 이 작업이 이루려는 것 한두 줄
+## Goal
+- What this work is trying to achieve, in one or two lines
 
-## 결정한 것
-- 정해진 사항과 그 이유 (다시 논의하지 않도록)
+## Decisions
+- What was decided and why (so it is not re-litigated)
 
-## 현재 상태
-- 끝난 것, 관련 PR·브랜치·파일 경로
+## Current state
+- What is done; related PRs, branches, file paths
 
-## 다음 할 일
-- 바로 이어서 할 순서대로
+## Next steps
+- What to do next, in order
 
-## 주의
-- 시도했다가 안 된 것, 사용자 선호·제약
+## Notes
+- What was tried and failed; user preferences and constraints
 ```
 
-- 사용자가 명령 뒤에 적은 내용은 반드시 포함한다: $ARGUMENTS
-- 토큰·비밀번호·API 키·개인 연락처는 절대 적지 않는다.
+- Always include what the user typed after the command: $ARGUMENTS
+- Never write tokens, passwords, API keys or personal contact details.
 
-## 2. 저장
+## 2. Save
 
-기본 브랜치(`main`/`master`)에 있다면 먼저 `git switch -c claude/handoff` 로
-브랜치를 만든다 (기본 브랜치에 직접 커밋하지 않음). 이미 작업 브랜치면 그대로 쓴다.
+If on the default branch (`main`/`master`), first create a branch with
+`git switch -c claude/handoff` — never commit the note to the default branch.
+If already on a work branch, use it.
 
 ```bash
-git add .claude/handoff.md
+git add HANDOFF.md
 git commit -m "Update handoff note"
 git push -u origin "$(git branch --show-current)"
 ```
 
-- 푸시가 실패하면 네트워크 오류일 때만 재시도하고, 그래도 안 되면 메모 내용을 대화에
-  그대로 보여준다 (사용자가 복사해 새 세션에 붙여넣을 수 있게).
+- Retry the push only on network errors. If it still fails, show the note's
+  content in the chat so the user can paste it into the new session.
 
-## 3. 새 세션 시작 문장 안내
+## 3. Tell the user how to continue
 
-클라우드 새 세션은 기본 브랜치에서 시작하므로, 메모가 있는 브랜치를 함께 알려준다.
-아래 형식으로 **복사해서 쓸 한 줄**을 보여준다:
+New cloud sessions start on the default branch, so name the branch that holds
+the note. Show **one line to copy**, in the user's language, equivalent to:
 
-> `<브랜치명>` 브랜치의 `.claude/handoff.md` 읽고 이어서 하자
+> Read `HANDOFF.md` on the `<branch>` branch and continue from there.
 
-그리고 "새 세션을 열고 위 문장을 붙여넣으세요" 라고 안내한다.
+Then tell the user to open a new session and paste that line.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# 저장소 스킬 점검: 개수 상한, SKILL.md 형식, (claude CLI가 있으면) 플러그인 검증.
-# 사용: bash scripts/check-skills.sh            # 점검
-#       bash scripts/check-skills.sh --adding 1  # 1개 추가해도 상한 이내인지 미리 확인
+# Repository skill checks: count cap, SKILL.md format, and plugin validation when the claude CLI exists.
+# Usage: bash scripts/check-skills.sh            # check
+#        bash scripts/check-skills.sh --adding 1  # check the cap still holds after adding 1 skill
 set -euo pipefail
 
 MAX_SKILLS="${MAX_SKILLS:-50}"
@@ -15,28 +15,54 @@ desc_chars=0
 for dir in "$ROOT"/skills/*/; do
   name="$(basename "$dir")"
   file="$dir/SKILL.md"
-  if [ ! -f "$file" ]; then echo "✗ $name: SKILL.md 없음"; fail=1; continue; fi
+  if [ ! -f "$file" ]; then echo "✗ $name: missing SKILL.md"; fail=1; continue; fi
   count=$((count + 1))
   fm="$(awk 'NR==1 && /^---/ {f=1; next} f && /^---/ {exit} f' "$file")"
   fm_name="$(printf '%s\n' "$fm" | sed -n 's/^name:[[:space:]]*//p' | tr -d '"' | head -1)"
   desc="$(printf '%s\n' "$fm" | sed -n 's/^description:[[:space:]]*//p' | head -1)"
-  [ "$fm_name" = "$name" ] || { echo "✗ $name: frontmatter name('$fm_name')이 폴더 이름과 다름"; fail=1; }
-  [ -n "$desc" ] || { echo "✗ $name: description 없음"; fail=1; }
-  # 직접 호출 전용 스킬은 목록에 올라가지 않으므로 상시 토큰 계산에서 제외
+  [ "$fm_name" = "$name" ] || { echo "✗ $name: frontmatter name ('$fm_name') does not match the folder name"; fail=1; }
+  [ -n "$desc" ] || { echo "✗ $name: missing description"; fail=1; }
+  # User-invoked-only skills are not listed to the model, so they add no always-on tokens
   printf '%s\n' "$fm" | grep -q '^disable-model-invocation:[[:space:]]*true' || desc_chars=$((desc_chars + ${#desc}))
 done
 
 total=$((count + ADDING))
-echo "스킬 개수: $count / 상한 $MAX_SKILLS (추가 예정 $ADDING → $total)"
-echo "상시 로드되는 description 합계: 약 ${desc_chars}자"
+echo "Skills: $count / cap $MAX_SKILLS (adding $ADDING → $total)"
+echo "Always-loaded descriptions: ~${desc_chars} characters"
 if [ "$total" -gt "$MAX_SKILLS" ]; then
-  echo "✗ 상한 초과: 추가하기 전에 $((total - MAX_SKILLS))개를 정리해야 합니다."
+  echo "✗ Over the cap: remove $((total - MAX_SKILLS)) skill(s) before adding."
   fail=1
 fi
 
-if command -v claude >/dev/null 2>&1; then
-  claude plugin validate "$ROOT" >/dev/null || { echo "✗ claude plugin validate 실패"; fail=1; }
+# Repository convention: committed text is English. Vendored skills (with UPSTREAM.txt) keep their original text.
+if command -v python3 >/dev/null 2>&1; then
+  python3 - "$ROOT" <<'PY' || fail=1
+import os, re, subprocess, sys
+root = sys.argv[1]
+hangul = re.compile("[\u1100-\u11ff\u3130-\u318f\uac00-\ud7a3]")
+vendored = {os.path.join("skills", d) for d in os.listdir(os.path.join(root, "skills"))
+            if os.path.isfile(os.path.join(root, "skills", d, "UPSTREAM.txt"))}
+files = subprocess.run(["git", "-C", root, "ls-files", "--cached", "--others", "--exclude-standard"],
+                       capture_output=True, text=True).stdout.split("\n")
+bad = []
+for f in filter(None, files):
+    # HANDOFF.md is a working note (/new) and may quote literal user-language examples.
+    if f == "HANDOFF.md" or any(f == v or f.startswith(v + "/") for v in vendored):
+        continue
+    try:
+        text = open(os.path.join(root, f), encoding="utf-8").read()
+    except (UnicodeDecodeError, OSError):
+        continue
+    bad += [f"{f}:{i}" for i, line in enumerate(text.splitlines(), 1) if hangul.search(line)]
+for b in bad[:20]:
+    print(f"✗ non-English text: {b}")
+sys.exit(1 if bad else 0)
+PY
 fi
 
-[ "$fail" = 0 ] && echo "✓ 점검 통과"
+if command -v claude >/dev/null 2>&1; then
+  claude plugin validate "$ROOT" >/dev/null || { echo "✗ claude plugin validate failed"; fail=1; }
+fi
+
+[ "$fail" = 0 ] && echo "✓ checks passed"
 exit "$fail"

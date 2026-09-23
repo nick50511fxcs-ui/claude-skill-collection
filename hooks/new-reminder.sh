@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# UserPromptSubmit 훅: 현재 대화 크기(토큰)가 기준을 넘으면 /new 저장을 제안하라고 Claude에게 알립니다.
-# 기준: NEW_REMINDER_TOKENS (기본 100000). 이후 같은 간격만큼 늘 때마다 한 번씩 다시 알림.
-# 어떤 오류가 나도 조용히 종료해 대화를 막지 않습니다.
+# UserPromptSubmit hook: when the conversation size (tokens) passes a threshold, tell Claude to suggest /new.
+# Threshold: NEW_REMINDER_TOKENS (default 100000); reminds again once per further step of the same size.
+# Any error exits silently so the conversation is never blocked.
 input="$(cat)"
 NEW_REMINDER_TOKENS="${NEW_REMINDER_TOKENS:-100000}" python3 - "$input" <<'PY' 2>/dev/null || true
 import json, os, sys, collections
@@ -12,7 +12,7 @@ path, sid = data.get("transcript_path"), data.get("session_id", "unknown")
 if not path or not os.path.exists(path):
     sys.exit(0)
 
-# 마지막 응답의 입력 토큰 = 지금 매번 다시 읽는 대화 크기
+# Input tokens of the latest reply = the conversation size re-read on every reply
 used = 0
 with open(path, encoding="utf-8", errors="ignore") as f:
     for line in collections.deque(f, maxlen=300):
@@ -41,8 +41,8 @@ open(state, "w").write(str(level))
 msg = (
     f"This conversation is now about {used // 1000}k tokens and every reply re-reads all of it. "
     "After answering the user's message, add one short line in the user's language asking whether to "
-    "save a handoff note and continue in a new session, e.g. '대화가 길어져 토큰 사용량이 늘고 있어요. "
-    "`/new` 를 입력하시면 지금까지 내용을 저장소에 요약 저장하고 새 세션에서 이어갈 수 있어요.' "
+    "save a handoff note and continue in a new session, e.g. 'This conversation is getting long and uses more tokens per reply. "
+    "Type `/new` to save a short summary to the repo and continue in a new session.' "
     "Ask once; do not repeat it in later replies."
 )
 print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": msg}}, ensure_ascii=False))
