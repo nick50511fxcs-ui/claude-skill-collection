@@ -1,4 +1,4 @@
-# Handoff (2026-09-23)
+# Handoff (2026-09-23, updated)
 
 ## Goal
 - Keep the user's Claude skills in this public GitHub repo so they work in every
@@ -10,7 +10,9 @@
   `git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills && bash /tmp/skills/install.sh --copy --with-headroom || true`
 - The repo must stay **public**: the setup script has no GitHub credentials (a private repo failed with exit 128).
 - task-observer is **not** auto-started (it costs ~15k tokens per session and cloud logs reset per session).
-  It is turned on on demand with `/task`. The upstream feedback report was drafted, and the user chose not to file it.
+  It is turned on on demand with `/task`. Its upstream description told Claude to invoke it
+  before the first tool call of every session, so it still auto-ran; the vendored copy now has
+  a replaced description (recorded in its `UPSTREAM.txt`; re-apply when updating from upstream). The upstream feedback report was drafted, and the user chose not to file it.
 - Cap of 50 skills (`scripts/check-skills.sh` plus the `check-skills` CI on every PR).
 - Everything committed is in **English**; CI fails on Korean text outside vendored skills and HANDOFF.md.
 - Headroom is installed as `headroom-ai[mcp]` (~430MB), not `[all]` (~7GB).
@@ -22,12 +24,11 @@
 - Merged: PR #1 (marketplace, task-observer, installers), #3 (README setup notes),
   #4 (`/task` shortcut), #5 (`skill-intake` skill, 50-skill cap and CI).
 - Closed without merging: PR #2 (task-observer autostart).
-- **Open: PR #6** on branch `claude/peaceful-davinci-14ymag`, CI green.
-  It adds the `/new` skill, the long-conversation reminder hook (100k tokens) and the English-only convention.
-  This note is committed on that branch.
+- Merged: PR #6 (`/new` skill, long-conversation reminder hook at 100k tokens, English-only convention).
+- **Open:** PR on branch `claude/brave-curie-fvdv10`: stops task-observer from auto-running.
 
 ## Next steps
-1. Merge PR #6 when the user says so. After that, new cloud sessions get `/new` and the reminder automatically.
+1. Merge the task-observer PR when the user says so. New sessions then stop spending ~15k tokens at start.
 2. Parked, per the user: build small custom skills for their repeated work tasks (e.g. online-store product pages).
 
 ## Notes

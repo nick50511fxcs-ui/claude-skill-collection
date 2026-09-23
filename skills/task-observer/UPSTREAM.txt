@@ -1,3 +1,6 @@
 upstream: https://github.com/rebelytics/one-skill-to-rule-them-all
 commit: 80ab2f3248eeca683d9d8119e4cc4d10f79c6428
 license: CC BY 4.0 (Eoghan Henn / rebelytics.com)
+local patch: SKILL.md frontmatter `description` is replaced. Upstream tells Claude to
+  invoke the skill before the first tool call of every session (~15k tokens per session).
+  Here it loads only when the user types /task or asks for it. Re-apply when updating.

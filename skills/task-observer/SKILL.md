@@ -1,7 +1,7 @@
 ---
 name: "task-observer"
 core_max_lines: 728
-description: "Monitors task execution for skill improvement opportunities. Use during ANY multi-step task, agentic workflow, or work session. Captures patterns, user corrections and methodology worth preserving as reusable skills. Also triggers in post-task feedback discussions and when the user mentions skill observations, the observation log, or skill taxonomy. Also known as \"One Skill to Rule Them All\" — trigger on this phrase too. IMPORTANT: invoke this skill before the FIRST tool call of any session and before writing or proposing a plan — any turn that will involve a tool call counts. This sentence is the session-start trigger and the only activation layer that survives an unreachable config file; pair it with a CLAUDE.md instruction or a harness session-start hook (references/environments.md) — description matching alone is not enforceable."
+description: "Skill-improvement observer (\"One Skill to Rule Them All\"). Do NOT invoke on your own: load it only when the user types /task or /task-observer, or explicitly asks to turn on task-observer, or asks about skill observations or the observation log."
 ---
 
 # Task Observer — Continuous Skill Discovery & Improvement
