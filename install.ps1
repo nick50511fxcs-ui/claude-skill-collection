@@ -1,9 +1,9 @@
-# 이 저장소의 스킬을 Claude Code에 설치합니다 (윈도우 PowerShell).
+# Installs this repository's skills into Claude Code (Windows PowerShell).
 #
-#   .\install.ps1                  # 플러그인 방식 (권장, 스킬 + claude-code-setup)
-#   .\install.ps1 -Copy            # 플러그인 대신 ~\.claude\skills 로 스킬 폴더 복사
-#   .\install.ps1 -WithClaudeMem   # claude-mem 메모리 플러그인도 함께 설치
-#   .\install.ps1 -WithHeadroom    # 헤드룸(토큰 압축 MCP)도 함께 설치 (Python 3.10+ 필요)
+#   .\install.ps1                  # plugin mode (recommended: skills + claude-code-setup)
+#   .\install.ps1 -Copy            # copy skill folders to ~\.claude\skills instead of a plugin
+#   .\install.ps1 -WithClaudeMem   # also install the claude-mem memory plugin
+#   .\install.ps1 -WithHeadroom    # also install Headroom (context-compression MCP, needs Python 3.10+)
 param([switch]$Copy, [switch]$WithClaudeMem, [switch]$WithHeadroom)
 $ErrorActionPreference = "Stop"
 
@@ -11,7 +11,7 @@ $Repo = if ($env:CLAUDE_SKILLS_REPO) { $env:CLAUDE_SKILLS_REPO } else { "nick505
 $HasClaude = [bool](Get-Command claude -ErrorAction SilentlyContinue)
 
 if (-not $Copy -and -not $HasClaude) {
-    Write-Host "claude CLI가 없어 복사 방식으로 설치합니다."
+    Write-Host "claude CLI not found; falling back to copy mode."
     $Copy = $true
 }
 
@@ -22,10 +22,10 @@ if ($Copy) {
         $Target = Join-Path $Dest $_.Name
         if (Test-Path $Target) { Remove-Item -Recurse -Force $Target }
         Copy-Item -Recurse $_.FullName $Target
-        Write-Host "✓ 스킬 복사: $($_.Name)"
+        Write-Host "[ok] copied skill: $($_.Name)"
     }
 } else {
-    # add는 이미 등록돼 있어도 성공하므로, 다시 실행할 때 새 스킬을 받도록 항상 update도 합니다.
+    # 'add' succeeds even when already registered, so always 'update' too so re-runs pick up new skills.
     claude plugin marketplace add $Repo
     claude plugin marketplace update claude-skill-collection
     claude plugin install skill-collection@claude-skill-collection
@@ -40,19 +40,19 @@ if ($WithClaudeMem -and $HasClaude) {
 }
 
 if ($WithHeadroom) {
-    # 시스템 파이썬 패키지와 충돌하지 않도록 전용 가상환경에 설치합니다.
+    # Install into a dedicated venv so it cannot conflict with system Python packages.
     $Venv = Join-Path $HOME ".headroom-venv"
     $Headroom = Join-Path $Venv "Scripts\headroom.exe"
     if (-not $HasClaude) {
-        Write-Host "헤드룸은 claude CLI가 필요합니다. 건너뜁니다."
+        Write-Host "Headroom needs the claude CLI; skipping."
     } else {
-        # 헤드룸은 선택 사항이라, 실패해도 나머지 설치를 막지 않습니다.
+        # Headroom is optional: a failure here must not break the rest of the install.
         if (-not (Test-Path $Headroom)) { python -m venv $Venv }
         if ($LASTEXITCODE -eq 0) { & (Join-Path $Venv "Scripts\pip.exe") install -q --upgrade "headroom-ai[mcp]" }
         if ($LASTEXITCODE -eq 0) { & $Headroom mcp install }
-        if ($LASTEXITCODE -eq 0) { Write-Host "✓ 헤드룸 MCP 등록 완료" }
-        else { Write-Host "⚠ 헤드룸 설치에 실패했습니다. 나머지는 정상 설치되었습니다." }
+        if ($LASTEXITCODE -eq 0) { Write-Host "[ok] Headroom MCP registered" }
+        else { Write-Host "[warn] Headroom install failed; everything else was installed." }
     }
 }
 
-Write-Host "완료. Claude Code를 재시작하면 스킬이 적용됩니다."
+Write-Host "Done. Restart Claude Code to load the skills."

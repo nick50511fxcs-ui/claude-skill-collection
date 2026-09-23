@@ -1,8 +1,8 @@
 ---
 name: task
-description: task-observer 단축 명령. /task 로 태스크 옵저버를 켭니다.
+description: Shortcut that turns on task-observer. Type /task, or /task <request> to also run a request.
 disable-model-invocation: true
-argument-hint: "[이어서 할 작업 (선택)]"
+argument-hint: "[request to run after activation (optional)]"
 ---
 
 Invoke the `task-observer` skill now and execute its Session Start Protocol

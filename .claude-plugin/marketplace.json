@@ -5,17 +5,17 @@
     "name": "nick50511fxcs-ui"
   },
   "metadata": {
-    "description": "nick50511fxcs-ui의 Claude 스킬·플러그인 모음"
+    "description": "Personal collection of Claude skills and plugins"
   },
   "plugins": [
     {
       "name": "skill-collection",
-      "description": "내가 모아둔 Claude 스킬 묶음 (skills/ 폴더 전체)",
+      "description": "All skills in skills/ bundled as one plugin",
       "source": "./"
     },
     {
       "name": "claude-mem",
-      "description": "세션이 바뀌어도 프로젝트·파일을 기억하는 메모리 (thedotmack/claude-mem)",
+      "description": "Memory that persists project and file context across sessions (thedotmack/claude-mem)",
       "source": {
         "source": "github",
         "repo": "thedotmack/claude-mem"
