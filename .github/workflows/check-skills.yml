@@ -1,0 +1,19 @@
+name: check-skills
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 스킬 개수(최대 50)와 SKILL.md 형식 점검
+        run: bash scripts/check-skills.sh
+      - name: 빈 환경 설치 시뮬레이션
+        run: |
+          T="$(mktemp -d)"
+          HOME="$T" bash install.sh --copy
+          for d in skills/*/; do test -f "$T/.claude/skills/$(basename "$d")/SKILL.md"; done
