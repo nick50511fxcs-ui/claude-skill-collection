@@ -25,11 +25,11 @@
   #4 (`/task` shortcut), #5 (`skill-intake` skill, 50-skill cap and CI).
 - Closed without merging: PR #2 (task-observer autostart).
 - Merged: PR #6 (`/new` skill, long-conversation reminder hook at 100k tokens, English-only convention).
-- **Open:** PR on branch `claude/brave-curie-fvdv10`: stops task-observer from auto-running.
+- Merged: PR #7 (task-observer no longer auto-runs; it loads only via `/task`).
+- No open PRs.
 
 ## Next steps
-1. Merge the task-observer PR when the user says so. New sessions then stop spending ~15k tokens at start.
-2. Parked, per the user: build small custom skills for their repeated work tasks (e.g. online-store product pages).
+1. Parked, per the user: build small custom skills for their repeated work tasks (e.g. online-store product pages).
 
 ## Notes
 - User request with /new: "지금까지 대화 핵심들만 요약해서 저장해줘" (summarize only the key points so far).
