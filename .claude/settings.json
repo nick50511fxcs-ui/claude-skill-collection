@@ -1,0 +1,20 @@
+{
+  "extraKnownMarketplaces": {
+    "claude-skill-collection": {
+      "source": {
+        "source": "github",
+        "repo": "nick50511fxcs-ui/claude-skill-collection"
+      }
+    },
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "skill-collection@claude-skill-collection": true,
+    "claude-code-setup@claude-plugins-official": true
+  }
+}

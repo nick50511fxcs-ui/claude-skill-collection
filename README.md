@@ -1,11 +1,75 @@
 # 클로드 스킬모음
 
 다운받은 Claude 스킬(SKILL.md)들을 모아두는 저장소입니다.
+이 저장소 자체가 **Claude Code 플러그인 마켓플레이스**라서, 어느 컴퓨터·어느 클라우드 세션에서든
+한 줄로 같은 스킬을 불러올 수 있습니다.
+
+## 들어있는 것
+
+| 이름 | 종류 | 설명 | 설치 방식 |
+|---|---|---|---|
+| `task-observer` | 스킬 (`skills/`) | 반복 작업을 기록하고 스킬로 만들라고 제안하는 관찰자 ([원본](https://github.com/rebelytics/one-skill-to-rule-them-all), CC BY 4.0) | `skill-collection` 플러그인에 포함 |
+| `claude-code-setup` | 공식 플러그인 | 프로젝트를 스캔해 훅·스킬·MCP 등을 추천 (앤트로픽 공식) | 기본 설치 |
+| `claude-mem` | 외부 플러그인 | 세션이 바뀌어도 기억하는 메모리 ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | 선택 설치 (`--with-claude-mem`) |
+| 헤드룸 / 옴니라우트 | 외부 도구 (스킬 아님) | 토큰 압축 / 무료 모델 라우팅 | 자동 설치 안 함 → [docs/external-tools.md](docs/external-tools.md) |
 
 ## 구조
-- `skills/` — 각 스킬별 폴더 안에 SKILL.md와 관련 파일을 넣습니다.
 
-## 사용법 (새 PC에서)
+```
+.claude-plugin/marketplace.json   이 저장소를 마켓플레이스로 등록
+.claude-plugin/plugin.json        skills/ 전체를 "skill-collection" 플러그인으로 묶음
+.claude/settings.json             이 저장소를 연 세션에서 플러그인 자동 활성화
+skills/<스킬이름>/SKILL.md         스킬 본체 (새 스킬은 여기에 폴더째 추가)
+install.sh / install.ps1          원클릭 설치 스크립트
+```
+
+## 사용법
+
+### 1. Claude Code 안에서 (가장 간단, 모든 PC 공통)
+
+```
+/plugin marketplace add nick50511fxcs-ui/claude-skill-collection
+/plugin install skill-collection@claude-skill-collection
+```
+
+### 2. 터미널에서 스크립트로 (새 PC)
+
+맥 / 리눅스:
 ```bash
 git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
+cd claude-skill-collection && bash install.sh              # --with-claude-mem 추가 가능
 ```
+
+윈도우 PowerShell:
+```powershell
+git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
+cd claude-skill-collection; .\install.ps1                   # -WithClaudeMem 추가 가능
+```
+
+`claude` 명령이 없거나 플러그인 대신 파일로 넣고 싶으면 `--copy` / `-Copy` 옵션을 쓰면
+`~/.claude/skills/` 로 스킬 폴더가 복사됩니다.
+
+### 3. 클라우드 (claude.ai/code 웹·모바일)
+
+- **이 저장소로 세션을 열 때**: `.claude/settings.json` 덕분에 스킬과 `claude-code-setup`이 자동으로 켜집니다.
+- **다른 저장소에서도 쓰려면**: claude.ai/code의 환경(Environment) 설정 → **Setup script**에 아래를 넣으세요.
+  이후 그 환경에서 여는 모든 세션에 스킬이 설치됩니다.
+  ```bash
+  git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills \
+    && bash /tmp/skills/install.sh --copy
+  ```
+
+### 4. claude.ai 채팅 앱 (웹/데스크톱)
+
+설정 → Capabilities → Skills 에서 스킬 폴더를 ZIP으로 올립니다.
+```bash
+cd skills && zip -r task-observer.zip task-observer
+```
+
+## 새 스킬 추가하기
+
+1. `skills/<스킬이름>/SKILL.md` (필요하면 `references/`, `scripts/` 등)를 넣습니다.
+2. `claude plugin validate .` 로 확인 후 커밋·푸시합니다.
+3. 다른 PC에서는 `/plugin marketplace update claude-skill-collection` 한 번이면 반영됩니다.
+
+외부 저장소에서 받은 스킬은 폴더 안에 `UPSTREAM.txt`(원본 주소·커밋·라이선스)를 남겨두면 나중에 업데이트하기 쉽습니다.

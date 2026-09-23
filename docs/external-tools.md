@@ -1,0 +1,34 @@
+# 스킬이 아닌 외부 도구 (자동 설치하지 않음)
+
+PDF에 소개된 5개 중 아래 2개는 스킬/플러그인이 아니라 **내 컴퓨터에 설치해서 돌리는 프로그램**이라
+이 저장소에 담아 동기화할 수 없습니다. 필요한 PC에서 직접 설치하세요.
+
+## 헤드룸 (Headroom) — 토큰 압축 MCP
+
+- 원본: https://github.com/headroomlabs-ai/headroom
+- 필요: Python 3.10+
+
+```bash
+pip install "headroom-ai[all]"
+headroom mcp install && claude
+# VS Code 확장 사용 시: headroom wrap vscode-claude   (되돌리기: headroom unwrap vscode-claude)
+```
+
+## 옴니라우트 (OmniRoute) — 무료 모델 라우팅 게이트웨이
+
+- 원본: https://github.com/diegosouzapw/OmniRoute
+
+```bash
+npm install -g omniroute
+omniroute                                   # 이 창은 켜둔 채로
+# 새 터미널에서
+export ANTHROPIC_BASE_URL=http://localhost:20128/v1   # 윈도우: $env:ANTHROPIC_BASE_URL="http://localhost:20128/v1"
+claude
+```
+
+⚠️ 주의
+- 이걸 켜면 요청(프롬프트·코드)이 Claude가 아닌 **제3자 무료 모델 제공자들**로 전송됩니다.
+  회사 코드나 민감한 자료가 있는 프로젝트에서는 쓰지 마세요.
+- 답변 품질·도구 호출 호환성은 모델마다 다릅니다.
+- claude.ai/code 클라우드 세션에서는 로컬 게이트웨이를 쓸 수 없습니다.
+- 원래대로 돌아가려면 `ANTHROPIC_BASE_URL` 없이 새 터미널에서 `claude` 를 실행하면 됩니다.

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "skill-collection",
+  "description": "내가 모아둔 Claude 스킬 묶음 (skills/ 폴더 전체)",
+  "version": "1.0.0",
+  "author": {
+    "name": "nick50511fxcs-ui"
+  },
+  "repository": "https://github.com/nick50511fxcs-ui/claude-skill-collection"
+}
