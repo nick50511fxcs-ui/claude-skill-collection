@@ -3,7 +3,8 @@
 #   .\install.ps1                  # 플러그인 방식 (권장, 스킬 + claude-code-setup)
 #   .\install.ps1 -Copy            # 플러그인 대신 ~\.claude\skills 로 스킬 폴더 복사
 #   .\install.ps1 -WithClaudeMem   # claude-mem 메모리 플러그인도 함께 설치
-param([switch]$Copy, [switch]$WithClaudeMem)
+#   .\install.ps1 -WithHeadroom    # 헤드룸(토큰 압축 MCP)도 함께 설치 (Python 3.10+ 필요)
+param([switch]$Copy, [switch]$WithClaudeMem, [switch]$WithHeadroom)
 $ErrorActionPreference = "Stop"
 
 $Repo = "nick50511fxcs-ui/claude-skill-collection"
@@ -34,6 +35,20 @@ if ($Copy) {
 if ($WithClaudeMem -and $HasClaude) {
     claude plugin marketplace add $Repo 2>$null
     claude plugin install claude-mem@claude-skill-collection
+}
+
+if ($WithHeadroom) {
+    # 시스템 파이썬 패키지와 충돌하지 않도록 전용 가상환경에 설치합니다.
+    $Venv = Join-Path $HOME ".headroom-venv"
+    $Headroom = Join-Path $Venv "Scripts\headroom.exe"
+    if (-not $HasClaude) {
+        Write-Host "헤드룸은 claude CLI가 필요합니다. 건너뜁니다."
+    } else {
+        if (-not (Test-Path $Headroom)) { python -m venv $Venv }
+        & (Join-Path $Venv "Scripts\pip.exe") install -q --upgrade "headroom-ai[all]"
+        & $Headroom mcp install
+        Write-Host "✓ 헤드룸 MCP 등록 완료"
+    }
 }
 
 Write-Host "완료. Claude Code를 재시작하면 스킬이 적용됩니다."

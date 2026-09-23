@@ -1,7 +1,8 @@
 # 스킬이 아닌 외부 도구 (자동 설치하지 않음)
 
 PDF에 소개된 5개 중 아래 2개는 스킬/플러그인이 아니라 **내 컴퓨터에 설치해서 돌리는 프로그램**이라
-이 저장소에 담아 동기화할 수 없습니다. 필요한 PC에서 직접 설치하세요.
+이 저장소에 담아 동기화할 수 없습니다. 헤드룸은 `install.sh --with-headroom` 으로 설치할 수 있고,
+옴니라우트는 필요한 PC에서 직접 설치하세요.
 
 ## 헤드룸 (Headroom) — 토큰 압축 MCP
 
@@ -12,6 +13,16 @@ PDF에 소개된 5개 중 아래 2개는 스킬/플러그인이 아니라 **내 
 pip install "headroom-ai[all]"
 headroom mcp install && claude
 # VS Code 확장 사용 시: headroom wrap vscode-claude   (되돌리기: headroom unwrap vscode-claude)
+```
+
+`install.sh --with-headroom` 은 `~/.headroom-venv` 전용 가상환경에 설치한 뒤 `headroom mcp install` 까지 실행합니다.
+
+참고: `headroom mcp install` 은 압축/조회 **도구(compress·retrieve·stats)만** 등록합니다.
+모든 요청을 자동으로 압축하려면 프록시를 따로 켜고 Claude Code를 거기에 연결해야 합니다
+(로컬 PC 전용, 클라우드 세션에서는 해당 없음):
+```bash
+headroom proxy                                           # 이 창은 켜둔 채로
+ANTHROPIC_BASE_URL=http://127.0.0.1:8787 claude          # 새 터미널에서
 ```
 
 ## 옴니라우트 (OmniRoute) — 무료 모델 라우팅 게이트웨이

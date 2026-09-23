@@ -11,7 +11,8 @@
 | `task-observer` | 스킬 (`skills/`) | 반복 작업을 기록하고 스킬로 만들라고 제안하는 관찰자 ([원본](https://github.com/rebelytics/one-skill-to-rule-them-all), CC BY 4.0) | `skill-collection` 플러그인에 포함 |
 | `claude-code-setup` | 공식 플러그인 | 프로젝트를 스캔해 훅·스킬·MCP 등을 추천 (앤트로픽 공식) | 기본 설치 |
 | `claude-mem` | 외부 플러그인 | 세션이 바뀌어도 기억하는 메모리 ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | 선택 설치 (`--with-claude-mem`) |
-| 헤드룸 / 옴니라우트 | 외부 도구 (스킬 아님) | 토큰 압축 / 무료 모델 라우팅 | 자동 설치 안 함 → [docs/external-tools.md](docs/external-tools.md) |
+| 헤드룸 | 외부 도구 (MCP) | 토큰 압축 ([headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom)) | 선택 설치 (`--with-headroom`) |
+| 옴니라우트 | 외부 도구 | 무료 모델 라우팅 | 자동 설치 안 함 → [docs/external-tools.md](docs/external-tools.md) |
 
 ## 구조
 
@@ -37,13 +38,13 @@ install.sh / install.ps1          원클릭 설치 스크립트
 맥 / 리눅스:
 ```bash
 git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
-cd claude-skill-collection && bash install.sh              # --with-claude-mem 추가 가능
+cd claude-skill-collection && bash install.sh              # --with-claude-mem --with-headroom 추가 가능
 ```
 
 윈도우 PowerShell:
 ```powershell
 git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
-cd claude-skill-collection; .\install.ps1                   # -WithClaudeMem 추가 가능
+cd claude-skill-collection; .\install.ps1                   # -WithClaudeMem -WithHeadroom 추가 가능
 ```
 
 `claude` 명령이 없거나 플러그인 대신 파일로 넣고 싶으면 `--copy` / `-Copy` 옵션을 쓰면
@@ -53,10 +54,10 @@ cd claude-skill-collection; .\install.ps1                   # -WithClaudeMem 추
 
 - **이 저장소로 세션을 열 때**: `.claude/settings.json` 덕분에 스킬과 `claude-code-setup`이 자동으로 켜집니다.
 - **다른 저장소에서도 쓰려면**: claude.ai/code의 환경(Environment) 설정 → **Setup script**에 아래를 넣으세요.
-  이후 그 환경에서 여는 모든 세션에 스킬이 설치됩니다.
+  이후 그 환경에서 여는 모든 세션에 스킬과 헤드룸이 설치됩니다.
   ```bash
   git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills \
-    && bash /tmp/skills/install.sh --copy
+    && bash /tmp/skills/install.sh --copy --with-headroom
   ```
 
 ### 4. claude.ai 채팅 앱 (웹/데스크톱)
