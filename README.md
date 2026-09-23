@@ -9,6 +9,7 @@
 | 이름 | 종류 | 설명 | 설치 방식 |
 |---|---|---|---|
 | `task-observer` | 스킬 (`skills/`) | 반복 작업을 기록하고 스킬로 만들라고 제안하는 관찰자 ([원본](https://github.com/rebelytics/one-skill-to-rule-them-all), CC BY 4.0) | `skill-collection` 플러그인에 포함 |
+| `new` | 단축 명령 (`skills/`) | `/new` 로 지금까지 내용을 `.claude/handoff.md` 에 짧게 저장·푸시하고 새 세션 시작 문장을 알려줌. 직접 입력할 때만 동작 | `skill-collection` 플러그인에 포함 |
 | `skill-intake` | 스킬 (`skills/`) | GitHub 링크를 이 저장소에 추가·정리하는 절차 (원본 확인 → 비용 측정 → 빈 환경 설치 검증 → PR) | `skill-collection` 플러그인에 포함 |
 | `task` | 단축 명령 (`skills/`) | `/task` 로 task-observer 켜기. `/task 할 일` 처럼 요청을 바로 이어 써도 됨. 직접 입력할 때만 동작해서 평소 토큰 소모 없음 | `skill-collection` 플러그인에 포함 (플러그인 설치 시 이름은 `/skill-collection:task`) |
 | `claude-code-setup` | 공식 플러그인 | 프로젝트를 스캔해 훅·스킬·MCP 등을 추천 (앤트로픽 공식) | 기본 설치 |
@@ -72,6 +73,16 @@ cd claude-skill-collection; .\install.ps1                   # -WithClaudeMem -Wi
 ```bash
 cd skills && zip -r task-observer.zip task-observer
 ```
+
+## 긴 대화 알림 (`/new` 제안)
+
+대화가 길어지면 답할 때마다 전체를 다시 읽어 토큰이 늘어납니다. `hooks/new-reminder.sh` 가
+메시지를 보낼 때마다 대화 크기를 재서 **10만 토큰을 넘으면** Claude가 "`/new` 로 저장할까요?" 라고 한 번 묻게 합니다
+(이후 10만 토큰 늘 때마다 한 번씩). 훅은 Claude 바깥에서 돌아서 평소 토큰 비용이 없습니다.
+
+- 설치: 플러그인 방식은 자동 포함, `install.sh --copy` 도 기본 등록 (`--no-new-reminder` 로 끔)
+- 기준 변경: 환경 변수 `NEW_REMINDER_TOKENS` (기본 100000)
+- 흐름: 알림 → `/new` 입력 → 안내된 한 줄을 새 세션에 붙여넣기
 
 ## 스킬 개수 상한: 50개
 

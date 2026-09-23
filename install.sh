@@ -5,6 +5,7 @@
 #   bash install.sh --copy          # 플러그인 대신 ~/.claude/skills 로 스킬 폴더 복사
 #   bash install.sh --with-claude-mem   # claude-mem 메모리 플러그인도 함께 설치
 #   bash install.sh --with-headroom     # 헤드룸(토큰 압축 MCP)도 함께 설치 (Python 3.10+ 필요)
+#   bash install.sh --no-new-reminder   # 대화가 길어지면 /new 저장을 제안하는 알림 훅을 건너뜀
 set -euo pipefail
 
 REPO="${CLAUDE_SKILLS_REPO:-nick50511fxcs-ui/claude-skill-collection}"
@@ -12,13 +13,15 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="plugin"
 WITH_MEM=0
 WITH_HEADROOM=0
+NEW_REMINDER=1
 
 for arg in "$@"; do
   case "$arg" in
     --copy) MODE="copy" ;;
     --with-claude-mem) WITH_MEM=1 ;;
     --with-headroom) WITH_HEADROOM=1 ;;
-    -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
+    --no-new-reminder) NEW_REMINDER=0 ;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
     *) echo "알 수 없는 옵션: $arg" >&2; exit 1 ;;
   esac
 done
@@ -72,6 +75,30 @@ if [ "$WITH_HEADROOM" = 1 ]; then
       echo "⚠ 헤드룸 설치에 실패했습니다. 나머지는 정상 설치되었습니다." >&2
     fi
   fi
+fi
+
+# 플러그인 방식은 hooks/hooks.json 으로 훅이 함께 설치되므로, 복사 방식일 때만 직접 등록합니다.
+if [ "$MODE" = "copy" ] && [ "$NEW_REMINDER" = 1 ]; then
+  HOOK="$HOME/.claude/hooks/new-reminder.sh"
+  mkdir -p "$HOME/.claude/hooks"
+  cp "$HERE/hooks/new-reminder.sh" "$HOOK"
+  chmod +x "$HOOK"
+  SETTINGS="$HOME/.claude/settings.json" COMMAND="bash \"$HOOK\"" python3 - <<'PY'
+import json, os
+path, command = os.environ["SETTINGS"], os.environ["COMMAND"]
+try:
+    with open(path) as f:
+        data = json.load(f)
+except FileNotFoundError:
+    data = {}
+groups = data.setdefault("hooks", {}).setdefault("UserPromptSubmit", [])
+if not any(h.get("command") == command for g in groups for h in g.get("hooks", [])):
+    groups.append({"hooks": [{"type": "command", "command": command}]})
+with open(path, "w") as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+PY
+  echo "✓ 긴 대화 알림 훅 등록 (/new 저장 제안)"
 fi
 
 echo "완료. Claude Code를 재시작하면 스킬이 적용됩니다."
