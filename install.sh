@@ -5,6 +5,7 @@
 #   bash install.sh --copy          # 플러그인 대신 ~/.claude/skills 로 스킬 폴더 복사
 #   bash install.sh --with-claude-mem   # claude-mem 메모리 플러그인도 함께 설치
 #   bash install.sh --with-headroom     # 헤드룸(토큰 압축 MCP)도 함께 설치 (Python 3.10+ 필요)
+#   bash install.sh --no-observer-autostart  # task-observer 세션 자동 활성화 설정을 건너뜀
 set -euo pipefail
 
 REPO="${CLAUDE_SKILLS_REPO:-nick50511fxcs-ui/claude-skill-collection}"
@@ -12,13 +13,15 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="plugin"
 WITH_MEM=0
 WITH_HEADROOM=0
+OBSERVER_AUTOSTART=1
 
 for arg in "$@"; do
   case "$arg" in
     --copy) MODE="copy" ;;
     --with-claude-mem) WITH_MEM=1 ;;
     --with-headroom) WITH_HEADROOM=1 ;;
-    -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
+    --no-observer-autostart) OBSERVER_AUTOSTART=0 ;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
     *) echo "알 수 없는 옵션: $arg" >&2; exit 1 ;;
   esac
 done
@@ -72,6 +75,42 @@ if [ "$WITH_HEADROOM" = 1 ]; then
       echo "⚠ 헤드룸 설치에 실패했습니다. 나머지는 정상 설치되었습니다." >&2
     fi
   fi
+fi
+
+if [ "$OBSERVER_AUTOSTART" = 1 ]; then
+  # 원작자 권장 방식: 전역 CLAUDE.md 활성화 블록 + SessionStart 훅.
+  # 관찰 로그는 $HOME/.claude/skill-observations/ 에 쌓입니다.
+  WORKSPACE="$HOME/.claude"
+  CLAUDE_MD="$WORKSPACE/CLAUDE.md"
+  HOOK="$WORKSPACE/hooks/task-observer-session-start.sh"
+  mkdir -p "$WORKSPACE/hooks"
+  cp "$HERE/activation/task-observer-session-start.sh" "$HOOK"
+  chmod +x "$HOOK"
+
+  # CLAUDE.md: 이전에 넣은 블록을 지우고 최신 블록으로 교체합니다.
+  touch "$CLAUDE_MD"
+  sed '/<!-- task-observer:start/,/<!-- task-observer:end -->/d' "$CLAUDE_MD" > "$CLAUDE_MD.tmp"
+  if [ -s "$CLAUDE_MD.tmp" ]; then echo >> "$CLAUDE_MD.tmp"; fi
+  sed "s#__WORKSPACE__#$WORKSPACE#g" "$HERE/activation/task-observer-claude-md.txt" >> "$CLAUDE_MD.tmp"
+  mv "$CLAUDE_MD.tmp" "$CLAUDE_MD"
+
+  # settings.json: SessionStart 훅을 (없을 때만) 추가합니다.
+  SETTINGS="$WORKSPACE/settings.json" HOOK="$HOOK" python3 - <<'PY'
+import json, os
+path, hook = os.environ["SETTINGS"], os.environ["HOOK"]
+try:
+    with open(path) as f:
+        data = json.load(f)
+except FileNotFoundError:
+    data = {}
+groups = data.setdefault("hooks", {}).setdefault("SessionStart", [])
+if not any(h.get("command") == hook for g in groups for h in g.get("hooks", [])):
+    groups.append({"hooks": [{"type": "command", "command": hook}]})
+with open(path, "w") as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+PY
+  echo "✓ task-observer 세션 자동 활성화 설정 (CLAUDE.md + SessionStart 훅)"
 fi
 
 echo "완료. Claude Code를 재시작하면 스킬이 적용됩니다."

@@ -25,6 +25,17 @@ skills/<스킬이름>/SKILL.md         스킬 본체 (새 스킬은 여기에 �
 install.sh / install.ps1          원클릭 설치 스크립트
 ```
 
+## task-observer 자동 활성화
+
+`install.sh` / `install.ps1` 는 기본으로 원작자 권장 설정을 함께 넣습니다 (`--no-observer-autostart` 로 끌 수 있음).
+
+- `~/.claude/CLAUDE.md` 에 활성화 블록 추가 (기존 내용은 유지, 재실행 시 블록만 교체)
+- `~/.claude/settings.json` 에 SessionStart 훅 추가 → 매 세션 시작 시 "task-observer 먼저 실행" 지시를 주입
+- 관찰 기록은 `~/.claude/skill-observations/` 에 쌓입니다. 하루 끝에 "오늘 기록된 관찰 있어?" 라고 물어보세요.
+
+⚠️ claude.ai/code 클라우드 세션은 끝나면 컨테이너가 지워지므로 **관찰 기록도 세션마다 초기화**됩니다.
+기록이 계속 쌓이길 원하면 로컬 PC에서 쓰세요.
+
 ## 사용법
 
 ### 1. Claude Code 안에서 (가장 간단, 모든 PC 공통)

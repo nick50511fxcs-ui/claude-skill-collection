@@ -4,7 +4,8 @@
 #   .\install.ps1 -Copy            # 플러그인 대신 ~\.claude\skills 로 스킬 폴더 복사
 #   .\install.ps1 -WithClaudeMem   # claude-mem 메모리 플러그인도 함께 설치
 #   .\install.ps1 -WithHeadroom    # 헤드룸(토큰 압축 MCP)도 함께 설치 (Python 3.10+ 필요)
-param([switch]$Copy, [switch]$WithClaudeMem, [switch]$WithHeadroom)
+#   .\install.ps1 -NoObserverAutostart  # task-observer 세션 자동 활성화 설정을 건너뜀
+param([switch]$Copy, [switch]$WithClaudeMem, [switch]$WithHeadroom, [switch]$NoObserverAutostart)
 $ErrorActionPreference = "Stop"
 
 $Repo = if ($env:CLAUDE_SKILLS_REPO) { $env:CLAUDE_SKILLS_REPO } else { "nick50511fxcs-ui/claude-skill-collection" }
@@ -53,6 +54,35 @@ if ($WithHeadroom) {
         if ($LASTEXITCODE -eq 0) { Write-Host "✓ 헤드룸 MCP 등록 완료" }
         else { Write-Host "⚠ 헤드룸 설치에 실패했습니다. 나머지는 정상 설치되었습니다." }
     }
+}
+
+if (-not $NoObserverAutostart) {
+    # 원작자 권장 방식: 전역 CLAUDE.md 활성화 블록 + SessionStart 훅 (훅은 Claude Code가 쓰는 Git Bash로 실행).
+    $Workspace = Join-Path $HOME ".claude"
+    $WorkspaceFwd = $Workspace -replace '\\', '/'
+    $HookDir = Join-Path $Workspace "hooks"
+    $Hook = Join-Path $HookDir "task-observer-session-start.sh"
+    New-Item -ItemType Directory -Force -Path $HookDir | Out-Null
+    Copy-Item -Force (Join-Path $PSScriptRoot "activation\task-observer-session-start.sh") $Hook
+
+    $ClaudeMd = Join-Path $Workspace "CLAUDE.md"
+    $Existing = if (Test-Path $ClaudeMd) { Get-Content -Raw -Encoding UTF8 $ClaudeMd } else { "" }
+    $Existing = [regex]::Replace($Existing, '(?s)<!-- task-observer:start.*?<!-- task-observer:end -->\r?\n?', '')
+    $Block = (Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot "activation\task-observer-claude-md.txt")).Replace("__WORKSPACE__", $WorkspaceFwd)
+    if ($Existing.Trim()) { $Existing = $Existing.TrimEnd() + "`n`n" } else { $Existing = "" }
+    [IO.File]::WriteAllText($ClaudeMd, $Existing + $Block, (New-Object Text.UTF8Encoding $false))
+
+    $SettingsPath = Join-Path $Workspace "settings.json"
+    $Settings = if (Test-Path $SettingsPath) { Get-Content -Raw -Encoding UTF8 $SettingsPath | ConvertFrom-Json } else { [pscustomobject]@{} }
+    $Command = "bash `"$($Hook -replace '\\', '/')`""
+    if (-not $Settings.PSObject.Properties["hooks"]) { $Settings | Add-Member hooks ([pscustomobject]@{}) }
+    if (-not $Settings.hooks.PSObject.Properties["SessionStart"]) { $Settings.hooks | Add-Member SessionStart @() }
+    $Already = @($Settings.hooks.SessionStart | ForEach-Object { $_.hooks } | Where-Object { $_.command -eq $Command })
+    if ($Already.Count -eq 0) {
+        $Settings.hooks.SessionStart = @($Settings.hooks.SessionStart) + @([pscustomobject]@{ hooks = @([pscustomobject]@{ type = "command"; command = $Command }) })
+    }
+    [IO.File]::WriteAllText($SettingsPath, ($Settings | ConvertTo-Json -Depth 20), (New-Object Text.UTF8Encoding $false))
+    Write-Host "✓ task-observer 세션 자동 활성화 설정 (CLAUDE.md + SessionStart 훅)"
 }
 
 Write-Host "완료. Claude Code를 재시작하면 스킬이 적용됩니다."
