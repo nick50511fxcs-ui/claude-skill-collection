@@ -15,7 +15,12 @@ headroom mcp install && claude
 # VS Code 확장 사용 시: headroom wrap vscode-claude   (되돌리기: headroom unwrap vscode-claude)
 ```
 
-`install.sh --with-headroom` 은 `~/.headroom-venv` 전용 가상환경에 설치한 뒤 `headroom mcp install` 까지 실행합니다.
+`install.sh --with-headroom` 은 `~/.headroom-venv` 전용 가상환경에 `headroom-ai[mcp]` 를 설치한 뒤
+`headroom mcp install` 까지 실행합니다.
+
+PDF의 `headroom-ai[all]` 은 GPU용 머신러닝 라이브러리(torch 등)까지 받아서 **약 7GB** 입니다.
+MCP 도구(compress·retrieve·stats)만 쓰려면 `[mcp]` (약 430MB)로 충분해서 스크립트는 이쪽을 씁니다.
+이미지·문서 압축 등 추가 기능이 필요하면 로컬 PC에서만 `[all]` 로 설치하세요.
 
 참고: `headroom mcp install` 은 압축/조회 **도구(compress·retrieve·stats)만** 등록합니다.
 모든 요청을 자동으로 압축하려면 프록시를 따로 켜고 Claude Code를 거기에 연결해야 합니다

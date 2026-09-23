@@ -7,7 +7,7 @@
 #   bash install.sh --with-headroom     # 헤드룸(토큰 압축 MCP)도 함께 설치 (Python 3.10+ 필요)
 set -euo pipefail
 
-REPO="nick50511fxcs-ui/claude-skill-collection"
+REPO="${CLAUDE_SKILLS_REPO:-nick50511fxcs-ui/claude-skill-collection}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="plugin"
 WITH_MEM=0
@@ -18,7 +18,7 @@ for arg in "$@"; do
     --copy) MODE="copy" ;;
     --with-claude-mem) WITH_MEM=1 ;;
     --with-headroom) WITH_HEADROOM=1 ;;
-    -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
     *) echo "알 수 없는 옵션: $arg" >&2; exit 1 ;;
   esac
 done
@@ -37,15 +37,18 @@ if [ "$MODE" = "copy" ]; then
     echo "✓ 스킬 복사: $name"
   done
 else
-  claude plugin marketplace add "$REPO" || claude plugin marketplace update claude-skill-collection
+  # add는 이미 등록돼 있어도 성공하므로, 다시 실행할 때 새 스킬을 받도록 항상 update도 합니다.
+  claude plugin marketplace add "$REPO"
+  claude plugin marketplace update claude-skill-collection
   claude plugin install skill-collection@claude-skill-collection
-  claude plugin marketplace add anthropics/claude-plugins-official || true
+  claude plugin update skill-collection@claude-skill-collection
+  claude plugin marketplace add anthropics/claude-plugins-official
   claude plugin install claude-code-setup@claude-plugins-official
 fi
 
 if [ "$WITH_MEM" = 1 ]; then
   if command -v claude >/dev/null 2>&1; then
-    claude plugin marketplace add "$REPO" 2>/dev/null || true
+    claude plugin marketplace add "$REPO"
     claude plugin install claude-mem@claude-skill-collection
   else
     echo "claude-mem은 claude CLI가 필요합니다. 건너뜁니다." >&2
@@ -60,10 +63,14 @@ if [ "$WITH_HEADROOM" = 1 ]; then
   elif ! command -v claude >/dev/null 2>&1; then
     echo "헤드룸은 claude CLI가 필요합니다. 건너뜁니다." >&2
   else
-    [ -x "$VENV/bin/headroom" ] || python3 -m venv "$VENV"
-    "$VENV/bin/pip" install -q --upgrade "headroom-ai[all]"
-    "$VENV/bin/headroom" mcp install
-    echo "✓ 헤드룸 MCP 등록 완료"
+    # 헤드룸은 선택 사항이라, 실패해도 나머지 설치(클라우드 세션 시작 포함)를 막지 않습니다.
+    if { [ -x "$VENV/bin/headroom" ] || python3 -m venv "$VENV"; } \
+      && "$VENV/bin/pip" install -q --upgrade "headroom-ai[mcp]" \
+      && "$VENV/bin/headroom" mcp install; then
+      echo "✓ 헤드룸 MCP 등록 완료"
+    else
+      echo "⚠ 헤드룸 설치에 실패했습니다. 나머지는 정상 설치되었습니다." >&2
+    fi
   fi
 fi
 
