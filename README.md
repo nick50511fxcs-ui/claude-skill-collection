@@ -9,6 +9,7 @@
 | 이름 | 종류 | 설명 | 설치 방식 |
 |---|---|---|---|
 | `task-observer` | 스킬 (`skills/`) | 반복 작업을 기록하고 스킬로 만들라고 제안하는 관찰자 ([원본](https://github.com/rebelytics/one-skill-to-rule-them-all), CC BY 4.0) | `skill-collection` 플러그인에 포함 |
+| `task` | 단축 명령 (`skills/`) | `/task` 로 task-observer 켜기. `/task 할 일` 처럼 요청을 바로 이어 써도 됨. 직접 입력할 때만 동작해서 평소 토큰 소모 없음 | `skill-collection` 플러그인에 포함 (플러그인 설치 시 이름은 `/skill-collection:task`) |
 | `claude-code-setup` | 공식 플러그인 | 프로젝트를 스캔해 훅·스킬·MCP 등을 추천 (앤트로픽 공식) | 기본 설치 |
 | `claude-mem` | 외부 플러그인 | 세션이 바뀌어도 기억하는 메모리 ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | 선택 설치 (`--with-claude-mem`) |
 | 헤드룸 | 외부 도구 (MCP) | 토큰 압축 ([headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom)) | 선택 설치 (`--with-headroom`) |
