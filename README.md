@@ -58,8 +58,11 @@ cd claude-skill-collection; .\install.ps1                   # -WithClaudeMem -Wi
   이후 그 환경에서 여는 모든 세션에 스킬과 헤드룸이 설치됩니다.
   ```bash
   git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills \
-    && bash /tmp/skills/install.sh --copy --with-headroom
+    && bash /tmp/skills/install.sh --copy --with-headroom || true
   ```
+  - 끝의 `|| true` 는 설치가 실패해도 세션 시작을 막지 않게 합니다.
+  - Setup script 단계에는 GitHub 로그인 정보가 없으므로 이 저장소는 **공개(public)** 로 유지해야 합니다.
+    비공개로 바꾸면 `could not read Username` (exit 128) 오류가 납니다.
 
 ### 4. claude.ai 채팅 앱 (웹/데스크톱)
 
