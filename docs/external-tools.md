@@ -1,9 +1,9 @@
 # External tools (not skills)
 
-Two of the five tools from the original guide are not skills or plugins but
-**programs you install and run**, so they cannot be synced through this
-repository. Headroom can be installed with `install.sh --with-headroom`;
-install OmniRoute by hand where you need it.
+Some tools are not skills or plugins but **programs you install and run** (or
+reference files you copy per project), so they cannot be synced through this
+repository. Headroom and Playwright MCP can be installed with `install.sh`
+(`--with-headroom`, `--with-playwright`); set up the others by hand where you need them.
 
 ## Headroom — context-compression MCP
 
@@ -50,3 +50,41 @@ claude
 - Answer quality and tool-call compatibility vary by model.
 - Cloud sessions (claude.ai/code) cannot use a local gateway.
 - To go back, run `claude` in a new terminal without `ANTHROPIC_BASE_URL`.
+
+## Playwright MCP — browser control and screenshots
+
+- Source: https://github.com/microsoft/playwright-mcp (Apache-2.0)
+- Requires: Node.js (`npx`)
+
+```bash
+claude mcp add -s user playwright -- npx @playwright/mcp@latest
+```
+
+`install.sh --with-playwright` runs the same command (skipped if `playwright` is
+already registered). Nothing is downloaded until the server first starts. Then ask
+Claude to "open it in the browser, check it, and fix what looks off".
+
+## awesome-design-md — design-system reference files
+
+- Source: https://github.com/VoltAgent/awesome-design-md (MIT)
+- Nothing to install: each folder under `design-md/` holds one `DESIGN.md`
+  (colors, type, spacing rules) for a well-known site.
+
+Copy the one you like into a project and ask Claude to follow it:
+```bash
+curl -fsSL https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md/stripe/DESIGN.md -o DESIGN.md
+```
+Not vendored here: the whole set is ~2.8 MB and only one file is used per project.
+
+## 21st.dev Magic MCP — UI component library
+
+- Source: https://21st.dev/mcp
+- Requires: a 21st.dev account and API key (the free tier limits component imports per day;
+  AI generation uses credits)
+
+```bash
+npx @21st-dev/cli@latest init --client claude    # Cursor: --client cursor
+```
+
+Not in `install.sh`: it needs an interactive sign-up and a personal API key.
+Then ask for things like "find a pricing-table component that fits the checkout page".

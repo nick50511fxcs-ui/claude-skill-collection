@@ -5,6 +5,7 @@
 #   bash install.sh --copy          # copy skill folders to ~/.claude/skills instead of a plugin
 #   bash install.sh --with-claude-mem   # also install the claude-mem memory plugin
 #   bash install.sh --with-headroom     # also install Headroom (context-compression MCP, needs Python 3.10+)
+#   bash install.sh --with-playwright   # also register the Playwright MCP (browser + screenshots, needs Node.js)
 #   bash install.sh --no-new-reminder   # skip the hook that suggests /new when a conversation gets long
 set -euo pipefail
 
@@ -13,6 +14,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="plugin"
 WITH_MEM=0
 WITH_HEADROOM=0
+WITH_PLAYWRIGHT=0
 NEW_REMINDER=1
 
 for arg in "$@"; do
@@ -20,8 +22,9 @@ for arg in "$@"; do
     --copy) MODE="copy" ;;
     --with-claude-mem) WITH_MEM=1 ;;
     --with-headroom) WITH_HEADROOM=1 ;;
+    --with-playwright) WITH_PLAYWRIGHT=1 ;;
     --no-new-reminder) NEW_REMINDER=0 ;;
-    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
     *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
 done
@@ -74,6 +77,18 @@ if [ "$WITH_HEADROOM" = 1 ]; then
     else
       echo "⚠ Headroom install failed; everything else was installed." >&2
     fi
+  fi
+fi
+
+if [ "$WITH_PLAYWRIGHT" = 1 ]; then
+  if ! command -v claude >/dev/null 2>&1 || ! command -v npx >/dev/null 2>&1; then
+    echo "Playwright MCP needs the claude CLI and Node.js (npx); skipping." >&2
+  elif claude mcp get playwright >/dev/null 2>&1; then
+    echo "✓ Playwright MCP already registered"
+  elif claude mcp add -s user playwright -- npx @playwright/mcp@latest; then
+    echo "✓ Playwright MCP registered"
+  else
+    echo "⚠ Playwright MCP registration failed; everything else was installed." >&2
   fi
 fi
 

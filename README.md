@@ -17,9 +17,14 @@ command on any machine or in any cloud session.
 | `task` | Shortcut (`skills/`) | `/task` turns on task-observer; `/task <request>` also runs the request. User-invoked only, so no idle token cost | Part of the plugin (named `/skill-collection:task` when installed as a plugin) |
 | `new` | Shortcut (`skills/`) | `/new` saves a short handoff note to `HANDOFF.md`, pushes it, and prints a one-line starter for a new session. User-invoked only | Part of the plugin |
 | `skill-intake` | Skill (`skills/`) | Procedure for adding or pruning skills from GitHub links (verify upstream → measure cost → clean-install test → PR) | Part of the plugin |
+| `design-taste-frontend` | Skill (`skills/`) | Anti-template frontend taste for landing pages, portfolios and redesigns; applies automatically when building UI ([upstream](https://github.com/Leonxlnx/taste-skill), MIT) | Part of the plugin |
+| `web-design-guidelines` | Skill (`skills/`) | Audits UI code against Vercel's Web Interface Guidelines (accessibility, forms, layout); triggers on "review my UI" ([upstream](https://github.com/vercel-labs/agent-skills), MIT) | Part of the plugin |
 | `claude-code-setup` | Official plugin | Scans a project and recommends hooks, skills, MCP servers (Anthropic) | Installed by default |
 | `claude-mem` | External plugin | Memory that persists across sessions ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | Optional (`--with-claude-mem`) |
 | Headroom | External tool (MCP) | Context compression ([headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom)) | Optional (`--with-headroom`) |
+| Playwright MCP | External tool (MCP) | Lets Claude open a browser, screenshot its own UI and fix what looks off ([microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)) | Optional (`--with-playwright`) |
+| awesome-design-md | Reference files | 70+ `DESIGN.md` design systems of well-known sites to drop into a project ([VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md)) | Not installed → [docs/external-tools.md](docs/external-tools.md) |
+| 21st.dev Magic MCP | External tool (MCP) | Pulls ready-made UI components into a project; needs an account and API key | Not installed → [docs/external-tools.md](docs/external-tools.md) |
 | OmniRoute | External tool | Routes requests to free third-party models | Not installed → [docs/external-tools.md](docs/external-tools.md) |
 
 ## Layout
@@ -49,13 +54,13 @@ install.sh / install.ps1          one-shot installers
 macOS / Linux:
 ```bash
 git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
-cd claude-skill-collection && bash install.sh              # optional: --with-claude-mem --with-headroom
+cd claude-skill-collection && bash install.sh              # optional: --with-claude-mem --with-headroom --with-playwright
 ```
 
 Windows PowerShell:
 ```powershell
 git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
-cd claude-skill-collection; .\install.ps1                   # optional: -WithClaudeMem -WithHeadroom
+cd claude-skill-collection; .\install.ps1                   # optional: -WithClaudeMem -WithHeadroom -WithPlaywright
 ```
 
 Without the `claude` CLI, or to install files instead of a plugin, use `--copy` / `-Copy`:
