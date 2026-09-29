@@ -4,7 +4,8 @@
 #   .\install.ps1 -Copy            # copy skill folders to ~\.claude\skills instead of a plugin
 #   .\install.ps1 -WithClaudeMem   # also install the claude-mem memory plugin
 #   .\install.ps1 -WithHeadroom    # also install Headroom (context-compression MCP, needs Python 3.10+)
-param([switch]$Copy, [switch]$WithClaudeMem, [switch]$WithHeadroom)
+#   .\install.ps1 -WithPlaywright  # also register the Playwright MCP (browser + screenshots, needs Node.js)
+param([switch]$Copy, [switch]$WithClaudeMem, [switch]$WithHeadroom, [switch]$WithPlaywright)
 $ErrorActionPreference = "Stop"
 
 $Repo = if ($env:CLAUDE_SKILLS_REPO) { $env:CLAUDE_SKILLS_REPO } else { "nick50511fxcs-ui/claude-skill-collection" }
@@ -52,6 +53,20 @@ if ($WithHeadroom) {
         if ($LASTEXITCODE -eq 0) { & $Headroom mcp install }
         if ($LASTEXITCODE -eq 0) { Write-Host "[ok] Headroom MCP registered" }
         else { Write-Host "[warn] Headroom install failed; everything else was installed." }
+    }
+}
+
+if ($WithPlaywright) {
+    if (-not $HasClaude -or -not (Get-Command npx -ErrorAction SilentlyContinue)) {
+        Write-Host "Playwright MCP needs the claude CLI and Node.js (npx); skipping."
+    } else {
+        claude mcp get playwright *> $null
+        if ($LASTEXITCODE -eq 0) { Write-Host "[ok] Playwright MCP already registered" }
+        else {
+            claude mcp add -s user playwright -- npx @playwright/mcp@latest
+            if ($LASTEXITCODE -eq 0) { Write-Host "[ok] Playwright MCP registered" }
+            else { Write-Host "[warn] Playwright MCP registration failed; everything else was installed." }
+        }
     }
 }
 
