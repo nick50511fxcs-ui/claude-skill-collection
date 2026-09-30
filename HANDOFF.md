@@ -1,39 +1,40 @@
-# Handoff (2026-09-23, updated)
+# Handoff (2026-09-30)
 
 ## Goal
-- Keep the user's Claude skills in this public GitHub repo so they work in every
-  cloud session (claude.ai/code) and on any machine, with low token overhead.
+- Excel VBA tool that builds export CI / PL / appendix from pasted ERP order data and
+  writes the invoice row into the team's shared export ledger. Other staff must be able to use it.
 
 ## Decisions
-- The repo is a Claude Code plugin marketplace; skills live in `skills/`. Default branch is `master`.
-- Cloud setup script (already saved in the user's environment):
-  `git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills && bash /tmp/skills/install.sh --copy --with-headroom || true`
-- The repo must stay **public**: the setup script has no GitHub credentials (a private repo failed with exit 128).
-- task-observer is **not** auto-started (it costs ~15k tokens per session and cloud logs reset per session).
-  It is turned on on demand with `/task`. Its upstream description told Claude to invoke it
-  before the first tool call of every session, so it still auto-ran; the vendored copy now has
-  a replaced description (recorded in its `UPSTREAM.txt`; re-apply when updating from upstream). The upstream feedback report was drafted, and the user chose not to file it.
-- Cap of 50 skills (`scripts/check-skills.sh` plus the `check-skills` CI on every PR).
-- Everything committed is in **English**; CI fails on Korean text outside vendored skills and HANDOFF.md.
-- Headroom is installed as `headroom-ai[mcp]` (~430MB), not `[all]` (~7GB).
-- OmniRoute is not installed: it sends prompts to third-party models.
-- No CLAUDE.md for now (the user agreed it is not needed).
-- Merge PRs only when the user asks.
+- Deliverables are PRIVATE: never commit tool files, samples, customer data or internal paths
+  to this public repo. Deliver files only as chat attachments (zip).
+- Format: .xlsx template + .bas module (CP949, CRLF) that the user imports and saves as .xlsm.
+  Logic is mirrored in a Python replica (build.py, replica.py, tests) because no Excel in the cloud.
+- CI/PL templates = the user's own original CI/PL file with values replaced by {{placeholders}}
+  (fonts, fills, widths, print setup, signature image kept). Output sheet names: INVOICE / Packing / detail.
+- Invoice No. = prefix + YYMM + 2-digit monthly serial, taken from the yearly ledger file
+  (one row per invoice appended at the bottom; month separator row "N월" added when the month changes;
+  NO. restarts monthly; columns found by header names in Settings).
+- Order number (수주번호) is typed by hand in the Input sheet (comma separated). No ERP access.
+- G.W optional. No shipping mark. PL Net Weight = per EA; total in the G.TOTAL row.
+- Weights: shared WeightDB first, then SWG / RTJ tables (octagonal vs oval by description).
+- Macros named for Alt+F8 order: A_Generate_CIPL, B_Load_Customer, C_Refresh_Lists, D_Setup, Z_Clear_RAW.
+- 8+ items -> "As per appendix" in CI/PL body and item list on the detail sheet.
 
 ## Current state
-- Merged: PR #1 (marketplace, task-observer, installers), #3 (README setup notes),
-  #4 (`/task` shortcut), #5 (`skill-intake` skill, 50-skill cap and CI).
-- Closed without merging: PR #2 (task-observer autostart).
-- Merged: PR #6 (`/new` skill, long-conversation reminder hook at 100k tokens, English-only convention).
-- Merged: PR #7 (task-observer no longer auto-runs; it loads only via `/task`).
-- No open PRs.
+- v4 delivered as CIPL_Tool_v4.zip (contains src/ with build.py, replica.py, test.py,
+  test_ledger.py, guide.txt, vbacheck.py and HANDOFF_private.md with full details).
+- User confirmed the ledger writing works in real Excel (v3). v4 (original-format templates,
+  optional G.W, macro rename, per-EA weight) is not yet confirmed in real Excel.
+- Nothing about the tool is committed to this repo (by design).
 
 ## Next steps
-1. Parked, per the user: build small custom skills for their repeated work tasks (e.g. online-store product pages).
+1. Ask the user to re-upload CIPL_Tool_v4.zip (and the original CI/PL sample if templates change);
+   the cloud container that had the files is gone.
+2. Get feedback on the v4 first run (layout vs. original, stamp image, row insertion, totals).
+3. Fix issues in the .bas and replica, re-run tests, deliver v5 as a zip attachment.
 
 ## Notes
-- User request with /new: "지금까지 대화 핵심들만 요약해서 저장해줘" (summarize only the key points so far).
-- The user works only in cloud sessions: no always-on local PC, and Remote Control is not an option.
-- The user is token-conscious and prefers plain-language Korean explanations in chat.
-- `.claude/` writes trigger an approval prompt; that is why the note lives at the repo root.
-- Windows (`install.ps1`) is untested and does not register the reminder hook.
+- Chat in plain Korean; user is token-conscious. Committed files stay in English.
+- LibreOffice Calc can be installed (apt) to render xlsx -> pdf for visual checks; openpyxl needs
+  Pillow to keep images.
+- Weight-table outliers exist in the user's tables (some 300LB lighter than 150LB); not changed.
