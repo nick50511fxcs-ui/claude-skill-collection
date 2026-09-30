@@ -1,39 +1,45 @@
-# Handoff (2026-09-23, updated)
+# Handoff (2026-09-30)
 
 ## Goal
-- Keep the user's Claude skills in this public GitHub repo so they work in every
-  cloud session (claude.ai/code) and on any machine, with low token overhead.
+- Automate the user's export Commercial Invoice / Packing List (CI/PL) Excel work:
+  fill the CI, PL and appendix sheets from pasted order RAW DATA, with no manual
+  row adding, deleting or reformatting. Other users at the company must be able to run it.
 
 ## Decisions
-- The repo is a Claude Code plugin marketplace; skills live in `skills/`. Default branch is `master`.
-- Cloud setup script (already saved in the user's environment):
-  `git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills && bash /tmp/skills/install.sh --copy --with-headroom || true`
-- The repo must stay **public**: the setup script has no GitHub credentials (a private repo failed with exit 128).
-- task-observer is **not** auto-started (it costs ~15k tokens per session and cloud logs reset per session).
-  It is turned on on demand with `/task`. Its upstream description told Claude to invoke it
-  before the first tool call of every session, so it still auto-ran; the vendored copy now has
-  a replaced description (recorded in its `UPSTREAM.txt`; re-apply when updating from upstream). The upstream feedback report was drafted, and the user chose not to file it.
-- Cap of 50 skills (`scripts/check-skills.sh` plus the `check-skills` CI on every PR).
-- Everything committed is in **English**; CI fails on Korean text outside vendored skills and HANDOFF.md.
-- Headroom is installed as `headroom-ai[mcp]` (~430MB), not `[all]` (~7GB).
-- OmniRoute is not installed: it sends prompts to third-party models.
-- No CLAUDE.md for now (the user agreed it is not needed).
-- Merge PRs only when the user asks.
+- Format: **Excel macro (.xlsm, VBA)**. No install needed, runs on each user's PC with
+  their own rights, so it can open the shared network drive (Claude cannot, and does not need to).
+- Verify the logic first with a Python replica against the user's 3 sample CI/PLs, then
+  deliver VBA. Excel is not available in the cloud session, so the user tests the macro once.
+- Workbook sheets: Input (customer dropdown, PO/JAR No., dates, packing, G.W, Generate button),
+  RAW (pasted order data plus one "ship qty" column; default = remaining qty, blank = skip),
+  Customers, WeightDB, Templates (CI / PL / appendix).
+- 8 or more items: put "As per appendix" in the CI and PL bodies and list the items on the appendix sheet.
+- Invoice No.: read the yearly export ledger file (`YY년 수출대장.XLSX` on the shared drive),
+  take the next number, write the row right away, stop if the file is locked. Path is a setting.
+  Assumed rule `JI-YYMM` + 2-digit monthly serial (for example JI-260918); user to confirm.
+- Customers: new customers are saved automatically; Consignee and Notify are reused as fixed data.
+  Payment terms, Incoterms, HS code and loading port are **per-PO defaults**: prefill with the
+  customer's last-used value, offer that customer's past values in a dropdown, highlight in yellow
+  for review, require a value before generating, record the actual values for each shipment in the
+  ledger, and ask before changing the saved default.
+- Weights: look up the user's SWG/RTJ weight tables by parsed spec (normalize `2-1/2"` vs `2.1/2"`,
+  `600LB` vs `Class 600`); if missing, mark the cell red, ask the user, and save the answer to WeightDB.
+- Unify the shipper address (samples mix the old and the new address).
 
 ## Current state
-- Merged: PR #1 (marketplace, task-observer, installers), #3 (README setup notes),
-  #4 (`/task` shortcut), #5 (`skill-intake` skill, 50-skill cap and CI).
-- Closed without merging: PR #2 (task-observer autostart).
-- Merged: PR #6 (`/new` skill, long-conversation reminder hook at 100k tokens, English-only convention).
-- Merged: PR #7 (task-observer no longer auto-runs; it loads only via `/task`).
-- No open PRs.
+- Design only. No code yet. Uploaded files are not in the repo; ask the user to re-upload them.
+- Sample issues found (to cite as automation benefits): CI vs PL reference No. mismatch, CI vs PL
+  description mismatch, an incomplete invoice No., weight-table outliers (300LB lighter than 150LB
+  at 2-1/2", 6", 24").
 
 ## Next steps
-1. Parked, per the user: build small custom skills for their repeated work tasks (e.g. online-store product pages).
+1. Get from the user: export ledger layout (redacted copy or screenshot), confirmation of the number rule
+   and whether the month follows the issue date or the ship date, one unified template or per-customer
+   templates, customer list personal or team-shared, one ledger file or one per staff member.
+2. Ask the user to re-upload: the sample CI/PLs (China, Vietnam, Indonesia), the RAW DATA sample and the weight tables.
+3. Build the Python replica, match all samples, then write the VBA .xlsm and a short Korean user guide.
 
 ## Notes
-- User request with /new: "지금까지 대화 핵심들만 요약해서 저장해줘" (summarize only the key points so far).
-- The user works only in cloud sessions: no always-on local PC, and Remote Control is not an option.
-- The user is token-conscious and prefers plain-language Korean explanations in chat.
-- `.claude/` writes trigger an approval prompt; that is why the note lives at the repo root.
-- Windows (`install.ps1`) is untested and does not register the reminder hook.
+- Chat in plain Korean. User is token-conscious. Committed files stay in English (CI rule).
+- The repo is public: keep customer names, addresses and internal paths out of committed files.
+- The earlier skill-repo handoff note is still on `master` (in HANDOFF.md).
