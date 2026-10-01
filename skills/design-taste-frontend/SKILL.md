@@ -1032,6 +1032,8 @@ npm install bootstrap
 
 ## Appendix B - Canonical Sources (read these before reinventing)
 
+> Visual inspiration galleries (local addition): see `references/inspiration.md`.
+
 ### Material Web
 - https://github.com/material-components/material-web
 - https://material-web.dev/theming/material-theming/
