@@ -1,7 +1,8 @@
 ---
 name: 6-1-sol-orch
 license: Apache-2.0
-description: Orchestrate substantial work as a root agent with on-demand explorer and researcher subagents, a bounded implementation worker, and optional independent review (Sol/Luna/Astra topology, adapted from Codex to Claude Code). Use when explicitly invoked (/6-1-sol-orch) or when the user asks for agent delegation. Skip delegation for work that is quicker to own directly.
+disable-model-invocation: true
+description: Orchestrate substantial work as a root agent with on-demand explorer and researcher subagents, a bounded implementation worker, and optional independent review (Sol/Luna/Astra topology, adapted from Codex). Type /6-1-sol-orch <task>.
 ---
 
 # 6.1 Sol Orch
