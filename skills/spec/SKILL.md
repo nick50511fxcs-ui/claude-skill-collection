@@ -1,23 +1,30 @@
 ---
 name: spec
-description: Save the user's personal profile (career spec, skills, preferences) to user-level CLAUDE.md so every session knows it without being told. Type /spec <your spec>, /spec show, or /spec clear.
+description: Keep the user's personal profile (career spec, skills, preferences) in a private file that loads only on demand. /spec save <spec>, /spec show, /spec clear, or /spec <request> to run a request with the profile.
 disable-model-invocation: true
-argument-hint: "<your spec in any language> | show | clear"
+argument-hint: "save <spec> | show | clear | <request that needs your profile>"
 ---
 
-# /spec — remember who the user is in every session
+# /spec — personal profile, loaded only when asked
 
-Claude Code's equivalent of Codex's "write my spec into AGENTS.md": the profile
-goes into the user-level memory file `~/.claude/CLAUDE.md`, which Claude Code
-loads at the start of every session in every project.
+The profile lives in `~/.claude/profile.md`. Claude Code does **not** load that
+file automatically, so it costs no tokens in sessions that do not use it. It is
+read only when the user types `/spec ...`.
 
 Input: $ARGUMENTS
 
-## Modes
+## Modes (decided by the first word of the input)
 
-- **show** → print the current profile block from `~/.claude/CLAUDE.md` (or say there is none).
-- **clear** → remove the profile block (everything between the markers, markers included). Leave the rest of the file untouched.
-- **anything else** → treat it as the user's spec and save it (below). If the input is empty, ask the user to paste their spec (resume, CV text, or a free-form description) and stop.
+- **save `<spec>`** → save the profile (below).
+- **show** → print `~/.claude/profile.md`, or say there is none and how to save one.
+- **clear** → delete `~/.claude/profile.md`. In cloud sessions, also remind the user to remove the snippet from the Setup script.
+- **empty input** → explain the four modes in one short list and stop.
+- **anything else** → treat the input as a request that needs the profile
+  (e.g. job search, company comparison, cover letter, interview prep). Read
+  `~/.claude/profile.md` first; if it is missing, ask the user to run
+  `/spec save <spec>` and stop. Then carry out the request using the profile.
+  For a job or company search, cite a source link for each company and flag
+  anything that could not be verified as current.
 
 ## Saving
 
@@ -26,10 +33,8 @@ Input: $ARGUMENTS
    or card numbers, passwords. If the input contains any, drop them and tell the
    user what was left out.
 2. **Normalize into this structure**, keeping the user's language. Omit
-   sections with no information; do not invent anything. Keep it under ~60 lines,
-   since it is loaded into every session.
+   sections with no information; do not invent anything.
    ```markdown
-   <!-- profile:start (managed by /spec) -->
    # About me
    ## Summary          (one or two lines: who I am, what I am looking for)
    ## Education
@@ -37,31 +42,27 @@ Input: $ARGUMENTS
    ## Skills & certifications
    ## Languages        (with test scores if given)
    ## Preferences      (target roles, industries, company size, region, salary, work style)
-   ## How to work with me  (language to answer in, tone, anything the user asked for)
-   <!-- profile:end -->
    ```
-3. **Write it.** Create `~/.claude/CLAUDE.md` if missing. If a block between
-   `<!-- profile:start` and `<!-- profile:end -->` already exists, replace it;
-   otherwise append it. Never touch anything outside the markers.
-4. **Never write the profile into a repository file** (including this skill
-   collection, which is public), and never commit or push it.
-5. Show the user the saved block and ask them to correct anything wrong.
+3. **Write** `~/.claude/profile.md`, replacing any previous version.
+4. **Never write the profile into CLAUDE.md, AGENTS.md or any repository file**
+   (this skill collection is public), and never commit or push it.
+5. Show the saved profile and ask the user to correct anything wrong.
 
-## Making it stick in cloud sessions
+## Making it survive cloud sessions
 
 If `CLAUDE_CODE_REMOTE=true`, the container's home directory is discarded when
-the session ends, so `~/.claude/CLAUDE.md` does not survive. After saving, also
-give the user a ready-to-paste snippet for their environment's **Setup script**
-(cloud environment menu in the session title bar → Edit → Setup script), placed
-after any existing lines:
+the session ends. After saving, also give the user a ready-to-paste snippet for
+their environment's **Setup script** (cloud environment menu in the session
+title bar → Edit → Setup script), placed after any existing lines:
 
 ```bash
-mkdir -p ~/.claude && cat >> ~/.claude/CLAUDE.md <<'PROFILE_EOF'
-<the exact saved block, markers included>
+mkdir -p ~/.claude && cat > ~/.claude/profile.md <<'PROFILE_EOF'
+<the exact saved profile>
 PROFILE_EOF
 ```
 
-Tell them: every new session in that environment then starts with the profile;
-the setup script is stored in their own environment settings, not in a
-repository; to update the profile later, run `/spec` again and replace the
-snippet. On a local machine (CLI or desktop app) no extra step is needed.
+Tell them: this only writes the file at session start; it is not read into the
+conversation, so it costs no tokens until they type `/spec`. The setup script
+is stored in their own environment settings, not in a repository. To update,
+run `/spec save` again and replace the snippet. On a local machine (CLI or
+desktop app) no extra step is needed.
