@@ -1,0 +1,7 @@
+upstream: https://github.com/Kimhyuntae9665/codex-skill-6-1-sol-orch (skills/6-1-sol-orch)
+commit: fb3d2fc8b3239d2dfd9140e43355b867461c1496
+license: Apache-2.0 (Kimhyuntae9665; derived from donvito/codex-astra-luna-orchestrator, see NOTICE)
+local patch: SKILL.md frontmatter `description` is rewritten for Claude Code (explicit /6-1-sol-orch
+  invocation), and a "Running in Claude Code (local adaptation)" section maps the Codex roles and
+  OpenAI model IDs onto the Agent tool. agents/openai.yaml (Codex UI metadata) is not copied.
+  Re-apply when updating.
