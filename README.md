@@ -16,6 +16,7 @@ command on any machine or in any cloud session.
 | `task-observer` | Skill (`skills/`) | Watches work sessions and proposes new skills / skill improvements from repeated patterns ([upstream](https://github.com/rebelytics/one-skill-to-rule-them-all), CC BY 4.0) | Part of the `skill-collection` plugin |
 | `task` | Shortcut (`skills/`) | `/task` turns on task-observer; `/task <request>` also runs the request. User-invoked only, so no idle token cost | Part of the plugin (named `/skill-collection:task` when installed as a plugin) |
 | `new` | Shortcut (`skills/`) | `/new` saves a short handoff note to `HANDOFF.md`, pushes it, and prints a one-line starter for a new session. User-invoked only | Part of the plugin |
+| `spec` | Shortcut (`skills/`) | `/spec <your spec>` saves your profile (career, skills, preferences) to `~/.claude/CLAUDE.md` so every session knows it; strips IDs and contact details, never commits it. User-invoked only | Part of the plugin |
 | `skill-intake` | Skill (`skills/`) | Procedure for adding or pruning skills from GitHub links (verify upstream → measure cost → clean-install test → PR) | Part of the plugin |
 | `design-taste-frontend` | Skill (`skills/`) | Anti-template frontend taste for landing pages, portfolios and redesigns; applies automatically when building UI ([upstream](https://github.com/Leonxlnx/taste-skill), MIT) | Part of the plugin |
 | `web-design-guidelines` | Skill (`skills/`) | Audits UI code against Vercel's Web Interface Guidelines (accessibility, forms, layout); triggers on "review my UI" ([upstream](https://github.com/vercel-labs/agent-skills), MIT) | Part of the plugin |
@@ -87,6 +88,15 @@ Upload a skill folder as a ZIP under Settings → Capabilities → Skills.
 ```bash
 cd skills && zip -r task-observer.zip task-observer
 ```
+
+## Coming from Codex
+
+| Codex | Claude Code |
+|---|---|
+| Write your spec into `AGENTS.md` so every session knows it | `/spec <your spec>` writes it to `~/.claude/CLAUDE.md` (user-level memory). In cloud sessions, paste the snippet `/spec` prints into the environment's Setup script so it survives |
+| Type `$` to list installed skills, pick one, Enter (shown in blue) | Type `/` to list skills, pick one, Enter. Skills also load on their own when their description matches the request |
+| `$6-1-sol-orch <task>` | `/6-1-sol-orch <task>` |
+| Model GPT-6 Sol, reasoning high | `/model` → Opus; set reasoning effort to high for long, multi-step work |
 
 ## Long-conversation reminder (`/new`)
 
