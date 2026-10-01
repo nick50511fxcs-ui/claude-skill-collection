@@ -1,0 +1,19 @@
+6.1 Sol Orch
+Public distribution maintained by Kimhyuntae9665, 2026.
+
+This skill was developed from the orchestration approach in:
+  donvito/codex-astra-luna-orchestrator
+  https://github.com/donvito/codex-astra-luna-orchestrator
+  Base commit: f1de1b8729c8ccfb7978321b4764c58bd34c8493
+  License: Apache License 2.0
+
+The upstream approach was locally adapted and rewritten into 6-1-sol-orch.
+Changes include Sol 6.1 root and worker roles, Luna exploration and research,
+on-demand delegation, optional Astra independent review, single-writer scope,
+root integration and verification, and explicit host capability boundaries.
+
+The public package adds Korean and English installation/use documentation,
+license metadata, and this attribution notice. The operational instructions
+otherwise preserve the local 6-1-sol-orch skill distributed on 2026-10-01.
+
+This community project is not affiliated with or endorsed by OpenAI.
