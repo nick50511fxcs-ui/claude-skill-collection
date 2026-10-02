@@ -1,39 +1,43 @@
-# Handoff (2026-09-23, updated)
+# Handoff (2026-10-02)
 
 ## Goal
-- Keep the user's Claude skills in this public GitHub repo so they work in every
-  cloud session (claude.ai/code) and on any machine, with low token overhead.
+- Keep the user's Claude skills in this public repo so they work in every cloud session.
+- Side project: a product web page for the user's company gasket line (built outside the repo).
 
 ## Decisions
-- The repo is a Claude Code plugin marketplace; skills live in `skills/`. Default branch is `master`.
-- Cloud setup script (already saved in the user's environment):
-  `git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills && bash /tmp/skills/install.sh --copy --with-headroom || true`
-- The repo must stay **public**: the setup script has no GitHub credentials (a private repo failed with exit 128).
-- task-observer is **not** auto-started (it costs ~15k tokens per session and cloud logs reset per session).
-  It is turned on on demand with `/task`. Its upstream description told Claude to invoke it
-  before the first tool call of every session, so it still auto-ran; the vendored copy now has
-  a replaced description (recorded in its `UPSTREAM.txt`; re-apply when updating from upstream). The upstream feedback report was drafted, and the user chose not to file it.
-- Cap of 50 skills (`scripts/check-skills.sh` plus the `check-skills` CI on every PR).
-- Everything committed is in **English**; CI fails on Korean text outside vendored skills and HANDOFF.md.
-- Headroom is installed as `headroom-ai[mcp]` (~430MB), not `[all]` (~7GB).
-- OmniRoute is not installed: it sends prompts to third-party models.
-- No CLAUDE.md for now (the user agreed it is not needed).
-- Merge PRs only when the user asks.
+- Repo is a Claude Code plugin marketplace; skills live in `skills/`; default branch `master`.
+- Repo stays **public** (the setup script clones it without credentials). Never commit company
+  photos, logos, specs or the product page here; keep them in the session scratchpad only.
+- Everything committed is in English; cap of 50 skills; merge PRs only when the user asks.
+- task-observer loads only via `/task`. No CLAUDE.md for now.
+- SiteSee (sitesee.co) and Varchive (varchive.ai) are design references, not skills.
+  Both domains were added to the environment's custom network allowlist.
 
 ## Current state
-- Merged: PR #1 (marketplace, task-observer, installers), #3 (README setup notes),
-  #4 (`/task` shortcut), #5 (`skill-intake` skill, 50-skill cap and CI).
-- Closed without merging: PR #2 (task-observer autostart).
-- Merged: PR #6 (`/new` skill, long-conversation reminder hook at 100k tokens, English-only convention).
-- Merged: PR #7 (task-observer no longer auto-runs; it loads only via `/task`).
-- No open PRs.
+- Branch `claude/sleepy-johnson-3s1aqg` (pushed, no PR yet): adds
+  `skills/design-taste-frontend/references/inspiration.md` + a one-line pointer in its
+  SKILL.md (local change recorded in `UPSTREAM.txt`).
+- Pre-existing failure: `scripts/check-skills.sh` -> `claude plugin validate` rejects the
+  marketplace plugin name `claude-mem` (reserved "claude-" prefix). Not fixed yet.
+- Product page: single-file HTML with three.js (bundled inline). The user holds the files:
+  the built HTML and `leakblok-site-source.zip` (src/app.js, template.html, build.py, img/).
+  Build: `npm i three@0.160.0 esbuild` then `python3 build.py`.
+- Page features: rotatable 3D gasket and thick sheet roll (unroll button/slider, 3t/1.5t),
+  installation photo with hover fluid-flow effect, white company logo in header and footer.
 
 ## Next steps
-1. Parked, per the user: build small custom skills for their repeated work tasks (e.g. online-store product pages).
+1. If the user wants a PR for the inspiration-references branch, fix the `claude-mem`
+   name first so CI passes.
+2. Product page: fill in placeholders the user must supply ("[문구 확인 필요]" copy, spec
+   values, contact link); swap in high-res photos and an official white logo if given.
+3. Ask whether sheets ship rolled or flat; if flat, start the sheet view unrolled.
+4. Parked: small custom skills for repeated work tasks (e.g. product pages); a design
+   vocabulary skill from SiteSee picks (user likes calm, premium dark layouts such as
+   Prepd; dislikes busy layouts such as F37 Foundry).
 
 ## Notes
-- User request with /new: "지금까지 대화 핵심들만 요약해서 저장해줘" (summarize only the key points so far).
-- The user works only in cloud sessions: no always-on local PC, and Remote Control is not an option.
-- The user is token-conscious and prefers plain-language Korean explanations in chat.
-- `.claude/` writes trigger an approval prompt; that is why the note lives at the repo root.
-- Windows (`install.ps1`) is untested and does not register the reminder hook.
+- User request with /new: (no extra text)
+- The user works only in cloud sessions, is token-conscious, prefers plain Korean in chat.
+- Do not invent product specs or performance claims; mark unknowns as placeholders.
+- Headless Chromium here renders WebGL at ~5 fps; animations must be time-based, not per-frame.
+- Image generation is not available; product visuals come from the user's photos or 3D code.
