@@ -29,7 +29,7 @@
   Adds EN/JA/ZH/KO switcher (auto by browser language, `?lang=xx`, saved choice; copy in
   `i18n.py`), fluid flow redone as CSS layers (no per-frame JS), mobile fixes (vertical
   swipe scrolls past the 3D viewer, tighter hero, photo fallback when JS/WebGL is missing).
-- The user could not get the "infinite loading on hover" bug to show up here; the
+- The "infinite loading on hover" bug did not reproduce in headless Chromium; the
   rewrite removes the old canvas loop that most likely caused it.
 
 ## Next steps
