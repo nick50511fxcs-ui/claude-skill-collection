@@ -24,14 +24,23 @@
   Build: `npm i three@0.160.0 esbuild` then `python3 build.py`.
 - Page features: rotatable 3D gasket and thick sheet roll (unroll button/slider, 3t/1.5t),
   installation photo with hover fluid-flow effect, white company logo in header and footer.
+- v2 (2026-10-02): built by patching the v1 HTML with `leakblok-site-patch.zip`
+  (`python3 build.py <v1.html> <out.html>`), so the original source zip is now outdated.
+  Adds EN/JA/ZH/KO switcher (auto by browser language, `?lang=xx`, saved choice; copy in
+  `i18n.py`), fluid flow redone as CSS layers (no per-frame JS), mobile fixes (vertical
+  swipe scrolls past the 3D viewer, tighter hero, photo fallback when JS/WebGL is missing).
+- The user could not get the "infinite loading on hover" bug to show up here; the
+  rewrite removes the old canvas loop that most likely caused it.
 
 ## Next steps
 1. If the user wants a PR for the inspiration-references branch, fix the `claude-mem`
    name first so CI passes.
 2. Product page: fill in placeholders the user must supply ("[문구 확인 필요]" copy, spec
    values, contact link); swap in high-res photos and an official white logo if given.
-3. Ask whether sheets ship rolled or flat; if flat, start the sheet view unrolled.
-4. Parked: small custom skills for repeated work tasks (e.g. product pages); a design
+3. Confirm the JA/ZH wording with a native speaker; host the page (static hosting such as
+   Cloudflare Pages or Netlify; a custom domain is optional).
+4. Ask whether sheets ship rolled or flat; if flat, start the sheet view unrolled.
+5. Parked: small custom skills for repeated work tasks (e.g. product pages); a design
    vocabulary skill from SiteSee picks (user likes calm, premium dark layouts such as
    Prepd; dislikes busy layouts such as F37 Foundry).
 
