@@ -29,8 +29,9 @@
   Adds EN/JA/ZH/KO switcher (auto by browser language, `?lang=xx`, saved choice; copy in
   `i18n.py`), fluid flow redone as CSS layers (no per-frame JS), mobile fixes (vertical
   swipe scrolls past the 3D viewer, tighter hero, photo fallback when JS/WebGL is missing).
-- The "infinite loading on hover" bug did not reproduce in headless Chromium; the
-  rewrite removes the old canvas loop that most likely caused it.
+- v3: the flow is pure CSS with pre-rendered mask/texture (`node gen_assets.js <v1.html>`),
+  always playing, no hover text, still moving under reduced motion. v2's hover version
+  did not play on the user's PC or phone (cause unconfirmed: JS canvas step or reduced motion).
 
 ## Next steps
 1. If the user wants a PR for the inspiration-references branch, fix the `claude-mem`
