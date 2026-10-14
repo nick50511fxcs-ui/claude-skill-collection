@@ -16,7 +16,7 @@ export const KILLS_PER_FLOOR = 10;
 export const MON_INTERVAL = 1.8;
 
 // ---------- Curves ----------
-export const xpNeed = lv => Math.floor(20 + 5.2 * Math.pow(lv, 1.9));
+export const xpNeed = lv => Math.floor(20 + 1.8 * Math.pow(lv, 1.9));
 export const charXpNeed = lv => Math.floor(15 * Math.pow(1.12, lv - 1));
 export const toolTier = lv => Math.min(10, Math.floor(lv / 100));
 export const spotsUnlocked = lv => SPOT_LV.filter(l => lv >= l).length;

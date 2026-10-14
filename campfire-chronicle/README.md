@@ -65,12 +65,13 @@ are a lower bound for real players. Key results of the last run
 
 | Milestone | Simulated time |
 |---|---|
-| Floor 21 (rebirth unlocked) | 1.0 h |
-| First rebirth | 4.7 h |
-| First legend / myth / primordial | 2.2 h / 43 h / 17 days |
-| Gathering skills at Lv 200 / 800 / 1370 | 30 / 180 / 365 days |
-| Best floor | 64 (30 d), 198 (180 d), 266 (365 d) |
-| Codex 129/129 | ~1 year |
+| One skill to Lv 1000, focused (life-focus mode, no bonuses) | 116 days (target: 3-4 months) |
+| Floor 21 (rebirth unlocked) | 1.8 h |
+| First rebirth | 3.2 h |
+| First legend / myth / primordial | 1.2 h / 4.6 days / 10.6 days |
+| Five gathering skills raised together reach Lv 1000 | ~138 days |
+| Best floor | 86 (30 d), 224 (180 d), 308 (365 d) |
+| Codex 128/129 | 1 year |
 
 ## Debug
 

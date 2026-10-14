@@ -737,7 +737,7 @@ const KILLS_PER_FLOOR = 10;
 const MON_INTERVAL = 1.8;
 
 // ---------- Curves ----------
-const xpNeed = lv => Math.floor(20 + 5.2 * Math.pow(lv, 1.9));
+const xpNeed = lv => Math.floor(20 + 1.8 * Math.pow(lv, 1.9));
 const charXpNeed = lv => Math.floor(15 * Math.pow(1.12, lv - 1));
 const toolTier = lv => Math.min(10, Math.floor(lv / 100));
 const spotsUnlocked = lv => SPOT_LV.filter(l => lv >= l).length;
