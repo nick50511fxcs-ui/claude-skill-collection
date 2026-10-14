@@ -1,53 +1,45 @@
-# Handoff (2026-10-02)
+# Handoff (2026-10-14)
 
 ## Goal
 - Keep the user's Claude skills in this public repo so they work in every cloud session.
-- Side project: a product web page for the user's company gasket line (built outside the repo).
+- Side project: product web page for the company gasket line (LEAKBLOK Premium P200),
+  aimed at overseas promotion.
 
 ## Decisions
-- Repo is a Claude Code plugin marketplace; skills live in `skills/`; default branch `master`.
-- Repo stays **public** (the setup script clones it without credentials). Never commit company
-  photos, logos, specs or the product page here; keep them in the session scratchpad only.
+- Repo is a plugin marketplace; skills in `skills/`; default branch `master`; repo stays public.
+  Never commit company photos, logos, specs or the product page here.
 - Everything committed is in English; cap of 50 skills; merge PRs only when the user asks.
 - task-observer loads only via `/task`. No CLAUDE.md for now.
-- SiteSee (sitesee.co) and Varchive (varchive.ai) are design references, not skills.
-  Both domains were added to the environment's custom network allowlist.
+- Page languages: EN/JA/ZH(Simplified)/KO; auto by browser language, `?lang=xx`, saved choice.
+- Fluid-flow effect: pure CSS layers over the install photo, always playing (also under
+  reduced motion), no "hover to see" caption. It is an animation, not a video.
 
 ## Current state
-- Branch `claude/sleepy-johnson-3s1aqg` (pushed, no PR yet): adds
-  `skills/design-taste-frontend/references/inspiration.md` + a one-line pointer in its
-  SKILL.md (local change recorded in `UPSTREAM.txt`).
-- Pre-existing failure: `scripts/check-skills.sh` -> `claude plugin validate` rejects the
-  marketplace plugin name `claude-mem` (reserved "claude-" prefix). Not fixed yet.
-- Product page: single-file HTML with three.js (bundled inline). The user holds the files:
-  the built HTML and `leakblok-site-source.zip` (src/app.js, template.html, build.py, img/).
-  Build: `npm i three@0.160.0 esbuild` then `python3 build.py`.
-- Page features: rotatable 3D gasket and thick sheet roll (unroll button/slider, 3t/1.5t),
-  installation photo with hover fluid-flow effect, white company logo in header and footer.
-- v2 (2026-10-02): built by patching the v1 HTML with `leakblok-site-patch.zip`
-  (`python3 build.py <v1.html> <out.html>`), so the original source zip is now outdated.
-  Adds EN/JA/ZH/KO switcher (auto by browser language, `?lang=xx`, saved choice; copy in
-  `i18n.py`), fluid flow redone as CSS layers (no per-frame JS), mobile fixes (vertical
-  swipe scrolls past the 3D viewer, tighter hero, photo fallback when JS/WebGL is missing).
-- v3: the flow is pure CSS with pre-rendered mask/texture (`node gen_assets.js <v1.html>`),
-  always playing, no hover text, still moving under reduced motion. v2's hover version
-  did not play on the user's PC or phone (cause unconfirmed: JS canvas step or reduced motion).
+- Live page (private artifact, owner only until shared via its Share menu):
+  https://claude.ai/artifact/Xi7TAmVCaERS6y1qxb3TZP — v3. To edit in a new session, read
+  it with the Artifact tool (`action: read`), change the saved file, republish with that `url`.
+- The user holds `leakblok-p200-v3.html` and `leakblok-site-patch.zip` (build.py, i18n.py
+  copy for all languages, i18n.js, body.html, gen_assets.js, pre-rendered mask/texture).
+  Build: `node gen_assets.js <v1.html>` then `python3 build.py <v1.html> <out.html>`, where
+  v1 is the original single-file build. The older `leakblok-site-source.zip` is outdated.
+- Mobile fixes done: vertical swipe scrolls past the 3D viewer, tighter hero, photo
+  fallback when JS/WebGL is missing. Verified only in headless Chromium, not real devices.
+- Branch `claude/sleepy-johnson-3s1aqg` (no PR): inspiration references for
+  design-taste-frontend. Pre-existing CI failure: `claude-mem` plugin name is rejected
+  (reserved "claude-" prefix).
 
 ## Next steps
-1. If the user wants a PR for the inspiration-references branch, fix the `claude-mem`
-   name first so CI passes.
-2. Product page: fill in placeholders the user must supply ("[문구 확인 필요]" copy, spec
-   values, contact link); swap in high-res photos and an official white logo if given.
-3. Confirm the JA/ZH wording with a native speaker; host the page (static hosting such as
-   Cloudflare Pages or Netlify; a custom domain is optional).
-4. Ask whether sheets ship rolled or flat; if flat, start the sheet view unrolled.
-5. Parked: small custom skills for repeated work tasks (e.g. product pages); a design
-   vocabulary skill from SiteSee picks (user likes calm, premium dark layouts such as
-   Prepd; dislikes busy layouts such as F37 Foundry).
+1. Ask whether the flow now plays on the user's real PC and phone (v2 did not).
+2. Fill placeholders ("[Copy TBD]" lines, spec values, contact info) in all four languages;
+   get JA/ZH wording checked by a native speaker.
+3. Public hosting: Cloudflare Pages or Netlify (free); a custom domain is optional.
+4. Ask whether sheets ship rolled or flat; maybe drop the "drag to rotate" hint too.
+5. Skill candidates (not logged; no persistent task-observer store exists, repo is public):
+   internal product-page workflow, open-source page-i18n skill, mobile QA rules for
+   design-taste-frontend (no scroll trap on 3D, compositor animations over canvas loops).
 
 ## Notes
 - User request with /new: (no extra text)
 - The user works only in cloud sessions, is token-conscious, prefers plain Korean in chat.
-- Do not invent product specs or performance claims; mark unknowns as placeholders.
-- Headless Chromium here renders WebGL at ~5 fps; animations must be time-based, not per-frame.
-- Image generation is not available; product visuals come from the user's photos or 3D code.
+- Do not invent product specs or claims; mark unknowns as placeholders.
+- Image generation is not available; visuals come from the user's photos or 3D code.
