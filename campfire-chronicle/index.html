@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>모닥불 연대기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="한 명의 모험가를 키우는 방치형 픽셀 RPG">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Silkscreen&display=swap">
+<link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="scene" width="384" height="216" aria-label="모험 장면"></canvas>
+    <div id="overlay"></div>
+    <div id="hudTL"></div>
+    <div id="hudTR"><div class="q-title">QUEST</div><ul id="goals"></ul></div>
+    <div id="clones"></div>
+    <div id="toasts" aria-live="polite"></div>
+    <div id="panel" hidden>
+      <div class="panel-head"><h2 id="panelTitle"></h2><button type="button" class="x" id="panelClose" aria-label="닫기">✕</button></div>
+      <div class="panel-body" id="panelBody"></div>
+    </div>
+  </div>
+  <div id="bar"></div>
+</div>
+<div id="modal" hidden></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

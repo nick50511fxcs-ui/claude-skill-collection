@@ -1,0 +1,4303 @@
+<title>모닥불 연대기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="한 명의 모험가를 키우는 방치형 픽셀 RPG">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Silkscreen&display=swap">
+<style>
+/* Layout: a 16:9 pixel stage with an Idleon-style navy panel layer and a
+   dark command bar below. Single deliberate dark look (night campfire). */
+:root {
+  color-scheme: dark;
+  --bg: #0e0b16;
+  --bg2: #171326;
+  --bar: #1b1e2e;
+  --bar-edge: #3a4064;
+  --panel: #1e285c;
+  --panel-edge: #b8c8f0;
+  --panel-ink: #10142a;
+  --slot: #4a4a58;
+  --slot-edge: #2a2a34;
+  --ink: #f4f1ff;
+  --ink-dim: #b9b6d8;
+  --ember: #ffb84a;
+  --ember-deep: #ff6a3a;
+  --hp: #e8444a;
+  --sta: #3d8bff;
+  --xp: #f0c43a;
+  --good: #7be07b;
+  --bad: #ff6a6a;
+  --font: 'Jua', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  --pixel: 'Silkscreen', 'Jua', monospace;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: radial-gradient(ellipse at 50% 120%, #3a1e1a 0%, var(--bg) 55%) fixed, var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+.px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+
+#app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-block: 12px 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- Stage ---------- */
+#stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  border: 3px solid #2a2440;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 0 0 2px #000, 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+#scene { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+#overlay { position: absolute; inset: 0; pointer-events: none; }
+#overlay > * { position: absolute; transform: translate(-50%, 0); white-space: nowrap; }
+.nametag { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 2px; }
+.nametag .nm { font-size: clamp(10px, 1.3vw, 14px); color: #fff; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
+.nametag .badge {
+  font-size: clamp(9px, 1.1vw, 12px); padding: 0 8px; border-radius: 3px;
+  background: #1f3a1f; border: 1px solid #7be07b; color: #c8ffc0;
+}
+.monname {
+  transform: translate(-50%, -100%) !important; font-size: clamp(10px, 1.2vw, 13px);
+  color: #fff; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
+}
+.monname.boss { color: #ffd27a; }
+.monname.v-golden { color: #ffe066; }
+.monname.v-giant { color: #8ac8ff; }
+.monname.v-ancient { color: #ff5f87; }
+.bubble {
+  transform: translate(-50%, -100%) !important;
+  max-width: 46%; white-space: normal !important; text-align: center;
+  background: #16204a; border: 2px solid #e8eeff; box-shadow: 0 0 0 2px #0a0e22;
+  border-radius: 3px; padding: 4px 10px; font-size: clamp(11px, 1.35vw, 15px); line-height: 1.35;
+}
+.bubble::after {
+  content: ''; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%);
+  border: 6px solid transparent; border-top-color: #e8eeff;
+}
+
+#hudTL {
+  position: absolute; left: 10px; top: 8px; display: flex; flex-direction: column; gap: 3px;
+  font-size: clamp(11px, 1.3vw, 15px); text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
+  pointer-events: none; max-width: 52%;
+}
+#hudTL .reg { font-size: clamp(14px, 1.9vw, 22px); color: #fff; }
+#hudTL .fl { color: var(--ember); }
+#hudTL .env { color: #dfe6ff; }
+#hudTL .gm { color: #ffb0c8; background: rgba(40, 10, 30, 0.6); padding: 1px 6px; border-radius: 3px; white-space: normal; }
+#hudTL .gm.ok { color: #b8ffb8; background: rgba(10, 40, 20, 0.6); text-decoration: line-through; }
+
+#hudTR {
+  position: absolute; right: 10px; top: 8px; width: min(36%, 300px);
+  background: #16204a; border: 2px solid #e8eeff; box-shadow: 0 0 0 2px #0a0e22; border-radius: 3px;
+  padding: 4px 10px 6px; font-size: clamp(10px, 1.2vw, 14px); pointer-events: none;
+}
+#hudTR .q-title { color: var(--ember); letter-spacing: 0.08em; font-family: var(--pixel); font-size: 0.85em; text-align: center; border-bottom: 1px solid #3a4a8a; margin-bottom: 3px; }
+#goals { margin: 0; padding-left: 16px; line-height: 1.45; }
+
+#clones { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 8px; }
+.clone { width: clamp(110px, 17vw, 190px); border: 2px solid #9ab8ff; border-radius: 4px; overflow: hidden; background: #000; box-shadow: 0 0 0 2px #0a0e22; position: relative; }
+.clone canvas { width: 100%; aspect-ratio: 16 / 9; height: auto; }
+.clone-lb { position: absolute; left: 0; right: 0; top: 0; font-size: clamp(9px, 1vw, 12px); padding: 1px 5px; background: rgba(10, 20, 60, 0.75); color: #cfe0ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#toasts { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; width: 40%; }
+.toast {
+  background: rgba(12, 14, 34, 0.88); border: 1px solid var(--tc, #d6d6d6); color: var(--tc, #fff);
+  padding: 2px 10px; border-radius: 3px; font-size: clamp(11px, 1.2vw, 14px); white-space: nowrap;
+  animation: toast 3.2s ease forwards;
+}
+@keyframes toast { 0% { opacity: 0; transform: translateY(-6px); } 8%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+.banner {
+  left: 50% !important; top: 30% !important; transform: translate(-50%, -50%) !important;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: rgba(10, 8, 24, 0.9); border: 3px solid currentColor; border-radius: 6px; padding: 10px 26px;
+  animation: banner 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.banner.tier3 { color: #c27bff; } .banner.tier4 { color: #ffbe4d; } .banner.tier5 { color: #ff5f87; }
+.banner.tier6 { color: #8ffcff; animation: banner 0.8s cubic-bezier(0.2, 1.6, 0.4, 1), rainbow 2s linear infinite; }
+.bn-tier { font-family: var(--pixel); letter-spacing: 0.12em; font-size: clamp(12px, 1.6vw, 18px); }
+.bn-body { display: flex; align-items: center; gap: 12px; color: #fff; font-size: clamp(16px, 2.6vw, 30px); }
+.bn-icon canvas { width: clamp(36px, 5vw, 56px); height: auto; image-rendering: pixelated; }
+.banner small { color: #dfe6ff; font-size: clamp(10px, 1.1vw, 13px); }
+@keyframes banner { from { transform: translate(-50%, -50%) scale(0.4); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+@keyframes rainbow { 0% { filter: hue-rotate(0); } 100% { filter: hue-rotate(360deg); } }
+.blackout { inset: 0 !important; left: 0 !important; top: 0 !important; transform: none !important; background: #000; }
+.blackout.on { animation: heartbeat 0.8s ease-in-out 2; }
+.blackout.reveal { animation: reveal 1.2s ease forwards; }
+@keyframes heartbeat { 0%, 100% { background: #000; } 30% { background: #2a0010; } 45% { background: #000; } 60% { background: #1a0010; } }
+@keyframes reveal { from { opacity: 1; } to { opacity: 0; } }
+
+/* ---------- Command bar ---------- */
+#bar {
+  display: grid; grid-template-columns: auto minmax(180px, 1fr) auto; gap: 14px; align-items: center;
+  background: var(--bar); border: 2px solid var(--bar-edge); border-radius: 6px; padding: 8px 10px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.who { display: flex; align-items: center; gap: 10px; }
+#portrait { width: 42px; height: 54px; background: #2a2f48; border: 2px solid #5a6494; border-radius: 4px; padding: 3px; box-sizing: content-box; }
+.who-nm { font-size: 17px; }
+.who-sub { color: var(--ink-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+.bars { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.meter { position: relative; height: 16px; background: #0c0d16; border: 2px solid #000; border-radius: 3px; overflow: hidden; }
+.meter i { position: absolute; inset: 0 auto 0 0; transition: width 0.2s linear; }
+.meter.hp i { background: linear-gradient(#ff7a7a, var(--hp) 60%, #a82a30); }
+.meter.sta i { background: linear-gradient(#7ab8ff, var(--sta) 60%, #2a5ab8); }
+.meter.xp i { background: linear-gradient(#ffe48a, var(--xp) 60%, #b88a1a); }
+.meter span { position: absolute; inset: 0; text-align: center; font-size: 12px; line-height: 13px; color: #fff; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000; font-variant-numeric: tabular-nums; }
+.meter b { position: absolute; left: 4px; top: 0; font-family: var(--pixel); font-size: 9px; line-height: 13px; color: rgba(255, 255, 255, 0.75); font-weight: 400; }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.btn {
+  position: relative; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: linear-gradient(#323858, #262a42); border: 2px solid #5a6494; border-radius: 6px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08), 0 2px 0 #000;
+}
+.btn:hover { border-color: #9aa8e0; background: linear-gradient(#3c4468, #2c3150); }
+.btn:active { transform: translateY(1px); }
+.btn.active { border-color: var(--ember); box-shadow: inset 0 0 0 1px var(--ember), 0 2px 0 #000; }
+.btn.on { background: linear-gradient(#5a3a1a, #3a2410); border-color: var(--ember); }
+.btn .lbl { font-size: 12px; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000; }
+.btn .dot { position: absolute; right: 4px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: #ff3a5a; border: 1px solid #000; }
+
+/* ---------- Panel ---------- */
+#panel {
+  position: absolute; left: 10px; top: 10px; bottom: 10px; width: min(560px, calc(100% - 20px));
+  display: flex; flex-direction: column;
+  background: var(--panel); border: 3px solid var(--panel-edge); border-radius: 5px;
+  box-shadow: 0 0 0 3px var(--panel-ink), 0 10px 30px rgba(0, 0, 0, 0.6); z-index: 5;
+}
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px 6px; border-bottom: 2px solid #4a5aa8; }
+.panel-head h2 { margin: 0; font-size: 20px; font-weight: 400; color: #fff; }
+.panel-head .x { width: 34px; height: 34px; background: #2a1a2a; border: 2px solid #c88aa8; border-radius: 4px; color: #ffc0d8; }
+.panel-body { overflow-y: auto; padding: 8px 12px 14px; display: flex; flex-direction: column; gap: 10px; scrollbar-color: #6a7ac8 transparent; }
+.psec { background: rgba(10, 14, 40, 0.45); border: 1px solid #4a5aa8; border-radius: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.psec h3 { margin: 0; font-size: 15px; font-weight: 400; color: var(--ember); }
+.psec h4 { margin: 4px 0 0; font-size: 14px; font-weight: 400; color: #cfe0ff; }
+.hint { margin: 0; color: var(--ink-dim); font-size: 13px; line-height: 1.45; }
+.warn { margin: 0; color: #ffb0b0; }
+.statlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 16px; font-size: 14px; }
+.statlist > div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted rgba(184, 200, 240, 0.25); padding-bottom: 2px; min-width: 0; }
+.statlist span { color: var(--ink-dim); }
+.statlist b { font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; }
+.pbtn {
+  background: linear-gradient(#4a5aa8, #36428a); border: 2px solid #9aa8e0; border-radius: 4px; padding: 3px 10px; font-size: 13px;
+  box-shadow: 0 2px 0 #10142a;
+}
+.pbtn:hover:not(:disabled) { background: linear-gradient(#5a6ac0, #4250a0); }
+.pbtn:disabled { opacity: 0.45; cursor: default; }
+.pbtn.big { padding: 8px 18px; font-size: 16px; background: linear-gradient(#ff9a3a, #c8601a); border-color: #ffd8a0; }
+.pbtn.danger { background: linear-gradient(#b83a4a, #8a2232); border-color: #ffa8b8; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: #232a5a; border-color: #5a6aa8; }
+.chip.on { background: linear-gradient(#ff9a3a, #c8601a); border-color: #ffd8a0; color: #fff; }
+
+.char-top { display: flex; gap: 14px; align-items: center; }
+.char-pic { width: 56px; height: 72px; background: #3a4278; border: 2px solid #9aa8e0; border-radius: 4px; padding: 6px; box-sizing: content-box; }
+.char-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.char-nm { font-size: 20px; }
+.char-nm .lv { color: var(--ember); font-size: 15px; }
+.char-sub { color: var(--ink-dim); font-size: 13px; }
+.char-sub b { color: #fff; font-weight: 400; }
+.alloc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
+.alloc-row { display: grid; grid-template-columns: 40px 1fr auto auto; gap: 6px; align-items: center; }
+.alloc-row b { font-weight: 400; font-variant-numeric: tabular-nums; }
+.gear-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; }
+.gear-txt { display: flex; flex-direction: column; min-width: 0; }
+.gear-txt b { font-weight: 400; }
+.gear-txt small, .spot-txt small, .recipe-txt small, .rare-row small, .ii-txt small, .perk small, .hall-row small { color: var(--ink-dim); font-size: 12px; }
+
+.slots { display: flex; flex-wrap: wrap; gap: 8px; }
+.slot { display: grid; grid-template-columns: 26px auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; background: #232a5a; border: 2px solid #5a6aa8; border-radius: 4px; padding: 4px 10px 4px 6px; }
+.slot canvas { grid-row: span 2; }
+.slot.main { border-color: var(--ember); }
+.slot small { color: var(--ink-dim); font-size: 11px; }
+.slot b { font-weight: 400; }
+.slot em { grid-column: 2; color: var(--bad); font-style: normal; font-size: 11px; }
+.skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.skill-card {
+  display: grid; grid-template-columns: 30px 1fr; grid-template-rows: auto auto auto auto; column-gap: 8px; text-align: left;
+  background: var(--slot); border: 2px solid var(--slot-edge); border-radius: 5px; padding: 6px 8px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1);
+}
+.skill-card canvas { grid-row: span 2; align-self: center; }
+.skill-card.sel { border-color: var(--ember); background: #5a4a3a; }
+.sc-nm { font-size: 14px; }
+.sc-lv { font-size: 13px; color: var(--ember); font-variant-numeric: tabular-nums; }
+.sc-bar { grid-column: span 2; height: 6px; background: #1a1a22; border: 1px solid #000; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.sc-bar i { display: block; height: 100%; background: var(--xp); }
+.sc-tool { grid-column: span 2; font-size: 11px; color: var(--ink-dim); }
+.ms { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--ink-dim); }
+.ms li.big { color: #ffe0a0; }
+.ms b { font-weight: 400; color: #fff; }
+.spot, .recipe, .rare-row, .perk, .hall-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 4px 0; border-bottom: 1px dotted rgba(184, 200, 240, 0.25); }
+.rare-row, .hall-row { grid-template-columns: auto 1fr; }
+.perk { grid-template-columns: 1fr auto; }
+.spot.locked, .recipe.locked { opacity: 0.55; }
+.spot.on b, .recipe.on b { color: var(--ember); }
+.spot-icons { display: flex; gap: 2px; }
+.spot-txt, .recipe-txt, .rare-row > div, .perk > div, .hall-row > div { display: flex; flex-direction: column; min-width: 0; }
+.spot-txt b, .recipe-txt b, .rare-row b, .perk b, .hall-row b { font-weight: 400; }
+.ins { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; }
+.ins .ok { color: var(--good); } .ins .no { color: var(--bad); }
+
+.slotgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 6px; }
+.cell {
+  position: relative; aspect-ratio: 1; display: grid; place-items: center;
+  background: var(--slot); border: 2px solid var(--slot-edge); border-radius: 6px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.12), inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+.cell.t2 { border-color: #3a6ab8; } .cell.t3 { border-color: #8a4ac8; } .cell.t4 { border-color: #c88a2a; }
+.cell.t5 { border-color: #c83a5a; } .cell.t6 { border-color: #5ac8d8; box-shadow: 0 0 8px #8ffcff; }
+.cell.unknown { background: #2e2e3a; }
+.cell.sel { outline: 2px solid var(--ember); }
+.cell .cnt { position: absolute; right: 3px; bottom: 1px; font-size: 12px; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; font-variant-numeric: tabular-nums; }
+.iteminfo { flex-direction: row; align-items: center; gap: 12px; }
+.ii-txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ii-txt b { font-weight: 400; font-size: 16px; }
+.codex-head { font-size: 15px; color: var(--ink-dim); }
+.codex-head b { color: #fff; font-weight: 400; }
+
+.ash { display: flex; align-items: baseline; gap: 10px; }
+.ash b { font-size: 30px; font-weight: 400; color: var(--ember); text-shadow: 0 0 12px rgba(255, 140, 50, 0.6); }
+.ash small { color: var(--ink-dim); }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.perk-trees { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.tree-war h3 { color: #ff8a6a; } .tree-art h3 { color: #ffd34d; } .tree-wan h3 { color: #8ac8ff; }
+.memories { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.memory { display: flex; flex-direction: column; gap: 4px; text-align: left; background: linear-gradient(#3a2a5a, #241a3a); border: 2px solid #c8a8ff; border-radius: 6px; padding: 10px; }
+.memory:hover { border-color: #fff; }
+.memory b { font-weight: 400; color: #ffe0a0; }
+.memory small { color: #dcd0ff; }
+.loglist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.loglist li { display: grid; grid-template-columns: 52px 1fr; gap: 6px; }
+.loglist time { color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+textarea { width: 100%; box-sizing: border-box; background: #0c0e22; color: #dfe6ff; border: 2px solid #4a5aa8; border-radius: 4px; padding: 6px; font: 12px/1.4 ui-monospace, monospace; resize: vertical; }
+
+/* ---------- Modal ---------- */
+#modal { position: fixed; inset: 0; background: rgba(4, 3, 10, 0.72); display: grid; place-items: center; z-index: 20; padding: 16px; }
+#modal[hidden] { display: none; }
+.modal-box {
+  width: min(520px, 100%); max-height: 86vh; overflow-y: auto; box-sizing: border-box;
+  background: var(--panel); border: 3px solid var(--panel-edge); box-shadow: 0 0 0 3px var(--panel-ink), 0 20px 50px rgba(0, 0, 0, 0.7);
+  border-radius: 6px; padding: 16px 20px;
+}
+.modal-box h2 { margin: 0 0 6px; font-weight: 400; font-size: 24px; color: var(--ember); }
+.modal-box h4 { margin: 12px 0 4px; font-weight: 400; color: #cfe0ff; }
+.modal-box .lead { margin: 0 0 8px; color: #dfe6ff; }
+.modal-box p { margin: 4px 0; line-height: 1.5; }
+.report { margin: 0; padding-left: 20px; line-height: 1.6; }
+.report b { color: #ffe0a0; font-weight: 400; }
+.modal-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 760px) {
+  #app { padding-block: 8px 12px; gap: 8px; }
+  #bar { grid-template-columns: auto 1fr; }
+  .btns { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); }
+  .btn { width: auto; height: 54px; }
+  #hudTR { display: none; }
+  #hudTL { max-width: 70%; }
+  #toasts { width: 70%; }
+  #clones { right: 6px; bottom: 6px; gap: 4px; }
+  #panel { position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); width: auto; top: max(8px, env(safe-area-inset-top, 0px)); bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+  .statlist, .alloc { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast, .banner, .blackout.on, .blackout.reveal { animation: none !important; }
+}
+</style>
+<div id="app">
+  <div id="stage">
+    <canvas id="scene" width="384" height="216" aria-label="모험 장면"></canvas>
+    <div id="overlay"></div>
+    <div id="hudTL"></div>
+    <div id="hudTR"><div class="q-title">QUEST</div><ul id="goals"></ul></div>
+    <div id="clones"></div>
+    <div id="toasts" aria-live="polite"></div>
+    <div id="panel" hidden>
+      <div class="panel-head"><h2 id="panelTitle"></h2><button type="button" class="x" id="panelClose" aria-label="닫기">✕</button></div>
+      <div class="panel-body" id="panelBody"></div>
+    </div>
+  </div>
+  <div id="bar"></div>
+</div>
+<div id="modal" hidden></div>
+<script>
+(() => {
+'use strict';
+const __m = {};
+__m.rng = (() => {
+// Seeded RNG (mulberry32). The state lives in the save file, so reloading the
+// page replays the same rolls instead of re-rolling a rare drop.
+function makeRng(seed) {
+  let s = seed >>> 0;
+  const rng = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  rng.getState = () => s;
+  return rng;
+}
+
+// Cheap deterministic hash for things derived from the wall clock (weather).
+function hash32(n) {
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+}
+
+return { makeRng, hash32 };
+})();
+
+__m.data = (() => {
+// Static game data: rarity tiers, skills, spots, items, recipes, monsters,
+// regions, rebirth perks and memory cards. Player-facing text is Korean.
+
+const TIERS = [
+  { key: 'common', name: '일반', color: '#d6d6d6', codex: 0.002 },
+  { key: 'uncommon', name: '고급', color: '#7be07b', codex: 0.004 },
+  { key: 'rare', name: '희귀', color: '#5ab4ff', codex: 0.01 },
+  { key: 'epic', name: '영웅', color: '#c27bff', codex: 0.02 },
+  { key: 'legend', name: '전설', color: '#ffbe4d', codex: 0.04 },
+  { key: 'myth', name: '신화', color: '#ff5f87', codex: 0.08 },
+  { key: 'prim', name: '태초', color: '#8ffcff', codex: 0.2 },
+];
+
+// Base chance per action / kill. Tiers 2+ are multiplied by the luck multiplier.
+// uncommon 15%, rare 3%, epic 0.3%, legend 0.02%, myth 0.002%, primordial 0.0001%.
+const TIER_P = [null, 0.15, 0.03, 0.003, 0.0002, 0.00002, 0.000001];
+const LUCK_CAP = 3;
+
+// Life skills are leveled by actions; combat mastery by kills.
+const SKILLS = {
+  combat: { name: '전투 숙련', short: '전투', icon: 'sword', color: '#e8e8f0', stat: '공격력·HP', per: '+0.1% 공격력·최대 HP' },
+  mining: { name: '광질', short: '광질', icon: 'pick', color: '#c8c8d0', stat: '공격력', per: '+0.1% 공격력' },
+  wood: { name: '벌목', short: '벌목', icon: 'axe', color: '#c08a4a', stat: '스태미나', per: '+0.1% 최대 스태미나' },
+  forage: { name: '채집', short: '채집', icon: 'leaf', color: '#6bbf5a', stat: '최대 HP', per: '+0.1% 최대 HP, 독 저항' },
+  fish: { name: '낚시', short: '낚시', icon: 'fish', color: '#5ab4ff', stat: '행운', per: '+0.0005 행운 배율' },
+  hunt: { name: '사냥', short: '사냥', icon: 'bow', color: '#d8784a', stat: '치명 피해', per: '+0.1% 치명타 피해' },
+  alchemy: { name: '연금술', short: '연금', icon: 'potion', color: '#c27bff', stat: '물약 효과', per: '+0.1% 물약 효과' },
+};
+const LIFE_SKILLS = ['mining', 'wood', 'forage', 'fish', 'hunt', 'alchemy'];
+const GATHER_SKILLS = ['mining', 'wood', 'forage', 'fish', 'hunt'];
+
+// Tool tier changes every 100 levels (visible on the sprite).
+const TOOL_TIERS = [
+  { name: '나무', color: '#a8743a' }, { name: '강철', color: '#b8c4d0' }, { name: '은', color: '#e8eef8' },
+  { name: '금', color: '#ffd34d' }, { name: '미스릴', color: '#7fe3ff' }, { name: '아다만', color: '#6aff9e' },
+  { name: '흑요', color: '#7a5aa8' }, { name: '용린', color: '#ff6a3d' }, { name: '별빛', color: '#fff6b0' },
+  { name: '천공', color: '#9ab8ff' }, { name: '마스터', color: '#ffe066' },
+];
+
+const AWAKENINGS = {
+  250: '각성 Ⅰ · 채집물 2배 확률 5%',
+  500: '각성 Ⅱ · 채집물 2배 확률 10%',
+  750: '각성 Ⅲ · 희귀 이상 확률 ×1.5',
+  1000: '마스터 · 전용 칭호와 전역 보너스',
+};
+const MASTER_BONUS = {
+  combat: '모든 공격력·HP ×1.25', mining: '공격력 ×1.25', wood: '모든 생활 속도 ×1.15',
+  forage: '최대 HP ×1.25', fish: '행운 상한 +0.5', hunt: '치명타 피해 ×1.5', alchemy: '물약 효과 ×2',
+};
+const MASTER_TITLE = {
+  combat: '전장의 주인', mining: '대지의 주인', wood: '숲의 주인', forage: '들판의 주인',
+  fish: '바다의 주인', hunt: '숲의 사냥꾼', alchemy: '진리의 연금술사',
+};
+
+const I = {};
+function it(id, name, tier, icon, color, skill, extra = {}) {
+  I[id] = { id, name, tier, icon, color, skill, ...extra };
+  return id;
+}
+
+// ---- Mining
+it('m_copper', '구리 광석', 0, 'ore', '#e08a4a', 'mining');
+it('m_tin', '주석 광석', 1, 'ore', '#c9d1d9', 'mining');
+it('m_quartz', '석영', 2, 'gem', '#eef0ff', 'mining');
+it('m_iron', '철 광석', 0, 'ore', '#b07a6a', 'mining');
+it('m_coal', '석탄', 1, 'ore', '#4a4a50', 'mining');
+it('m_amethyst', '자수정', 2, 'gem', '#a66bff', 'mining');
+it('m_silver', '은 광석', 0, 'ore', '#e6ecf5', 'mining');
+it('m_gold', '금 광석', 1, 'ore', '#ffd34d', 'mining');
+it('m_sapphire', '사파이어', 2, 'gem', '#3d7cff', 'mining');
+it('m_mithril', '미스릴 광석', 0, 'ore', '#7fe3ff', 'mining');
+it('m_obsidian', '흑요석', 1, 'gem', '#4a3a6a', 'mining');
+it('m_ruby', '루비', 2, 'gem', '#ff3b5c', 'mining');
+it('m_adamant', '아다만 광석', 0, 'ore', '#6aff9e', 'mining');
+it('m_meteor', '운석 조각', 1, 'ore', '#ff8a3d', 'mining');
+it('m_stardia', '별빛 다이아', 2, 'gem', '#ffffff', 'mining');
+it('m_fossil', '고대 화석', 3, 'shell', '#d8c39a', 'mining');
+it('m_dragonstone', '용의 비늘석', 4, 'scale', '#ff6a3d', 'mining');
+it('m_timecrystal', '시간의 결정', 5, 'orb', '#9effe0', 'mining');
+it('m_prim', '별의 심장석', 6, 'star', '#fff3a0', 'mining', { effect: '공격력 ×1.5 (중복 획득마다 +0.1)' });
+
+// ---- Woodcutting
+it('w_oak', '참나무 원목', 0, 'log', '#c08a4a', 'wood');
+it('w_resin', '송진', 1, 'drop', '#e8a93a', 'wood');
+it('w_acorn', '도토리', 2, 'seed', '#a8743a', 'wood');
+it('w_birch', '자작나무 원목', 0, 'log', '#e8dcc8', 'wood');
+it('w_maple', '단풍 수액', 1, 'drop', '#d9532c', 'wood');
+it('w_pinecone', '황금 솔방울', 2, 'seed', '#ffcc4d', 'wood');
+it('w_elder', '고목 원목', 0, 'log', '#7a5432', 'wood');
+it('w_amber', '호박석', 1, 'gem', '#ffb030', 'wood');
+it('w_owl', '부엉이 깃털', 2, 'feather', '#b89a7a', 'wood');
+it('w_mana', '마나 원목', 0, 'log', '#6a8cff', 'wood');
+it('w_spirit', '정령 수액', 1, 'drop', '#7dffe0', 'wood');
+it('w_fairy', '요정 날개', 2, 'feather', '#ffb8f0', 'wood');
+it('w_world', '세계수 가지', 0, 'log', '#8fe07a', 'wood');
+it('w_goldsap', '황금 수액', 1, 'drop', '#ffd700', 'wood');
+it('w_glowleaf', '빛나는 잎', 2, 'leaf', '#c8ff6a', 'wood');
+it('w_ring', '천년 나이테', 3, 'log', '#ffcf87', 'wood');
+it('w_entheart', '엔트의 심장', 4, 'orb', '#6bbf3a', 'wood');
+it('w_rainbow', '무지개 송진', 5, 'drop', '#ff7ae0', 'wood');
+it('w_prim', '세계수의 묘목', 6, 'sprout', '#7dff7a', 'wood', { effect: '모든 생활 속도 ×1.25 (중복마다 +0.05)' });
+
+// ---- Foraging
+it('f_mugwort', '쑥', 0, 'leaf', '#6bbf5a', 'forage');
+it('f_dandelion', '민들레', 1, 'flower', '#ffe14d', 'forage');
+it('f_mushroom', '버섯', 2, 'mushroom', '#c8553d', 'forage');
+it('f_mint', '박하', 0, 'leaf', '#6effc8', 'forage');
+it('f_berry', '블루베리', 1, 'seed', '#4a5cff', 'forage');
+it('f_pine', '송이버섯', 2, 'mushroom', '#d8b48a', 'forage');
+it('f_antidote', '해독초', 0, 'leaf', '#9a6bff', 'forage');
+it('f_mandrake', '맨드레이크', 1, 'root', '#c8a27a', 'forage');
+it('f_firefly', '반딧불 이끼', 2, 'leaf', '#d8ff5a', 'forage');
+it('f_snowlotus', '설련화', 0, 'flower', '#e8f6ff', 'forage');
+it('f_poppy', '고산 양귀비', 1, 'flower', '#6aa8ff', 'forage');
+it('f_ginseng', '산삼', 2, 'root', '#f0d8a8', 'forage');
+it('f_moonflower', '달빛 꽃', 0, 'flower', '#c8d0ff', 'forage');
+it('f_dew', '별 이슬', 1, 'drop', '#b8f4ff', 'forage');
+it('f_fairyshroom', '요정 버섯', 2, 'mushroom', '#ff8ae8', 'forage');
+it('f_goldacorn', '황금 도토리', 3, 'seed', '#ffcf3a', 'forage');
+it('f_phoenix', '불사조 깃털', 4, 'feather', '#ff5a2a', 'forage');
+it('f_oldginseng', '천년 산삼', 5, 'root', '#ffe9b0', 'forage');
+it('f_prim', '일곱 빛 네잎클로버', 6, 'clover', '#7dff9a', 'forage', { effect: '행운 상한 +0.5 (중복마다 +0.1)' });
+
+// ---- Fishing (w = base weight in kg for size records)
+it('s_minnow', '피라미', 0, 'fish', '#b8c8d8', 'fish', { w: 0.05 });
+it('s_crucian', '붕어', 1, 'fish', '#c8a050', 'fish', { w: 0.4 });
+it('s_trout', '무지개송어', 2, 'fish', '#ff8aa8', 'fish', { w: 1.2 });
+it('s_carp', '잉어', 0, 'fish', '#d89a50', 'fish', { w: 3 });
+it('s_catfish', '메기', 1, 'fish', '#7a7a62', 'fish', { w: 5 });
+it('s_goldcarp', '황금 잉어', 2, 'fish', '#ffd34d', 'fish', { w: 4 });
+it('s_salmon', '연어', 0, 'fish', '#ff8a6a', 'fish', { w: 4 });
+it('s_eel', '장어', 1, 'fish', '#5a6a3a', 'fish', { w: 2 });
+it('s_sturgeon', '철갑상어', 2, 'fish', '#8a9aa8', 'fish', { w: 20 });
+it('s_mackerel', '고등어', 0, 'fish', '#4a8ad8', 'fish', { w: 0.8 });
+it('s_tuna', '참치', 1, 'fish', '#3a5a9a', 'fish', { w: 60 });
+it('s_marlin', '청새치', 2, 'fish', '#3a7aff', 'fish', { w: 90 });
+it('s_angler', '아귀', 0, 'fish', '#7a5a4a', 'fish', { w: 15 });
+it('s_squid', '대왕오징어', 1, 'tentacle', '#ff6a6a', 'fish', { w: 150 });
+it('s_dragonfish', '심해 용고기', 2, 'fish', '#3affd8', 'fish', { w: 40 });
+it('s_spring', '벚꽃 연어', 2, 'fish', '#ffb8d8', 'fish', { w: 5, season: 0 });
+it('s_summer', '반딧불 은어', 2, 'fish', '#d8ff6a', 'fish', { w: 0.3, season: 1 });
+it('s_autumn', '단풍 쏘가리', 2, 'fish', '#ff7a2a', 'fish', { w: 1.5, season: 2 });
+it('s_winter', '얼음 빙어', 2, 'fish', '#bff2ff', 'fish', { w: 0.1, season: 3 });
+it('s_chest', '물에 젖은 보물상자', 3, 'chest', '#c8913a', 'fish');
+it('s_mermaid', '인어의 비늘', 4, 'scale', '#6affe8', 'fish');
+it('s_kraken', '크라켄의 촉수', 5, 'tentacle', '#c83aff', 'fish');
+it('s_prim', '달을 삼킨 고래', 6, 'whale', '#6a7aff', 'fish', { effect: '밤 동안 모든 경험치 ×1.3 (중복마다 +0.05)' });
+
+// ---- Hunting
+it('h_rabbitmeat', '토끼 고기', 0, 'meat', '#e88a7a', 'hunt');
+it('h_rabbithide', '토끼 가죽', 1, 'hide', '#e8dcc8', 'hunt');
+it('h_pheasant', '꿩 깃털', 2, 'feather', '#c84a2a', 'hunt');
+it('h_venison', '사슴 고기', 0, 'meat', '#c85a4a', 'hunt');
+it('h_deerhide', '사슴 가죽', 1, 'hide', '#b8783a', 'hunt');
+it('h_antler', '사슴뿔', 2, 'horn', '#e8d8b8', 'hunt');
+it('h_boar', '멧돼지 고기', 0, 'meat', '#a84a3a', 'hunt');
+it('h_bearhide', '곰 가죽', 1, 'hide', '#6a4a32', 'hunt');
+it('h_claw', '곰 발톱', 2, 'horn', '#f0f0e0', 'hunt');
+it('h_wolfhide', '설원 늑대 가죽', 0, 'hide', '#d8e0f0', 'hunt');
+it('h_tusk', '매머드 상아', 1, 'horn', '#fff6d8', 'hunt');
+it('h_fang', '설표 송곳니', 2, 'horn', '#e8f0ff', 'hunt');
+it('h_griffin', '그리핀 깃털', 0, 'feather', '#ffd87a', 'hunt');
+it('h_unicorn', '유니콘 뿔 조각', 1, 'horn', '#ffe0ff', 'hunt');
+it('h_kirin', '기린 비늘', 2, 'scale', '#7affb8', 'hunt');
+it('h_white', '백색 변이 가죽', 3, 'hide', '#ffffff', 'hunt');
+it('h_goldantler', '황금 사슴뿔', 4, 'horn', '#ffd34d', 'hunt');
+it('h_gumiho', '구미호 꼬리', 5, 'feather', '#ff9a3a', 'hunt');
+it('h_prim', '하얀 사슴 왕', 6, 'deer', '#f0ffff', 'hunt', { effect: '치명타 피해 +100% (중복마다 +20%)' });
+
+// ---- Combat (region materials + skill-wide rares)
+it('c_jelly', '슬라임 젤리', 0, 'jelly', '#7ae05a', 'combat');
+it('c_spore', '버섯 포자', 1, 'drop', '#d8a87a', 'combat');
+it('c_crown', '왕관 조각', 2, 'gem', '#ffd34d', 'combat');
+it('c_slime', '독 점액', 0, 'jelly', '#a65aff', 'combat');
+it('c_poisonspore', '독버섯 포자', 1, 'drop', '#c85aff', 'combat');
+it('c_venom', '독샘', 2, 'orb', '#7aff3a', 'combat');
+it('c_batwing', '박쥐 날개', 0, 'feather', '#6a8ab8', 'combat');
+it('c_yetifur', '설인 털', 1, 'hide', '#f0f8ff', 'combat');
+it('c_icecore', '얼음 핵', 2, 'orb', '#9ae8ff', 'combat');
+it('c_shadow', '그림자 정수', 0, 'orb', '#7a4ab8', 'combat');
+it('c_abyss', '심연 파편', 1, 'gem', '#4a2a7a', 'combat');
+it('c_voideye', '공허의 눈', 2, 'orb', '#ff3aff', 'combat');
+it('c_core', '몬스터 핵', 3, 'orb', '#ff4a4a', 'combat');
+it('c_seal', '마왕의 인장', 4, 'charm', '#ffcf3a', 'combat');
+it('c_tear', '고대 신의 눈물', 5, 'drop', '#aaffff', 'combat');
+it('c_prim', '잊혀진 신의 파편', 6, 'star', '#ffffff', 'combat', { effect: '모든 스탯 +5% (중복마다 +2%)' });
+
+// ---- Alchemy (products + skill-wide rares)
+it('p_str', '힘의 물약', 0, 'potion', '#ff4a4a', 'alchemy', { potion: 'str', desc: '이번 전투 동안 공격력 +25%' });
+it('p_hp', '체력의 물약', 0, 'potion', '#4aff7a', 'alchemy', { potion: 'hp', desc: '이번 전투 동안 최대 HP +25%' });
+it('p_sta', '지구력 물약', 0, 'potion', '#4a9aff', 'alchemy', { potion: 'sta', desc: '이번 전투 동안 스태미나 +40%' });
+it('p_antidote', '해독 물약', 1, 'potion', '#a65aff', 'alchemy', { potion: 'antidote', desc: '이번 전투 동안 독 무효' });
+it('p_warm', '온기의 물약', 1, 'potion', '#ff8a2a', 'alchemy', { potion: 'warm', desc: '이번 전투 동안 한기 무효' });
+it('p_luck', '행운의 물약', 1, 'potion', '#ffd34d', 'alchemy', { potion: 'luck', desc: '이번 전투 동안 행운 배율 +0.3' });
+it('x_str', '힘의 영약', 2, 'elixir', '#ff2a5a', 'alchemy', { elixir: 'atk', desc: '영구 공격력 +2% (최대 50회)' });
+it('x_life', '생명의 영약', 2, 'elixir', '#2aff8a', 'alchemy', { elixir: 'hp', desc: '영구 최대 HP +2% (최대 50회)' });
+it('x_cat', '행운의 촉매', 2, 'orb', '#ffe87a', 'alchemy', { desc: '사용 시 1시간 동안 생활 희귀 확률 ×1.5' });
+it('x_secret', '???의 영약', 4, 'elixir', '#ffffff', 'alchemy', { elixir: 'all', desc: '영구 모든 스탯 +3% (최대 20회)' });
+it('a_salt', '현자의 소금', 3, 'gem', '#f0f0f0', 'alchemy');
+it('a_essence', '엘릭서 원액', 4, 'potion', '#ff9aff', 'alchemy');
+it('a_homunculus', '호문쿨루스 플라스크', 5, 'potion', '#9aff9a', 'alchemy');
+it('a_prim', '현자의 돌', 6, 'stone', '#ff2a3a', 'alchemy', { effect: '물약 효과 ×2 (중복마다 +0.1), 연금 실패 없음' });
+
+const ITEMS = I;
+
+// Spots unlock at these levels; each gives common / uncommon / rare items.
+const SPOT_LV = [1, 50, 150, 300, 500];
+const SPOT_XP = [8, 14, 24, 40, 65];
+const SPOTS = {
+  mining: [
+    { name: '얕은 갱도', items: ['m_copper', 'm_tin', 'm_quartz'] },
+    { name: '철광 언덕', items: ['m_iron', 'm_coal', 'm_amethyst'] },
+    { name: '수정 동굴', items: ['m_silver', 'm_gold', 'm_sapphire'] },
+    { name: '심연 광맥', items: ['m_mithril', 'm_obsidian', 'm_ruby'] },
+    { name: '별똥 분화구', items: ['m_adamant', 'm_meteor', 'm_stardia'] },
+  ],
+  wood: [
+    { name: '참나무 숲', items: ['w_oak', 'w_resin', 'w_acorn'] },
+    { name: '자작나무 길', items: ['w_birch', 'w_maple', 'w_pinecone'] },
+    { name: '고목의 숲', items: ['w_elder', 'w_amber', 'w_owl'] },
+    { name: '마법의 숲', items: ['w_mana', 'w_spirit', 'w_fairy'] },
+    { name: '세계수 뿌리', items: ['w_world', 'w_goldsap', 'w_glowleaf'] },
+  ],
+  forage: [
+    { name: '들판', items: ['f_mugwort', 'f_dandelion', 'f_mushroom'] },
+    { name: '숲길', items: ['f_mint', 'f_berry', 'f_pine'] },
+    { name: '안개 늪', items: ['f_antidote', 'f_mandrake', 'f_firefly'] },
+    { name: '고산 지대', items: ['f_snowlotus', 'f_poppy', 'f_ginseng'] },
+    { name: '요정 정원', items: ['f_moonflower', 'f_dew', 'f_fairyshroom'] },
+  ],
+  fish: [
+    { name: '개울', items: ['s_minnow', 's_crucian', 's_trout'] },
+    { name: '호수', items: ['s_carp', 's_catfish', 's_goldcarp'] },
+    { name: '강 하구', items: ['s_salmon', 's_eel', 's_sturgeon'] },
+    { name: '먼 바다', items: ['s_mackerel', 's_tuna', 's_marlin'] },
+    { name: '심해', items: ['s_angler', 's_squid', 's_dragonfish'] },
+  ],
+  hunt: [
+    { name: '초원', items: ['h_rabbitmeat', 'h_rabbithide', 'h_pheasant'] },
+    { name: '사슴 숲', items: ['h_venison', 'h_deerhide', 'h_antler'] },
+    { name: '산악 지대', items: ['h_boar', 'h_bearhide', 'h_claw'] },
+    { name: '설원', items: ['h_wolfhide', 'h_tusk', 'h_fang'] },
+    { name: '신수의 숲', items: ['h_griffin', 'h_unicorn', 'h_kirin'] },
+  ],
+};
+// Skill-wide high tiers: [epic, legend, myth, primordial].
+const SKILL_RARES = {
+  mining: ['m_fossil', 'm_dragonstone', 'm_timecrystal', 'm_prim'],
+  wood: ['w_ring', 'w_entheart', 'w_rainbow', 'w_prim'],
+  forage: ['f_goldacorn', 'f_phoenix', 'f_oldginseng', 'f_prim'],
+  fish: ['s_chest', 's_mermaid', 's_kraken', 's_prim'],
+  hunt: ['h_white', 'h_goldantler', 'h_gumiho', 'h_prim'],
+  combat: ['c_core', 'c_seal', 'c_tear', 'c_prim'],
+  alchemy: ['a_salt', 'a_essence', 'a_homunculus', 'a_prim'],
+};
+const SEASON_FISH = ['s_spring', 's_summer', 's_autumn', 's_winter'];
+const SEASON_NAME = ['봄', '여름', '가을', '겨울'];
+
+const RECIPES = [
+  { id: 'p_str', lv: 1, xp: 10, in: { f_mugwort: 3, m_copper: 2 } },
+  { id: 'p_hp', lv: 8, xp: 14, in: { f_dandelion: 2, s_minnow: 3 } },
+  { id: 'p_sta', lv: 15, xp: 18, in: { w_oak: 4, h_rabbitmeat: 2 } },
+  { id: 'p_antidote', lv: 25, xp: 24, in: { f_mugwort: 5, f_mushroom: 1, c_slime: 2 } },
+  { id: 'p_warm', lv: 40, xp: 32, in: { w_resin: 3, m_coal: 2, c_batwing: 2 } },
+  { id: 'p_luck', lv: 60, xp: 40, in: { h_pheasant: 1, s_crucian: 3, w_acorn: 1 } },
+  { id: 'x_str', lv: 100, xp: 80, in: { h_antler: 2, m_amethyst: 2, f_pine: 3 }, max: 50 },
+  { id: 'x_life', lv: 150, xp: 110, in: { f_mandrake: 3, s_salmon: 5, h_bearhide: 2 }, max: 50 },
+  { id: 'x_cat', lv: 200, xp: 140, in: { f_firefly: 3, s_goldcarp: 1, m_sapphire: 1 } },
+  { id: 'x_secret', lv: 1, xp: 300, in: { a_salt: 1, f_ginseng: 2, w_spirit: 2 }, max: 20, secret: true },
+];
+
+const MONSTERS = {
+  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#7ae05a' }, hp: 1, atk: 1 },
+  shroom: { name: '버섯돌이', sprite: 'shroom', pal: { r: '#e8553d' }, hp: 1.2, atk: 0.9 },
+  kingslime: { name: '왕 슬라임', sprite: 'slime', pal: { a: '#5ad0e0' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#9a5ad8' }, hp: 1, atk: 1.1 },
+  pshroom: { name: '독버섯', sprite: 'shroom', pal: { r: '#a83ad8' }, hp: 1.3, atk: 0.9 },
+  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#6a3ab8' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#6a8ab8' }, hp: 0.8, atk: 1.2, fly: true },
+  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#e8f0ff' }, hp: 1.4, atk: 1 },
+  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#bfe0ff' }, hp: 1, atk: 1, crown: true, scale: 1.6 },
+};
+
+const REGIONS = [
+  { name: '햇살 초원', from: 1, mobs: ['slime', 'shroom'], boss: 'kingslime', mats: ['c_jelly', 'c_spore', 'c_crown'], gimmick: null, theme: 'meadow' },
+  { name: '독안개 숲', from: 11, mobs: ['frog', 'pshroom'], boss: 'frogking', mats: ['c_slime', 'c_poisonspore', 'c_venom'], gimmick: 'poison', theme: 'swamp' },
+  { name: '얼음 동굴', from: 21, mobs: ['bat', 'yeti'], boss: 'yetiking', mats: ['c_batwing', 'c_yetifur', 'c_icecore'], gimmick: 'ice', theme: 'ice' },
+  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'yetiking', mats: ['c_shadow', 'c_abyss', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
+];
+const GIMMICK_TEXT = {
+  poison: '독안개: 스태미나 소모 ×2.5 (채집 Lv 60 또는 해독 물약으로 무효)',
+  ice: '한기: 공격 속도 -40% (벌목 Lv 80 또는 온기의 물약으로 무효)',
+};
+
+const GEAR_NAMES = {
+  weapon: ['낡은 검', '강철 검', '기사의 검', '영웅의 검', '전설의 검', '신화의 검', '태초의 검'],
+  armor: ['천 옷', '가죽 갑옷', '사슬 갑옷', '영웅의 갑옷', '전설의 갑옷', '신화의 갑옷', '태초의 갑옷'],
+  charm: ['조약돌 부적', '은 부적', '수정 부적', '영웅의 부적', '전설의 부적', '신화의 부적', '태초의 부적'],
+};
+const GEAR_TIER_MULT = [1, 1.3, 1.7, 2.3, 3.2, 4.5, 7];
+
+const PERKS = {
+  w_atk: { tree: 'war', name: '불꽃의 칼날', desc: '공격력 +10%', base: 1, grow: 1.4 },
+  w_hp: { tree: 'war', name: '불꽃의 심장', desc: '최대 HP +10%', base: 1, grow: 1.4 },
+  w_xp: { tree: 'war', name: '전투의 기억', desc: '캐릭터 경험치 +15%', base: 2, grow: 1.5 },
+  w_start: { tree: 'war', name: '지름길', desc: '윤회 후 시작 층 +5', base: 5, grow: 2, max: 10 },
+  a_speed: { tree: 'art', name: '숙련된 손', desc: '모든 생활 속도 +3%', base: 2, grow: 1.45, max: 20 },
+  a_xp: { tree: 'art', name: '장인의 눈', desc: '생활 경험치 +5%', base: 2, grow: 1.45, max: 20 },
+  a_luck: { tree: 'art', name: '행운의 불씨', desc: '행운 배율 +0.05', base: 3, grow: 1.6, max: 10 },
+  r_clone: { tree: 'wan', name: '분신술', desc: '분신 슬롯 +1 (분신은 생활만, 속도 60%)', base: 10, grow: 6, max: 2 },
+  r_offline: { tree: 'wan', name: '긴 여정', desc: '오프라인 상한 +2시간', base: 3, grow: 1.6, max: 18 },
+  r_gold: { tree: 'wan', name: '방랑 상인', desc: '골드 +20%', base: 1, grow: 1.4 },
+};
+const PERK_TREES = { war: '전사의 불', art: '장인의 불', wan: '방랑자의 불' };
+
+const MEMORIES = {
+  fisher: { name: '전생에 어부였다', desc: '낚시 경험치 ×2', skill: 'fish' },
+  miner: { name: '전생에 광부였다', desc: '광질 경험치 ×2', skill: 'mining' },
+  lumber: { name: '전생에 나무꾼이었다', desc: '벌목 경험치 ×2', skill: 'wood' },
+  herbal: { name: '전생에 약초꾼이었다', desc: '채집 경험치 ×2', skill: 'forage' },
+  hunter: { name: '전생에 사냥꾼이었다', desc: '사냥 경험치 ×2', skill: 'hunt' },
+  alchem: { name: '전생에 연금술사였다', desc: '연금술 경험치 ×2, 실패 없음', skill: 'alchemy' },
+  berserk: { name: '전생에 광전사였다', desc: 'HP 50% 이하일 때 공격력 +60%' },
+  coward: { name: '전생에 겁쟁이였다', desc: '회피 +30%, 공격력 -10%' },
+  rich: { name: '전생에 부자였다', desc: '골드 ×3' },
+  lucky: { name: '전생에 행운아였다', desc: '행운 배율 +0.5' },
+  sleepy: { name: '전생에 잠꾸러기였다', desc: '야영 시간 +50% (생활 시간 증가)' },
+  warrior: { name: '전생에 검투사였다', desc: '전투 숙련 경험치 ×2, 공격력 +15%' },
+};
+
+const STAT_NAMES = { str: '힘', agi: '민첩', vit: '체력', luk: '행운' };
+const PRESETS = {
+  balanced: { name: '균형형', w: { str: 4, agi: 2, vit: 3, luk: 1 } },
+  attack: { name: '공격형', w: { str: 6, agi: 3, vit: 1, luk: 0 } },
+  survive: { name: '생존형', w: { str: 3, agi: 1, vit: 6, luk: 0 } },
+  luck: { name: '행운형', w: { str: 3, agi: 2, vit: 2, luk: 3 } },
+};
+
+const LINES = {
+  fight: ['오늘도 한 층 더!', '이 슬라임… 끈적해', '검이 점점 무거워지는 기분이야', '저 녀석, 날 노려보는데?', '모닥불이 그리워…'],
+  camp: ['잠깐 쉬어 갈까', '불 좀 쬐자…', '소시지 굽고 싶다', '오늘은 대박 날 것 같아', '별이 예쁘네'],
+  mining: ['반짝이는 게 보인다!', '팔이 저려…', '이 돌, 뭔가 수상해'],
+  wood: ['나무가 쓰러진다아!', '나이테가 예쁘네', '도끼 날 좀 갈아야겠다'],
+  forage: ['이건 먹어도 되는 거겠지?', '향긋하다', '네잎클로버는 어디 있을까'],
+  fish: ['입질이 왔다!', '…아무것도 안 무네', '저번에 놓친 메기, 기억한다'],
+  hunt: ['쉿… 조용히', '바람이 등 뒤에서 분다', '저기 뭔가 지나갔다'],
+  alchemy: ['색이 변하고 있어…!', '이번엔 안 터지겠지', '킁킁, 냄새가 수상한데'],
+};
+
+return { TIERS, TIER_P, LUCK_CAP, SKILLS, LIFE_SKILLS, GATHER_SKILLS, TOOL_TIERS, AWAKENINGS, MASTER_BONUS, MASTER_TITLE, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES, MONSTERS, REGIONS, GIMMICK_TEXT, GEAR_NAMES, GEAR_TIER_MULT, PERKS, PERK_TREES, MEMORIES, STAT_NAMES, PRESETS, LINES };
+})();
+
+__m.engine = (() => {
+// Pure game logic. No DOM access, so the same code runs in the browser and in
+// the Node balance simulator (sim/simulate.mjs).
+const { TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, RECIPES, MONSTERS, REGIONS, GEAR_NAMES, GEAR_TIER_MULT, PERKS, MEMORIES, PRESETS, AWAKENINGS, TOOL_TIERS, MASTER_BONUS } = __m.data;
+const { makeRng, hash32 } = __m.rng;
+
+const VERSION = 1;
+const OFFLINE_BASE_H = 12;
+const ACTION_TIME = 3;
+const ALCH_TIME = 4;
+const CLONE_SPEED = 0.6;
+const KILLS_PER_FLOOR = 10;
+const MON_INTERVAL = 1.8;
+
+// ---------- Curves ----------
+const xpNeed = lv => Math.floor(20 + 5.2 * Math.pow(lv, 1.9));
+const charXpNeed = lv => Math.floor(15 * Math.pow(1.12, lv - 1));
+const toolTier = lv => Math.min(10, Math.floor(lv / 100));
+const spotsUnlocked = lv => SPOT_LV.filter(l => lv >= l).length;
+const skillPassive = lv => lv * 0.001 + Math.floor(lv / 10) * 0.01;
+const perkCost = (id, lv) => Math.ceil(PERKS[id].base * Math.pow(PERKS[id].grow, lv));
+// Soft pity: past 1.5x the expected count, myth/primordial odds ramp up (x2 at 2x, x3 at 2.5x).
+const pity = ratio => (ratio > 1.5 ? 1 + 2 * (ratio - 1.5) : 1);
+const ashFor = maxFloor => (maxFloor > 20 ? Math.floor(Math.pow(maxFloor / 5, 1.5)) : 0);
+// Monsters grow faster than gear (1.16 vs 1.12 per floor), so the climb always
+// meets a wall that only permanent multipliers can push back.
+const monHp = f => 20 * Math.pow(1.16, f - 1);
+const monAtk = f => 3 * Math.pow(1.15, f - 1);
+const GEAR_GROWTH = 1.12;
+
+function gearValue(g) {
+  return (g.slot === 'weapon' ? 5 : 22) * Math.pow(GEAR_GROWTH, g.f - 1) * GEAR_TIER_MULT[g.tier] * g.roll * (1 + 0.1 * g.enh);
+}
+function charmValue(g) {
+  const k = (g.tier + 1) * g.roll * (1 + 0.1 * g.enh);
+  return { luck: 0.02 * k, crit: 0.01 * k };
+}
+function gearScore(g) {
+  if (!g) return 0;
+  if (g.slot === 'charm') { const c = charmValue(g); return c.luck * 10 + c.crit * 10; }
+  return gearValue(g);
+}
+const gearName = g => `${GEAR_NAMES[g.slot][g.tier]}${g.enh ? ' +' + g.enh : ''}`;
+const enhanceCost = g => Math.ceil(10 * Math.pow(1.13, g.f - 1) * Math.pow(1.5, g.enh));
+
+// What happens at a given skill level (used for logs and the "next milestone" list).
+function milestoneAt(k, lv) {
+  if (lv === 1000) return `마스터 달성 · ${MASTER_BONUS[k]}`;
+  if (AWAKENINGS[lv]) return AWAKENINGS[lv];
+  if (k === 'alchemy') {
+    const r = RECIPES.find(x => x.lv === lv && !x.secret);
+    if (r) return `새 레시피: ${ITEMS[r.id].name}`;
+  }
+  const si = SPOT_LV.indexOf(lv);
+  if (si > 0 && SPOTS[k]) return `새 장소: ${SPOTS[k][si].name}`;
+  if (lv % 100 === 0) return `도구 승급: ${TOOL_TIERS[toolTier(lv)].name} (속도 +10%)`;
+  if (lv % 10 === 0) return `${SKILLS[k].stat} +1% 보너스`;
+  return null;
+}
+function nextMilestones(k, lv, count = 4) {
+  const out = [];
+  for (let l = lv + 1; out.length < count && l <= lv + 1000; l++) {
+    const m = milestoneAt(k, l);
+    if (m && (!m.endsWith('+1% 보너스') || out.length === 0)) out.push({ lv: l, text: m });
+  }
+  return out;
+}
+
+function freshChar(floor) {
+  return {
+    lv: 1, xp: 0, pts: 0, st: { str: 5, agi: 5, vit: 5, luk: 5 }, preset: 'balanced', auto: true,
+    hp: 1e12, sta: 1e12, gold: 0, floor, kills: 0, maxFloor: floor, farmUntil: 0,
+    gear: { weapon: null, armor: null, charm: null },
+  };
+}
+
+function newState(seed = (Math.random() * 4294967296) >>> 0) {
+  const skills = {};
+  for (const k of Object.keys(SKILLS)) skills[k] = { lv: 1, xp: 0, n: 0, dryM: 0, dryP: 0 };
+  const now = Date.now();
+  return {
+    v: VERSION, seed, rng: seed, time: 0, created: now, lastSeen: now,
+    char: freshChar(1), mode: 'fight', focus: false,
+    slots: [{ k: 'mining', p: 0 }],
+    spots: { mining: 0, wood: 0, forage: 0, fish: 0, hunt: 0 },
+    recipe: 'p_str', secret: false,
+    skills, items: {}, codex: {}, records: {},
+    potAuto: { str: true, hp: true, sta: true, antidote: true, warm: true, luck: true },
+    pot: {}, catUntil: 0, elixirs: { atk: 0, hp: 0, all: 0 },
+    rb: { count: 0, ash: 0, totalAsh: 0, perks: {}, memory: null, choices: null, bestFloor: 1 },
+    stats: { kills: 0, deaths: 0, bosses: 0, actions: 0, gold: 0 },
+    hall: [], log: [],
+  };
+}
+
+// Fill in fields added in later versions so old saves keep loading.
+function migrate(raw) {
+  const base = newState(raw.seed);
+  const s = { ...base, ...raw };
+  s.char = { ...freshChar(1), ...raw.char, st: { ...base.char.st, ...(raw.char?.st || {}) }, gear: { ...base.char.gear, ...(raw.char?.gear || {}) } };
+  for (const k of Object.keys(base.skills)) s.skills[k] = { ...base.skills[k], ...(raw.skills?.[k] || {}) };
+  s.rb = { ...base.rb, ...(raw.rb || {}) };
+  s.stats = { ...base.stats, ...(raw.stats || {}) };
+  s.potAuto = { ...base.potAuto, ...(raw.potAuto || {}) };
+  s.elixirs = { ...base.elixirs, ...(raw.elixirs || {}) };
+  s.v = VERSION;
+  return s;
+}
+
+const VARIANTS = {
+  golden: { name: '황금 ', hp: 2, atk: 1, xp: 2, gold: 10 },
+  giant: { name: '거대 ', hp: 5, atk: 1.5, xp: 10, gold: 5 },
+  ancient: { name: '고대 ', hp: 20, atk: 2, xp: 100, gold: 50 },
+};
+const NO_VARIANT = { name: '', hp: 1, atk: 1, xp: 1, gold: 1 };
+
+class Game {
+  constructor(state, opts = {}) {
+    this.s = state;
+    this.rng = makeRng(state.rng);
+    this.clock = opts.clock || (() => Date.now());
+    this.quiet = !!opts.quiet; // simulator: skip logs
+    this.simStep = opts.simStep || 0;
+    this.events = [];
+    this.live = true;
+    this.summary = null;
+    this.mon = null;
+    this.heroTimer = 0.3;
+    this.monTimer = 1;
+    this.lastEnv = -1e9;
+    this.env = this.envNow();
+    this.dirty = true;
+    this.calc();
+    const c = state.char;
+    c.hp = Math.min(c.hp, this.d.hp);
+    c.sta = Math.min(c.sta, this.d.sta);
+  }
+
+  // ---------- Infrastructure ----------
+  emit(e) {
+    if (this.live) this.events.push(e);
+    if (this.summary) this.summarize(e);
+  }
+  log(text, tier = 0) {
+    if (this.quiet) return;
+    this.s.log.unshift({ at: this.clock(), text, tier });
+    if (this.s.log.length > 80) this.s.log.length = 80;
+  }
+  has(id) { return !!this.s.codex[id]; }
+  // Primordial items stack: every duplicate adds a little more to its effect.
+  prim(id, base, per) { const n = this.s.items[id] || 0; return n ? base + per * (n - 1) : 0; }
+  P(id) { return this.s.rb.perks[id] || 0; }
+  serialize() {
+    this.s.rng = this.rng.getState();
+    this.s.lastSeen = this.clock();
+    return JSON.stringify(this.s);
+  }
+
+  envNow() {
+    const t = this.clock();
+    const d = new Date(t);
+    const h = d.getHours();
+    const m = d.getMonth();
+    const season = m >= 2 && m <= 4 ? 0 : m >= 5 && m <= 7 ? 1 : m >= 8 && m <= 10 ? 2 : 3;
+    const w = hash32((Math.floor(t / 3600000) * 2654435761) ^ 0x9e37);
+    const weather = w < 0.18 ? (season === 3 ? 'snow' : 'rain') : 'clear';
+    return { night: h >= 20 || h < 6, hour: h + d.getMinutes() / 60, season, weather };
+  }
+
+  // ---------- Derived stats ----------
+  calc() {
+    const s = this.s, c = s.char, st = c.st, sk = s.skills, mem = s.rb.memory, pot = s.pot, env = this.env;
+    const pb = k => skillPassive(sk[k].lv);
+    const master = k => sk[k].lv >= 1000;
+    let codex = 0;
+    for (const id in s.codex) codex += TIERS[ITEMS[id].tier].codex;
+    const potPow = (1 + pb('alchemy')) * (this.prim('a_prim', 2, 0.1) || 1) * (master('alchemy') ? 2 : 1);
+    const allMul = (this.prim('c_prim', 1.05, 0.02) || 1) * (1 + 0.03 * s.elixirs.all);
+    const g = c.gear;
+    const wAtk = g.weapon ? gearValue(g.weapon) : 0;
+    const aHp = g.armor ? gearValue(g.armor) : 0;
+    const ch = g.charm ? charmValue(g.charm) : { luck: 0, crit: 0 };
+
+    let atk = (4 + st.str * 2 + wAtk) * (1 + pb('mining')) * (1 + pb('combat')) * (1 + codex)
+      * (1 + 0.1 * this.P('w_atk')) * (1 + 0.02 * s.elixirs.atk) * allMul;
+    if (pot.str) atk *= 1 + 0.25 * potPow;
+    atk *= this.prim('m_prim', 1.5, 0.1) || 1;
+    if (master('mining')) atk *= 1.25;
+    if (master('combat')) atk *= 1.25;
+    if (mem === 'coward') atk *= 0.9;
+    if (mem === 'warrior') atk *= 1.15;
+
+    let hp = (40 + st.vit * 8 + c.lv * 4 + aHp) * (1 + pb('forage')) * (1 + pb('combat')) * (1 + codex)
+      * (1 + 0.1 * this.P('w_hp')) * (1 + 0.02 * s.elixirs.hp) * allMul;
+    if (pot.hp) hp *= 1 + 0.25 * potPow;
+    if (master('forage')) hp *= 1.25;
+    if (master('combat')) hp *= 1.25;
+
+    let sta = 100 * (1 + st.vit * 0.005) * (1 + pb('wood'));
+    if (pot.sta) sta *= 1 + 0.4 * potPow;
+
+    const luckCap = LUCK_CAP + this.prim('f_prim', 0.5, 0.1) + (master('fish') ? 0.5 : 0);
+    let luck = 1 + st.luk * 0.002 + sk.fish.lv * 0.0005 + Math.floor(sk.fish.lv / 10) * 0.005
+      + 0.05 * this.P('a_luck') + ch.luck + (mem === 'lucky' ? 0.5 : 0) + (pot.luck ? 0.3 * potPow : 0);
+    luck = Math.min(luckCap, luck);
+
+    const critC = Math.min(0.75, 0.05 + st.luk * 0.003 + ch.crit);
+    const critD = (1.5 + pb('hunt') + this.prim('h_prim', 1, 0.2)) * (master('hunt') ? 1.5 : 1);
+    const interval = Math.max(0.25, 1.4 / (1 + st.agi * 0.008));
+    const dodge = Math.min(0.6, st.agi * 0.002 + (mem === 'coward' ? 0.3 : 0));
+    const nightXp = env.night ? this.prim('s_prim', 1.3, 0.05) || 1 : 1;
+
+    this.d = {
+      atk, hp, sta, luck, luckCap, critC, critD, interval, dodge, potPow, codex,
+      res: { poison: Math.min(1, sk.forage.lv / 60), ice: Math.min(1, sk.wood.lv / 80) },
+      lifeSpeed: (1 + 0.03 * this.P('a_speed')) * (this.prim('w_prim', 1.25, 0.05) || 1) * (master('wood') ? 1.15 : 1),
+      lifeXp: (1 + 0.05 * this.P('a_xp')) * nightXp,
+      charXp: (1 + 0.15 * this.P('w_xp')) * nightXp,
+      gold: (1 + 0.2 * this.P('r_gold')) * (mem === 'rich' ? 3 : 1),
+      campDur: 60 * (mem === 'sleepy' ? 1.5 : 1),
+    };
+    this.dirty = false;
+  }
+
+  skillSpeed(k) {
+    const sk = this.s.skills[k];
+    return this.d.lifeSpeed * (1 + 0.1 * toolTier(sk.lv)) * (k === 'forage' && this.env.weather === 'rain' ? 1.2 : 1);
+  }
+  skillXpMult(k) {
+    const mem = this.s.rb.memory;
+    return this.d.lifeXp * (mem && MEMORIES[mem].skill === k ? 2 : 1) * (k === 'combat' && mem === 'warrior' ? 2 : 1);
+  }
+  rareMult(k) {
+    const sk = this.s.skills[k];
+    return this.d.luck * (sk.lv >= 750 ? 1.5 : 1) * (this.s.catUntil > this.s.time && k !== 'combat' ? 1.5 : 1)
+      * (k === 'fish' && this.env.night ? 1.3 : 1);
+  }
+
+  // ---------- Main loop ----------
+  advance(sec, live = true) {
+    this.live = live;
+    const stepMax = live ? 0.1 : this.simStep || 0.5;
+    let left = sec;
+    while (left > 1e-9) {
+      const dt = Math.min(stepMax, left);
+      this.step(dt);
+      left -= dt;
+    }
+    this.live = true;
+  }
+
+  fastForward(sec) {
+    const c = this.s.char;
+    const startLv = c.lv, startFloor = c.maxFloor, startGold = this.s.stats.gold;
+    const skillStart = Object.fromEntries(Object.entries(this.s.skills).map(([k, v]) => [k, v.lv]));
+    this.summary = { sec, kills: 0, deaths: 0, drops: [0, 0, 0, 0, 0, 0, 0], best: [], records: 0, codex: [], fails: 0, rebirth: false };
+    this.advance(sec, false);
+    const sm = this.summary;
+    this.summary = null;
+    sm.charLv = [startLv, this.s.char.lv];
+    sm.floor = [startFloor, this.s.char.maxFloor];
+    sm.gold = this.s.stats.gold - startGold;
+    sm.skills = Object.entries(this.s.skills).filter(([k, v]) => v.lv > skillStart[k]).map(([k, v]) => ({ k, from: skillStart[k], to: v.lv }));
+    return sm;
+  }
+
+  summarize(e) {
+    const sm = this.summary;
+    if (e.t === 'kill') sm.kills++;
+    else if (e.t === 'death') sm.deaths++;
+    else if (e.t === 'drop') {
+      sm.drops[e.tier] += e.n;
+      if (e.tier >= 3) sm.best.push(e.id);
+    } else if (e.t === 'record') sm.records++;
+    else if (e.t === 'codex') sm.codex.push(e.id);
+    else if (e.t === 'act' && e.kind === 'fail') sm.fails++;
+  }
+
+  step(dt) {
+    const s = this.s;
+    s.time += dt;
+    if (s.time - this.lastEnv >= 60) {
+      this.env = this.envNow();
+      this.lastEnv = s.time;
+      this.dirty = true;
+    }
+    if (this.dirty) this.calc();
+    for (let i = 1; i < s.slots.length; i++) this.lifeTick(s.slots[i], i, dt * CLONE_SPEED);
+    if (s.mode === 'fight') this.fightStep(dt);
+    else this.campStep(dt);
+  }
+
+  // ---------- Camp & life skills ----------
+  enterCamp(reason) {
+    const s = this.s;
+    s.mode = 'camp';
+    s.pot = {};
+    this.mon = null;
+    this.dirty = true;
+    this.emit({ t: 'camp', reason });
+  }
+
+  enterFight() {
+    const s = this.s, c = s.char;
+    s.mode = 'fight';
+    s.pot = {};
+    this.calc();
+    const gm = this.gimmick(c.floor);
+    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_antidote', 'p_warm']) {
+      const type = ITEMS[id].potion;
+      if (!s.potAuto[type] || !(s.items[id] > 0)) continue;
+      if (type === 'antidote' && (gm !== 'poison' || this.d.res.poison >= 1)) continue;
+      if (type === 'warm' && (gm !== 'ice' || this.d.res.ice >= 1)) continue;
+      s.items[id]--;
+      s.pot[type] = true;
+    }
+    this.calc();
+    c.hp = this.d.hp;
+    c.sta = this.d.sta;
+    this.emit({ t: 'fight', pots: Object.keys(s.pot) });
+  }
+
+  campStep(dt) {
+    const s = this.s, c = s.char, d = this.d;
+    c.sta = Math.min(d.sta, c.sta + (d.sta / d.campDur) * dt);
+    c.hp = Math.min(d.hp, c.hp + (d.hp / (d.campDur * 0.6)) * dt);
+    this.lifeTick(s.slots[0], 0, dt);
+    if (!s.focus && c.sta >= d.sta && c.hp >= d.hp) this.enterFight();
+  }
+
+  recipe() { return RECIPES.find(r => r.id === this.s.recipe); }
+  canCraft(r) {
+    if (!r) return false;
+    const s = this.s;
+    if (r.secret && !s.secret) return false;
+    if (s.skills.alchemy.lv < r.lv) return false;
+    if (r.max && this.crafted(r) >= r.max) return false;
+    for (const id in r.in) if ((s.items[id] || 0) < r.in[id]) return false;
+    return true;
+  }
+  crafted(r) {
+    const e = ITEMS[r.id].elixir;
+    return e ? this.s.elixirs[e] : 0;
+  }
+
+  lifeTick(slot, idx, dt) {
+    const k = slot.k;
+    if (k === 'alchemy' && !this.canCraft(this.recipe())) { slot.p = 0; slot.blocked = true; return; }
+    slot.blocked = false;
+    slot.p += (dt * this.skillSpeed(k)) / (k === 'alchemy' ? ALCH_TIME : ACTION_TIME);
+    while (slot.p >= 1) {
+      slot.p -= 1;
+      if (k === 'alchemy') {
+        this.alchemyAction(idx);
+        if (!this.canCraft(this.recipe())) { slot.p = 0; break; }
+      } else this.gatherAction(k, idx);
+    }
+  }
+
+  rollTier(k, mult) {
+    const sk = this.s.skills[k];
+    // Luck only counts as its square root for myth/primordial, so they stay rare.
+    const top = Math.sqrt(mult);
+    const eM = 1 / (TIER_P[5] * top), eP = 1 / (TIER_P[6] * top);
+    const pityM = pity(sk.dryM / eM), pityP = pity(sk.dryP / eP);
+    let r = this.rng();
+    const p6 = TIER_P[6] * top * pityP;
+    if (r < p6) { sk.dryP = 0; sk.dryM++; return 6; }
+    r -= p6;
+    const p5 = TIER_P[5] * top * pityM;
+    if (r < p5) { sk.dryM = 0; sk.dryP++; return 5; }
+    r -= p5;
+    sk.dryM++;
+    sk.dryP++;
+    for (let t = 4; t >= 2; t--) {
+      const p = TIER_P[t] * mult;
+      if (r < p) return t;
+      r -= p;
+    }
+    return r < TIER_P[1] ? 1 : 0;
+  }
+
+  gatherAction(k, slot) {
+    const s = this.s, sk = s.skills[k];
+    const spot = Math.min(s.spots[k], spotsUnlocked(sk.lv) - 1);
+    const tier = this.rollTier(k, this.rareMult(k));
+    let id;
+    if (tier >= 3) id = SKILL_RARES[k][tier - 3];
+    else {
+      id = SPOTS[k][spot].items[tier];
+      if (k === 'fish' && tier === 2 && this.rng() < 0.3) id = SEASON_FISH[this.env.season];
+    }
+    const dbl = sk.lv >= 500 ? 0.1 : sk.lv >= 250 ? 0.05 : 0;
+    const n = dbl && tier < 3 && this.rng() < dbl ? 2 : 1;
+    sk.n++;
+    s.stats.actions++;
+    let w = 0;
+    if (ITEMS[id].w) w = this.fishRecord(id);
+    this.gain(id, n, k);
+    this.skillXp(k, SPOT_XP[spot] * this.skillXpMult(k));
+    this.emit({ t: 'act', k, slot, id, tier, n, w });
+  }
+
+  gauss() {
+    const u = Math.max(1e-12, this.rng()), v = this.rng();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  fishRecord(id) {
+    const w = +(ITEMS[id].w * Math.exp(0.35 * this.gauss())).toFixed(2);
+    const rec = this.s.records[id];
+    if (!rec || w > rec) {
+      this.s.records[id] = w;
+      if (rec) {
+        this.emit({ t: 'record', id, w });
+        this.log(`신기록! ${ITEMS[id].name} ${w}kg`, 2);
+      }
+    }
+    return w;
+  }
+
+  alchemyAction(slot) {
+    const s = this.s, sk = s.skills.alchemy, r = this.recipe();
+    for (const id in r.in) s.items[id] -= r.in[id];
+    const noFail = this.has('a_prim') || s.rb.memory === 'alchem';
+    const failP = noFail ? 0 : Math.max(0, 0.15 - sk.lv * 0.002);
+    const roll = this.rng();
+    let kind = 'ok', n = 1;
+    if (roll < failP) { kind = 'fail'; n = 0; }
+    else if (roll < failP + 0.001) { kind = 'miracle'; n = 10; }
+    else if (roll < failP + 0.051) { kind = 'great'; n = 2; }
+    if (n) {
+      const it = ITEMS[r.id];
+      if (r.max) n = Math.min(n, r.max - this.crafted(r));
+      if (it.elixir) {
+        s.elixirs[it.elixir] += n;
+        this.register(r.id);
+        this.dirty = true;
+        this.emit({ t: 'drop', id: r.id, n, tier: it.tier, src: 'alchemy' });
+      } else this.gain(r.id, n, 'alchemy');
+    }
+    if (kind === 'miracle') this.log(`연금술 기적! ${ITEMS[r.id].name} ×10`, 4);
+    if (!s.secret && this.rng() < 0.00001 * this.d.luck) {
+      s.secret = true;
+      this.log('미지의 레시피를 발견했다! ???의 영약', 5);
+      this.emit({ t: 'secret' });
+    }
+    const t = this.rollTier('alchemy', this.rareMult('alchemy'));
+    if (t >= 3) this.gain(SKILL_RARES.alchemy[t - 3], 1, 'alchemy');
+    sk.n++;
+    s.stats.actions++;
+    this.skillXp('alchemy', r.xp * (kind === 'fail' ? 1.5 : 1) * this.skillXpMult('alchemy'));
+    this.emit({ t: 'act', k: 'alchemy', slot, id: r.id, kind, n, tier: ITEMS[r.id].tier });
+  }
+
+  register(id) {
+    const s = this.s, it = ITEMS[id];
+    if (s.codex[id]) return;
+    s.codex[id] = 1;
+    this.dirty = true;
+    this.emit({ t: 'codex', id });
+    this.log(`도감 등록: ${it.name}`, it.tier);
+  }
+
+  gain(id, n, src) {
+    const s = this.s, it = ITEMS[id];
+    s.items[id] = (s.items[id] || 0) + n;
+    this.register(id);
+    if (it.tier >= 4) {
+      s.hall.unshift({ id, at: this.clock(), n: s.skills[src] ? s.skills[src].n : 0, src });
+      if (s.hall.length > 60) s.hall.length = 60;
+      this.log(`[${TIERS[it.tier].name}] ${it.name} 획득!`, it.tier);
+    }
+    this.emit({ t: 'drop', id, n, tier: it.tier, src });
+  }
+
+  skillXp(k, x) {
+    const sk = this.s.skills[k];
+    sk.xp += x;
+    while (sk.xp >= xpNeed(sk.lv)) {
+      sk.xp -= xpNeed(sk.lv);
+      sk.lv++;
+      this.dirty = true;
+      const m = milestoneAt(k, sk.lv);
+      this.emit({ t: 'slv', k, lv: sk.lv, m });
+      if (m && (sk.lv % 10 !== 0 || sk.lv % 50 === 0)) this.log(`${SKILLS[k].name} Lv.${sk.lv} · ${m}`, sk.lv % 100 === 0 ? 3 : 2);
+    }
+  }
+
+  useItem(id) {
+    const s = this.s;
+    if (id !== 'x_cat' || !(s.items[id] > 0)) return false;
+    s.items[id]--;
+    s.catUntil = Math.max(s.time, s.catUntil) + 3600;
+    this.log('행운의 촉매 사용: 1시간 동안 생활 희귀 확률 ×1.5', 2);
+    return true;
+  }
+
+  // ---------- Combat ----------
+  region(f) {
+    for (let i = REGIONS.length - 1; i >= 0; i--) if (f >= REGIONS[i].from) return REGIONS[i];
+    return REGIONS[0];
+  }
+  gimmick(f) {
+    const g = this.region(f).gimmick;
+    return g === 'mixed' ? ['poison', 'ice', null][f % 3] : g;
+  }
+
+  spawn() {
+    const c = this.s.char, f = c.floor, reg = this.region(f), boss = f % 10 === 0;
+    const key = boss ? reg.boss : reg.mobs[Math.floor(this.rng() * reg.mobs.length)];
+    const M = MONSTERS[key];
+    let variant = null;
+    if (!boss) {
+      const vr = this.rng() / this.d.luck;
+      if (vr < 0.00001) variant = 'ancient';
+      else if (vr < 0.001) variant = 'giant';
+      else if (vr < 0.01) variant = 'golden';
+    }
+    const vm = VARIANTS[variant] || NO_VARIANT;
+    const hp = monHp(f) * M.hp * (boss ? 10 : 1) * vm.hp;
+    this.mon = {
+      key, boss, variant, f, hp, maxHp: hp,
+      name: vm.name + (reg.theme === 'tower' ? '심연의 ' : '') + M.name,
+      atk: monAtk(f) * M.atk * (boss ? 2.2 : 1) * vm.atk,
+      approach: 0.8,
+    };
+    this.heroTimer = 0.15;
+    this.monTimer = 0.9;
+    if (variant === 'ancient') this.log(`고대 개체 출현! ${this.mon.name}`, 5);
+    this.emit({ t: 'spawn', mon: this.mon });
+  }
+
+  fightStep(dt) {
+    const s = this.s, c = s.char, d = this.d;
+    const gm = this.gimmick(c.floor);
+    // Poison fog shortens fights (stamina x2.5) instead of killing: a wall slows, never stops.
+    const poison = gm === 'poison' && !s.pot.antidote ? 1.5 * (1 - d.res.poison) : 0;
+    c.sta -= dt * (1 + poison);
+    if (c.sta <= 0) { c.sta = 0; this.enterCamp('tired'); return; }
+    if (!this.mon) this.spawn();
+    const m = this.mon;
+    if (m.approach > 0) { m.approach -= dt; return; }
+    const iv = d.interval / (gm === 'ice' && !s.pot.warm ? 1 - 0.4 * (1 - d.res.ice) : 1);
+    this.heroTimer -= dt;
+    this.monTimer -= dt;
+    while (this.mon && s.mode === 'fight' && (this.heroTimer <= 0 || this.monTimer <= 0)) {
+      if (this.heroTimer <= this.monTimer) { this.heroTimer += iv; this.heroHit(); }
+      else { this.monTimer += MON_INTERVAL; this.monHit(); }
+    }
+  }
+
+  heroHit() {
+    const s = this.s, c = s.char, d = this.d, m = this.mon;
+    let dmg = d.atk * (0.9 + 0.2 * this.rng());
+    if (s.rb.memory === 'berserk' && c.hp < d.hp * 0.5) dmg *= 1.6;
+    const crit = this.rng() < d.critC;
+    if (crit) dmg *= d.critD;
+    m.hp -= dmg;
+    this.emit({ t: 'hit', who: 'mon', dmg, crit });
+    if (m.hp <= 0) this.kill();
+  }
+
+  monHit() {
+    const c = this.s.char, m = this.mon;
+    if (this.rng() < this.d.dodge) { this.emit({ t: 'miss' }); return; }
+    const dmg = m.atk * (0.9 + 0.2 * this.rng());
+    c.hp -= dmg;
+    this.emit({ t: 'hit', who: 'hero', dmg });
+    if (c.hp <= 0) this.die();
+  }
+
+  kill() {
+    const s = this.s, c = s.char, d = this.d, m = this.mon;
+    const vm = VARIANTS[m.variant] || NO_VARIANT;
+    const bossMul = m.boss ? 10 : 1;
+    s.stats.kills++;
+    this.mon = null;
+    this.charXp(4 * Math.pow(1.14, m.f - 1) * bossMul * vm.xp * d.charXp);
+    const gold = Math.pow(1.13, m.f - 1) * bossMul * vm.gold * d.gold;
+    c.gold += gold;
+    s.stats.gold += gold;
+    this.skillXp('combat', (1 + m.f * 0.08) * (m.boss ? 5 : 1) * this.skillXpMult('combat'));
+    s.skills.combat.n++;
+    const reg = this.region(m.f);
+    if (m.variant || m.boss || this.rng() < 0.4) {
+      const t = this.rollTier('combat', d.luck * (m.variant ? 2 : 1));
+      this.gain(t >= 3 ? SKILL_RARES.combat[t - 3] : reg.mats[t], 1, 'combat');
+    }
+    const sure = m.boss || m.variant === 'giant' || m.variant === 'ancient';
+    if (sure || this.rng() < 0.03) this.dropGear(m);
+    this.emit({ t: 'kill', mon: m, gold });
+    if (m.boss) {
+      s.stats.bosses++;
+      this.log(`${m.f}층 보스 ${m.name} 처치!`, 3);
+    }
+    c.kills++;
+    if (m.boss || c.kills >= KILLS_PER_FLOOR) {
+      c.kills = 0;
+      if (s.time >= c.farmUntil) {
+        c.floor++;
+        if (c.floor > c.maxFloor) {
+          c.maxFloor = c.floor;
+          if (c.maxFloor > s.rb.bestFloor) s.rb.bestFloor = c.maxFloor;
+          if (c.maxFloor === 21 && s.rb.count === 0) this.log('윤회가 해금되었다!', 4);
+        }
+        this.emit({ t: 'floor', floor: c.floor });
+      }
+    }
+  }
+
+  die() {
+    const s = this.s, c = s.char;
+    s.stats.deaths++;
+    this.emit({ t: 'death', floor: c.floor });
+    c.floor = Math.max(1, c.floor - 1);
+    c.kills = 0;
+    c.hp = 0;
+    c.farmUntil = s.time + 180;
+    this.enterCamp('death');
+  }
+
+  rollGearTier(mult, min = 0) {
+    let r = this.rng();
+    for (let t = 6; t >= 2; t--) {
+      const p = TIER_P[t] * (t >= 5 ? Math.sqrt(mult) : mult);
+      if (r < p) return Math.max(min, t);
+      r -= p;
+    }
+    return Math.max(min, r < TIER_P[1] ? 1 : 0);
+  }
+
+  dropGear(m) {
+    const s = this.s, c = s.char;
+    const slot = ['weapon', 'armor', 'charm'][Math.floor(this.rng() * 3)];
+    const tier = this.rollGearTier(this.d.luck, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0);
+    const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0 };
+    const cur = c.gear[slot];
+    if (gearScore(g) > gearScore(cur)) {
+      c.gear[slot] = g;
+      this.dirty = true;
+      this.emit({ t: 'gear', g, equip: true });
+      if (tier >= 2) this.log(`장비 획득: [${TIERS[tier].name}] ${gearName(g)} (${m.f}층)`, tier);
+    } else {
+      const sell = Math.pow(1.13, m.f - 1) * 5 * (tier + 1);
+      c.gold += sell;
+      this.emit({ t: 'gear', g, equip: false, sell });
+    }
+  }
+
+  enhance(slot) {
+    const c = this.s.char, g = c.gear[slot];
+    if (!g) return false;
+    const cost = enhanceCost(g);
+    if (c.gold < cost) return false;
+    c.gold -= cost;
+    g.enh++;
+    this.dirty = true;
+    return true;
+  }
+
+  charXp(x) {
+    const c = this.s.char;
+    c.xp += x;
+    let up = false;
+    while (c.xp >= charXpNeed(c.lv)) {
+      c.xp -= charXpNeed(c.lv);
+      c.lv++;
+      c.pts += 3;
+      up = true;
+    }
+    if (up) {
+      if (c.auto) this.autoAllocate();
+      this.dirty = true;
+      this.emit({ t: 'lv', lv: c.lv });
+    }
+  }
+
+  autoAllocate() {
+    const c = this.s.char, w = PRESETS[c.preset].w;
+    while (c.pts > 0) {
+      let best = null, bestV = Infinity;
+      for (const k in w) {
+        if (!w[k]) continue;
+        const v = (c.st[k] - 5) / w[k];
+        if (v < bestV) { bestV = v; best = k; }
+      }
+      c.st[best]++;
+      c.pts--;
+    }
+    this.dirty = true;
+  }
+  allocate(stat, n = 1) {
+    const c = this.s.char;
+    n = Math.min(n, c.pts);
+    if (n <= 0) return;
+    c.st[stat] += n;
+    c.pts -= n;
+    this.dirty = true;
+  }
+  respec() {
+    const c = this.s.char;
+    for (const k in c.st) { c.pts += c.st[k] - 5; c.st[k] = 5; }
+    if (c.auto) this.autoAllocate();
+    this.dirty = true;
+  }
+
+  // ---------- Slots & settings ----------
+  setSlotSkill(i, k) {
+    const sl = this.s.slots;
+    const other = sl.findIndex((x, j) => j !== i && x.k === k);
+    if (other >= 0) sl[other].k = sl[i].k; // swap so one skill never runs twice
+    sl[i].k = k;
+    sl[i].p = 0;
+    if (other >= 0) sl[other].p = 0;
+  }
+  freeSkill() {
+    const used = new Set(this.s.slots.map(x => x.k));
+    return ['fish', 'wood', 'forage', 'hunt', 'mining', 'alchemy'].find(k => !used.has(k));
+  }
+
+  // ---------- Rebirth ----------
+  canRebirth() { return this.s.char.maxFloor > 20; }
+  rebirth() {
+    if (!this.canRebirth()) return false;
+    const s = this.s, rb = s.rb, old = s.char;
+    const gain = ashFor(old.maxFloor);
+    rb.ash += gain;
+    rb.totalAsh += gain;
+    rb.count++;
+    const start = Math.max(1, Math.min(1 + 5 * this.P('w_start'), rb.bestFloor - 10));
+    s.char = freshChar(start);
+    s.char.preset = old.preset;
+    s.char.auto = old.auto;
+    rb.memory = null;
+    const keys = Object.keys(MEMORIES);
+    const pick = [];
+    while (pick.length < 3) {
+      const k = keys[Math.floor(this.rng() * keys.length)];
+      if (!pick.includes(k)) pick.push(k);
+    }
+    rb.choices = pick;
+    s.pot = {};
+    s.mode = 'fight';
+    this.mon = null;
+    this.calc();
+    s.char.hp = this.d.hp;
+    s.char.sta = this.d.sta;
+    this.log(`윤회 ${rb.count}회차 시작 · 모닥불의 재 +${gain}`, 4);
+    this.emit({ t: 'rebirth', gain });
+    return gain;
+  }
+  chooseMemory(key) {
+    const rb = this.s.rb;
+    if (!rb.choices || !rb.choices.includes(key)) return false;
+    rb.memory = key;
+    rb.choices = null;
+    this.dirty = true;
+    this.log(`전생의 기억: ${MEMORIES[key].name}`, 3);
+    return true;
+  }
+  buyPerk(id) {
+    const rb = this.s.rb, lv = this.P(id), p = PERKS[id];
+    if (p.max && lv >= p.max) return false;
+    const cost = perkCost(id, lv);
+    if (rb.ash < cost) return false;
+    rb.ash -= cost;
+    rb.perks[id] = lv + 1;
+    if (id === 'r_clone') this.s.slots.push({ k: this.freeSkill(), p: 0 });
+    this.dirty = true;
+    return true;
+  }
+
+  // ---------- UI helpers ----------
+  offlineCapSec() { return (OFFLINE_BASE_H + 2 * this.P('r_offline')) * 3600; }
+  goals() {
+    const s = this.s, c = s.char, out = [];
+    if (s.rb.choices) out.push('전생의 기억을 골라주세요 (윤회 탭)');
+    if (c.pts > 0 && !c.auto) out.push(`스탯 포인트 ${c.pts}개를 분배하세요`);
+    if (this.canRebirth() && s.rb.count === 0) out.push('윤회 가능! 윤회 탭을 열어보세요');
+    const nextBoss = Math.ceil((c.floor + (c.floor % 10 === 0 ? 0 : 0)) / 10) * 10 || 10;
+    out.push(`${nextBoss}층 보스 처치`);
+    if (c.maxFloor <= 20 && s.rb.count === 0) out.push('21층 도달 시 윤회 해금');
+    const k = s.slots[0].k, nm = nextMilestones(k, s.skills[k].lv, 1)[0];
+    if (nm) out.push(`${SKILLS[k].name} Lv.${nm.lv} · ${nm.text}`);
+    return out.slice(0, 3);
+  }
+}
+
+return { VERSION, OFFLINE_BASE_H, ACTION_TIME, ALCH_TIME, CLONE_SPEED, KILLS_PER_FLOOR, MON_INTERVAL, xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, perkCost, pity, ashFor, monHp, monAtk, GEAR_GROWTH, gearValue, charmValue, gearScore, gearName, enhanceCost, milestoneAt, nextMilestones, newState, migrate, Game };
+})();
+
+__m.sprites = (() => {
+// Pixel art drawn from character grids, cached as offscreen canvases.
+// '.' is transparent; other characters map to palette colors.
+
+const OUTLINE = '#1e1626';
+
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  if (amt < 0) { r *= 1 + amt; g *= 1 + amt; b *= 1 + amt; }
+  else { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; }
+  return `rgb(${r | 0},${g | 0},${b | 0})`;
+}
+
+
+const BASE_PAL = {
+  o: OUTLINE, w: '#ffffff', e: '#1e1626', m: '#5a1a2a', r: '#ff9a9a',
+  1: '#8a8a96', 2: '#5c5c68', 3: '#9a6a3a', 4: '#6a4424', g: '#4caf50', G: '#2e7d32',
+};
+
+const cache = new Map();
+function makeCanvas(w, h) {
+  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+
+// Render a grid to a canvas. pal maps chars to colors; 'a' gets b/c shades automatically.
+function sprite(name, rows, pal = {}) {
+  const key = name + JSON.stringify(pal);
+  if (cache.has(key)) return cache.get(key);
+  const w = Math.max(...rows.map(r => r.length)), h = rows.length;
+  const p = { ...BASE_PAL, ...pal };
+  if (p.a && !pal.b) p.b = shade(p.a, -0.3);
+  if (p.a && !pal.c) p.c = shade(p.a, 0.35);
+  const cv = makeCanvas(w, h);
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < rows[y].length; x++) {
+      const ch = rows[y][x];
+      if (ch === '.' || ch === ' ') continue;
+      const col = p[ch];
+      if (!col) continue;
+      ctx.fillStyle = col;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  cache.set(key, cv);
+  return cv;
+}
+
+// Draw a sprite rotated around a pivot with nearest-neighbour sampling, so it stays crisp.
+const rotCache = new Map();
+function drawRotated(ctx, img, x, y, px, py, angle, flip = false) {
+  const q = Math.round(angle / (Math.PI / 32));
+  const key = img;
+  let byAngle = rotCache.get(key);
+  if (!byAngle) { byAngle = new Map(); rotCache.set(key, byAngle); }
+  const ck = q + (flip ? 'f' : '') + ',' + px + ',' + py;
+  let entry = byAngle.get(ck);
+  if (!entry) {
+    const a = (q * Math.PI) / 32;
+    const w = img.width, h = img.height;
+    const R = Math.ceil(Math.hypot(Math.max(px, w - px), Math.max(py, h - py))) + 1;
+    const out = makeCanvas(R * 2, R * 2);
+    const octx = out.getContext('2d');
+    const src = img.getContext('2d').getImageData(0, 0, w, h).data;
+    const dst = octx.createImageData(R * 2, R * 2);
+    const cos = Math.cos(-a), sin = Math.sin(-a);
+    for (let dy = 0; dy < R * 2; dy++) {
+      for (let dx = 0; dx < R * 2; dx++) {
+        const rx = dx - R + 0.5, ry = dy - R + 0.5;
+        let sx = Math.floor(rx * cos - ry * sin + px);
+        const sy = Math.floor(rx * sin + ry * cos + py);
+        if (flip) sx = w - 1 - sx;
+        if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;
+        const si = (sy * w + sx) * 4, di = (dy * R * 2 + dx) * 4;
+        if (src[si + 3] === 0) continue;
+        dst.data[di] = src[si]; dst.data[di + 1] = src[si + 1]; dst.data[di + 2] = src[si + 2]; dst.data[di + 3] = 255;
+      }
+    }
+    octx.putImageData(dst, 0, 0);
+    entry = { c: out, R };
+    byAngle.set(ck, entry);
+  }
+  ctx.drawImage(entry.c, Math.round(x - entry.R), Math.round(y - entry.R));
+}
+
+// ---------------- Characters ----------------
+const HERO = [
+  '....ooooo.....',
+  '..oohhhhhoo...',
+  '.ohhhhhhhhho..',
+  'ohhhhhhhhhhho.',
+  'ohhhhssssssho.',
+  'ohhhssssesseso',
+  'ohhhssssesseso',
+  'ohhhsssrssssro',
+  '.ohhhssssssso.',
+  '..ohhhoooooo..',
+  '..ohhttttttoo.',
+  '.ohhttttttttо.'.replace('о', 'o'),
+  '.ohhtbbbbbbto.',
+  '.ohhtttttttto.',
+  '..ohhppppppo..',
+  '...oppo.oppo..',
+  '...offo.offo..',
+  '...oooo.oooo..',
+];
+const HERO_STEP = [
+  '..ohhppppppo..',
+  '..oppo...oppo.',
+  '..offo...offo.',
+  '..oooo...oooo.',
+];
+const HERO_CROUCH = [
+  '..ohhppppppo..',
+  '.oppppoopppo..',
+  '.ooooo.ooooo..',
+];
+const HERO_PAL = {
+  h: '#3f9a5c', s: '#ffd8b0', t: '#efe9d8', b: '#7a4a2a', p: '#4a4a72', f: '#5a3a24',
+};
+const CLONE_PAL = {
+  h: '#6aa8ff', s: '#cfe6ff', t: '#e8f2ff', b: '#4a6ab8', p: '#4a5aa8', f: '#3a4a8a',
+};
+
+const MON = {
+  slime: [
+    '....oooooo....',
+    '..ooccaaaaoo..',
+    '.ocwcaaaaaaao.',
+    '.ocaaaaaaaaao.',
+    'oaaaaeaaaeaaao',
+    'oaaaaeaaaeaaao',
+    'oaaaaaaaaaaabo',
+    'oaaaaaammaaabo',
+    'obaaaaaaaaabbo',
+    '.obbbbbbbbbbo.',
+    '..oooooooooo..',
+  ],
+  shroom: [
+    '.....oooo.....',
+    '...oorrrroo...',
+    '..orrwwrrrro..',
+    '.orrwwrrrwwro.',
+    '.orrrrrrrwwrro',
+    'orwwrrrrrrrrro',
+    'orrrrrrwwrrrro',
+    'oooooooooooooo',
+    '...osssssso...',
+    '...oseSsseo...',
+    '...ossssssо...'.replace('о', 'o'),
+    '...osssmmso...',
+    '...ossssssо...'.replace('о', 'o'),
+    '...oSSooSSo...',
+    '...oooooooo...',
+  ],
+  frog: [
+    '..oo....oo....',
+    '.oweo..oweo...',
+    '.oaaooooaao...',
+    'oaaaaaaaaaaoo.',
+    'oaaaaaaaaaaaao',
+    'oammmmmmmmaaao',
+    'oacccccccaaaao',
+    'oaccccccccaaao',
+    '.oaccccccaaao.',
+    'oaaoo....ooaao',
+    'ooooo....ooooo',
+  ],
+  bat: [
+    'oo............oo',
+    'oaoo........ooao',
+    'oaaaoo.oo.ooaaao',
+    '.oaaaaoaaoaaaao.',
+    '..oaaaaaaaaaao..',
+    '...oaaraaraao...',
+    '....oaawwaao....',
+    '.....oaaaao.....',
+    '......oooo......',
+  ],
+  bat2: [
+    '................',
+    '................',
+    '.......oo.......',
+    '......oaao......',
+    '..oooaaaaaaooo..',
+    '.oaaaaraaraaaao.',
+    'oaaaoaawwaaoaaao',
+    'oaao.oaaaao.oaao',
+    'ooo...oooo...ooo',
+  ],
+  yeti: [
+    '.....oooooo.....',
+    '...ooaaaaaaoo...',
+    '..oaaaaaaaaaao..',
+    '.oaaaaaaaaaaaao.',
+    '.oaaffffffffaao.',
+    '.oaffefffeffao..',
+    '.oaffffffffffao.',
+    '.oaafwmwmwwfaao.',
+    '..oaaffffffaao..',
+    '.ooaaaaaaaaaaoo.',
+    'oaaoaaaaaaaaoaao',
+    'oaaoaaccccaaoaao',
+    'oaaoaccccccaoaao',
+    'oaaoaccccccaoaao',
+    '.oo.oaaaaaao.oo.',
+    '....oaaooaao....',
+    '...oaaao.oaaao..',
+    '...ooooo.ooooo..',
+  ],
+};
+const MON_BASE_PAL = {
+  slime: { a: '#7ae05a' },
+  shroom: { r: '#e8553d', s: '#f6e6cc', S: '#d8c0a0' },
+  frog: { a: '#9a5ad8' },
+  bat: { a: '#6a8ab8', r: '#ff4a6a' },
+  bat2: { a: '#6a8ab8', r: '#ff4a6a' },
+  yeti: { a: '#e8f0ff', f: '#9ab0d8', c: '#ffffff' },
+};
+
+const CROWN = [
+  'o.o.o.o',
+  'oyoyoyo',
+  'oyyryyo',
+  'ooooooo',
+];
+
+// Animals for hunting.
+const ANIMALS = {
+  rabbit: [
+    '...oo.oo..',
+    '...oaooao.',
+    '...oaooao.',
+    '..oaaaaaao',
+    '.oaaaaeaao',
+    'oaaaaaaaro',
+    'oaaaaaaao.',
+    '.oaaaaaao.',
+    '.oo.oo.oo.',
+  ],
+  deer: [
+    'y.y.......y.y.',
+    '.yy.......yy..',
+    '..yy.....yy...',
+    '...oooooooo...',
+    '..oaaaaaaeao..',
+    '..oaaaaaaaaaro',
+    '...oaaaaaaoo..',
+    'ooaaaaaaaao...',
+    'oaaaaaaaaao...',
+    '.oaaaaaaaao...',
+    '.oao.oao.oao..',
+    '.oo..oo..oo...',
+  ],
+};
+
+// ---------------- Tools (held upright; pivot is the bottom of the handle) ----------------
+const TOOLS = {
+  pick: [
+    '..ooooooo..',
+    '.oaaaaaaao.',
+    'oaao.d.oaao',
+    'oo...d...oo',
+    '.....d.....',
+    '.....d.....',
+    '.....d.....',
+    '.....d.....',
+    '.....d.....',
+    '.....D.....',
+  ],
+  axe: [
+    '...oooo.',
+    '..oaaaao',
+    '.oaaaaao',
+    '.oaaado.',
+    '..oood..',
+    '....d...',
+    '....d...',
+    '....d...',
+    '....d...',
+    '....D...',
+  ],
+  sword: [
+    '..o..',
+    '.oao.',
+    '.oao.',
+    '.oao.',
+    '.oao.',
+    '.oao.',
+    '.oao.',
+    'ooooo',
+    'oyyyo',
+    '.odo.',
+    '.oDo.',
+  ],
+  sickle: [
+    '.oooo...',
+    'oaaaao..',
+    'oo..oao.',
+    '.....oo.',
+    '....d...',
+    '....d...',
+    '....d...',
+    '....D...',
+  ],
+  rod: [
+    'a',
+    'd',
+    'd',
+    'a',
+    'd',
+    'd',
+    'd',
+    'd',
+    'd',
+    'd',
+    'D',
+    'D',
+  ],
+  ladle: [
+    '.ooo.',
+    'oaaao',
+    'oaaao',
+    '.odo.',
+    '..d..',
+    '..d..',
+    '..d..',
+    '..d..',
+    '..D..',
+  ],
+};
+const TOOL_PIVOT = { pick: [5, 9], axe: [4, 9], sword: [2, 10], sickle: [4, 7], rod: [0, 11], ladle: [2, 8] };
+const TOOL_FOR = { combat: 'sword', mining: 'pick', wood: 'axe', forage: 'sickle', fish: 'rod', hunt: 'bow', alchemy: 'ladle' };
+const WOOD_PAL = { d: '#9a6a3a', D: '#6a4424', y: '#ffd34d' };
+
+const BOW = [
+  '.oo..',
+  'oaao.',
+  '.oao.',
+  '..oao',
+  '..oao',
+  '..oao',
+  '..oao',
+  '.oao.',
+  'oaao.',
+  '.oo..',
+];
+
+// ---------------- Item icons (12x12) ----------------
+const ICONS = {
+  ore: [
+    '............',
+    '....oooo....',
+    '..oo1111oo..',
+    '.o11a1111ao.',
+    '.o1aa11111o.',
+    'o111111aa12o',
+    'o1a1111aa12o',
+    'o11aa111112o',
+    '.o11111a12o.',
+    '.o22222222o.',
+    '..oooooooo..',
+    '............',
+  ],
+  gem: [
+    '............',
+    '...oooooo...',
+    '..owccacao..',
+    '.owcaaaaabo.',
+    '.ocaaaaaabbo',
+    '..oaaaaabbo.',
+    '...oaaabbo..',
+    '....oabbo...',
+    '.....obo....',
+    '......o.....',
+    '............',
+    '............',
+  ],
+  log: [
+    '............',
+    '............',
+    '..ooooooooo.',
+    '.obbbbbbbocco',
+    'obaaaaaaoc44co',
+    'obaaaaaaoc44co',
+    '.obbbbbbbocco',
+    '..ooooooooo.',
+    '............',
+    '............',
+    '............',
+    '............',
+  ].map(r => r.slice(0, 12)),
+  drop: [
+    '.....oo.....',
+    '....oco.....',
+    '....oaco....',
+    '...oacaao...',
+    '..oacaaaao..',
+    '..ocaaaaao..',
+    '.ocwaaaaabo.',
+    '.oaaaaaaabo.',
+    '.oaaaaaabbo.',
+    '..obbbbbbo..',
+    '...oooooo...',
+    '............',
+  ],
+  leaf: [
+    '.......ooo..',
+    '.....ooccao.',
+    '...oocaaaao.',
+    '..ocaaaaaao.',
+    '.ocaaaGaaao.',
+    '.oaaaGaaabo.',
+    '.oaaGaaabo..',
+    '.oaGaaabo...',
+    '.oGabbbo....',
+    'oGoooo......',
+    'oo..........',
+    '............',
+  ],
+  flower: [
+    '............',
+    '...oo.oo....',
+    '..oaaoaao...',
+    '..oaayaao...',
+    '.oaayyyaao..',
+    '..oaayaao...',
+    '..oaaoaao...',
+    '...ooGoo....',
+    '...ogGo.....',
+    '....oGgo....',
+    '....oGoo....',
+    '.....o......',
+  ],
+  mushroom: [
+    '............',
+    '....oooo....',
+    '..ooaaaaoo..',
+    '.oawwaaawao.',
+    'oaaaaaawwaao',
+    'oawwaaaaaaao',
+    'oooooooooooo',
+    '...osssso...',
+    '...osssso...',
+    '...osssso...',
+    '...oooooo...',
+    '............',
+  ],
+  fish: [
+    '............',
+    '............',
+    '....ooooo...',
+    '..ooccccaoo.',
+    'oooaaaaaaaeo',
+    'ocoaaaaaaaao',
+    'ocoaaaaaaao.',
+    'oooobbbbboo.',
+    '...ooooo....',
+    '............',
+    '............',
+    '............',
+  ],
+  meat: [
+    '............',
+    '....ooooo...',
+    '...oaaacao..',
+    '..oaacaaaao.',
+    '..oaaaaaaao.',
+    '..obaaaaabo.',
+    '...obbbbbo..',
+    '....oowoo...',
+    '.....owo....',
+    '....owwwo...',
+    '....ooooo...',
+    '............',
+  ],
+  hide: [
+    '............',
+    '.oo......oo.',
+    '.oaooooooao.',
+    '..oaaaaaao..',
+    '.oacaaaaaao.',
+    '.oaaaaacaao.',
+    '.oaacaaaaao.',
+    '..oaaaaaao..',
+    '.oaobbbboao.',
+    '.oo.oooo.oo.',
+    '............',
+    '............',
+  ],
+  feather: [
+    '..........o.',
+    '........ooao',
+    '.......ocaao',
+    '......ocaabo',
+    '.....ocaabo.',
+    '....ocaabo..',
+    '...ocaabo...',
+    '..ocabbo....',
+    '..oabbo.....',
+    '.o4oo.......',
+    'o4o.........',
+    '.o..........',
+  ],
+  horn: [
+    '.........oo.',
+    '........oco.',
+    '.......ocao.',
+    '......ocabo.',
+    '.....ocaabo.',
+    '....ocaabo..',
+    '...ocaaabo..',
+    '..ocaaabo...',
+    '.ocaaabbo...',
+    '.oabbbbo....',
+    '.oooooo.....',
+    '............',
+  ],
+  potion: [
+    '....oooo....',
+    '....o44o....',
+    '....owwo....',
+    '...oowwoo...',
+    '..owcaaaao..',
+    '.owcaaaaabo.',
+    '.ocaaaaaabo.',
+    '.oaaaaaaabo.',
+    '.oaaaaaabbo.',
+    '..obbbbbbo..',
+    '...oooooo...',
+    '............',
+  ],
+  elixir: [
+    '.....oo.....',
+    '....oyyo....',
+    '....owwo....',
+    '...owcawo...',
+    '..owcaaaao..',
+    '.owcaaaaabo.',
+    'oycaaaaaabyo',
+    '.oaaaaaaabo.',
+    '..oaaaaabo..',
+    '...obbbbo...',
+    '....oooo....',
+    '............',
+  ],
+  orb: [
+    '............',
+    '....oooo....',
+    '..ooccaaoo..',
+    '.ocwcaaaaao.',
+    '.ocwaaaaaao.',
+    'ocaaaaaaaabo',
+    'oaaaaaaaaabo',
+    'oaaaaaaaabbo',
+    '.oaaaaaabbo.',
+    '.obbbbbbbbo.',
+    '..oooooooo..',
+    '............',
+  ],
+  scale: [
+    '............',
+    '.....oo.....',
+    '...ooccoo...',
+    '..ocaaaaco..',
+    '.ocaaaaaaao.',
+    '.oaaaaaaaao.',
+    '.oaobbbboao.',
+    '.oaaaaaaaao.',
+    '..oaaaaaao..',
+    '...obbbbo...',
+    '....oooo....',
+    '............',
+  ],
+  shell: [
+    '............',
+    '....oooo....',
+    '..oocaaaoo..',
+    '.ocabababao.',
+    '.oaabababao.',
+    'ocabababaabo',
+    'oaababababbo',
+    '.oaabababbo.',
+    '..ooaaabboo.',
+    '....oooo....',
+    '............',
+    '............',
+  ],
+  seed: [
+    '............',
+    '.....oo.....',
+    '...oo44oo...',
+    '..o444444o..',
+    '..oooooooo..',
+    '..ocaaaaao..',
+    '..oaaaaaao..',
+    '..oaaaaabo..',
+    '...oaaabo...',
+    '....obbo....',
+    '.....oo.....',
+    '............',
+  ],
+  root: [
+    '.....oGo....',
+    '....oGgGo...',
+    '.....oGo....',
+    '....ooaoo...',
+    '...ocaaaao..',
+    '...oaaaaao..',
+    '....oaaao...',
+    '...oaobaoo..',
+    '..oaooboao..',
+    '..oo.oboo...',
+    '.....oo.....',
+    '............',
+  ],
+  tentacle: [
+    '.........oo.',
+    '........oaao',
+    '.......oawao',
+    '......oaaao.',
+    '.....oawao..',
+    '....oaaao...',
+    '...oawao....',
+    '..oaaao.....',
+    '.oawao......',
+    'oaaao.......',
+    'oao.........',
+    'oo..........',
+  ],
+  chest: [
+    '............',
+    '............',
+    '..oooooooo..',
+    '.oaaaaaaaao.',
+    'oaaaaaaaaaao',
+    'oooooyyooooo',
+    'oaaaaoyoaaao',
+    'oaaaaaoaaaao',
+    'oaaaaaaaaaao',
+    'oooooooooooo',
+    '............',
+    '............',
+  ],
+  charm: [
+    '....oooo....',
+    '...o....o...',
+    '...o....o...',
+    '....oooo....',
+    '...oaaaao...',
+    '..oacaaaao..',
+    '..oaayyaao..',
+    '..oaayyaao..',
+    '..oaaaaabo..',
+    '...obbbbo...',
+    '....oooo....',
+    '............',
+  ],
+  jelly: [
+    '............',
+    '............',
+    '....oooo....',
+    '..oocaaaoo..',
+    '.ocwcaaaaao.',
+    '.ocaaaaaaao.',
+    'oaaaaaaaaabo',
+    'oaaaaaaaabbo',
+    '.obbbbbbbbo.',
+    '..oooooooo..',
+    '............',
+    '............',
+  ],
+  star: [
+    '.....oo.....',
+    '.....oyo....',
+    '....oyyo....',
+    'ooooyyyyoooo',
+    'oyyyywwyyyyo',
+    '.oyyywwyyyo.',
+    '..oyyyyyyo..',
+    '..oyyooyyo..',
+    '.oyyo..oyyo.',
+    '.oyo....oyo.',
+    '.oo......oo.',
+    '............',
+  ],
+  sprout: [
+    '............',
+    '.ooo...ooo..',
+    'oaaao.oaaao.',
+    'oacaaoaacao.',
+    '.oaaaoaaao..',
+    '..ooaaaoo...',
+    '....oao.....',
+    '....oao.....',
+    '..oo444oo...',
+    '.o4444444o..',
+    '..ooooooo...',
+    '............',
+  ],
+  clover: [
+    '............',
+    '..ooo.ooo...',
+    '.oaaaoaaao..',
+    '.oaacoacao..',
+    '..oooaooo...',
+    '.oaaaoaaao..',
+    '.oacaoacao..',
+    '..ooo.ooo...',
+    '.....oGo....',
+    '......oGo...',
+    '.......oo...',
+    '............',
+  ],
+  whale: [
+    '............',
+    '..o.o.......',
+    '...o........',
+    '...ooooooo..',
+    '.ooaaaaaaaoo',
+    'oaaaaaaaaeao',
+    'oaaaaaaaaaao',
+    'occcccccaaao',
+    '.occcccaaao.',
+    '..oooooooaoo',
+    '........ooao',
+    '..........oo',
+  ],
+  deer: [
+    'o.o....o.o..',
+    '.oa....ao...',
+    '..oa..ao....',
+    '...oaao.....',
+    '...oaaaao...',
+    '..oaaeaaao..',
+    '..oaaaaaao..',
+    '...oaaaao...',
+    '...oaaao....',
+    '....oaro....',
+    '.....oo.....',
+    '............',
+  ],
+  stone: [
+    '............',
+    '....oooo....',
+    '...ocwaao...',
+    '..ocwaaaao..',
+    '.ocaaaaaaao.',
+    '.oaaaayaaao.',
+    '.oaaayyyaao.',
+    '.oaaaayaabo.',
+    '..oaaaaabo..',
+    '...obbbbo...',
+    '....oooo....',
+    '............',
+  ],
+  sword: [
+    '..........oo',
+    '.........oco',
+    '........ocao',
+    '.......ocao.',
+    '......ocao..',
+    '.....ocao...',
+    '.o..ocao....',
+    '.ooocao.....',
+    '..oyoo......',
+    '.oyoo.......',
+    'o4oo........',
+    'oo..........',
+  ],
+  armor: [
+    '............',
+    '..oo....oo..',
+    '.oaaoooooao.',
+    '.oaaaaaaaao.',
+    '.ocaaaaaaao.',
+    '..ocaaaaao..',
+    '..oaaaaaao..',
+    '..oaayyaao..',
+    '..oaaaaaao..',
+    '..obbbbbbo..',
+    '..oooooooo..',
+    '............',
+  ],
+  pick: [
+    '............',
+    '...ooooo....',
+    '..oaaaaaoo..',
+    '.oao...oaao.',
+    '.oo...o4o.oo',
+    '.....o4o....',
+    '....o4o.....',
+    '...o4o......',
+    '..o4o.......',
+    '.o4o........',
+    '.oo.........',
+    '............',
+  ],
+  axe: [
+    '............',
+    '.....oooo...',
+    '....oaaaao..',
+    '...oaaaaao..',
+    '...oaaao4o..',
+    '....ooo4o...',
+    '......o4o...',
+    '.....o4o....',
+    '....o4o.....',
+    '...o4o......',
+    '...oo.......',
+    '............',
+  ],
+  bow: [
+    '...ooo......',
+    '..oaao.o....',
+    '.oao...w....',
+    '.oao...w....',
+    'oao....w....',
+    'oaoooooooooo',
+    'oao....w....',
+    '.oao...w....',
+    '.oao...w....',
+    '..oaao.o....',
+    '...ooo......',
+    '............',
+  ],
+  camp: [
+    '............',
+    '.....oo.....',
+    '....oyyo....',
+    '...oyrryo...',
+    '...oyrrryo..',
+    '..oyrrwryo..',
+    '..oyrwwryo..',
+    '...oyyyyo...',
+    '.o44oooo44o.',
+    'o4444444444o',
+    '.oooooooooo.',
+    '............',
+  ],
+  book: [
+    '............',
+    '.oooooooooo.',
+    '.oaaaaaaaaoo',
+    '.oacwwwwaaoo',
+    '.oaaaaaaaaoo',
+    '.oacwwwaaaoo',
+    '.oaaaaaaaaoo',
+    '.oaaaayyaaoo',
+    '.oaaaayyaaoo',
+    '.obbbbbbbboo',
+    '.ooowwwwwwoo',
+    '..oooooooooo',
+  ],
+  bag: [
+    '............',
+    '....oooo....',
+    '...o4..4o...',
+    '..oooooooo..',
+    '.ocaaaaaaao.',
+    '.oaaayyaaao.',
+    '.oaaaoyaaao.',
+    '.oaaaaaaaao.',
+    '.oaaaaaaabo.',
+    '.obbbbbbbbo.',
+    '..oooooooo..',
+    '............',
+  ],
+  person: [
+    '............',
+    '....oooo....',
+    '...ohhhho...',
+    '..ohhssssho.',
+    '..ohsseseo..',
+    '..ohssssso..',
+    '...ooooo....',
+    '..otttttto..',
+    '.otttttttto.',
+    '.ottbbbbtto.',
+    '.otttttttto.',
+    '.oooooooooo.',
+  ],
+  scroll: [
+    '............',
+    '.oooooooooo.',
+    'o4444444444o',
+    '.owwwwwwwwo.',
+    '.ow11w111wo.',
+    '.owwwwwwwwo.',
+    '.ow111w11wo.',
+    '.owwwwwwwwo.',
+    '.ow11111wwo.',
+    'o4444444444o',
+    '.oooooooooo.',
+    '............',
+  ],
+  gear: [
+    '............',
+    '.....oo.....',
+    '..oo.oo.oo..',
+    '..o1o11o1o..',
+    '...o1111o...',
+    '.oo11oo11oo.',
+    '.oo11oo11oo.',
+    '...o1111o...',
+    '..o1o11o1o..',
+    '..oo.oo.oo..',
+    '.....oo.....',
+    '............',
+  ],
+  cycle: [
+    '............',
+    '....ooooo...',
+    '...oaaaaao..',
+    '..oao...oao.',
+    '.oao.....oo.',
+    'oaaao.......',
+    '.oao.....oao',
+    '..o.....oaaao',
+    '.........oao.',
+    '..oao...oao..',
+    '...oaaaaao...',
+    '....ooooo....',
+  ].map(r => r.slice(0, 12)),
+  moon: [
+    '............',
+    '....oooo....',
+    '..oowwwoo...',
+    '.owwwoo.....',
+    '.owwo.......',
+    'owwo........',
+    'owwo........',
+    '.owwo.......',
+    '.owwwoo.....',
+    '..oowwwoo...',
+    '....oooo....',
+    '............',
+  ],
+};
+
+function icon(template, color, extra = {}) {
+  return sprite('icon:' + template, ICONS[template] || ICONS.orb, {
+    a: color, y: '#ffd34d', s: '#f6e6cc', h: '#3f9a5c', t: '#efe9d8', b2: '#7a4a2a', ...extra,
+  });
+}
+
+// ---------------- Bitmap font for damage numbers ----------------
+const FONT = {
+  0: ['111', '101', '101', '101', '111'], 1: ['010', '110', '010', '010', '111'],
+  2: ['111', '001', '111', '100', '111'], 3: ['111', '001', '111', '001', '111'],
+  4: ['101', '101', '111', '001', '001'], 5: ['111', '100', '111', '001', '111'],
+  6: ['111', '100', '111', '101', '111'], 7: ['111', '001', '001', '010', '010'],
+  8: ['111', '101', '111', '101', '111'], 9: ['111', '101', '111', '001', '111'],
+  K: ['101', '110', '100', '110', '101'], M: ['10001', '11011', '10101', '10001', '10001'],
+  B: ['110', '101', '110', '101', '110'], T: ['111', '010', '010', '010', '010'],
+  E: ['111', '100', '111', '100', '111'], '.': ['0', '0', '0', '0', '1'],
+  '+': ['000', '010', '111', '010', '000'], '-': ['000', '000', '111', '000', '000'],
+  '!': ['1', '1', '1', '0', '1'], ' ': ['00', '00', '00', '00', '00'],
+  x: ['000', '101', '010', '101', '000'], g: ['111', '100', '101', '101', '111'],
+  P: ['111', '101', '111', '100', '100'], X: ['101', '101', '010', '101', '101'],
+  L: ['100', '100', '100', '100', '111'], V: ['101', '101', '101', '101', '010'],
+  S: ['111', '100', '111', '001', '111'], I: ['111', '010', '010', '010', '111'], U: ['101', '101', '101', '101', '111'],
+  k: ['100', '101', '110', '101', '101'],
+};
+function textWidth(str, scale = 1) {
+  let w = 0;
+  for (const ch of str) w += ((FONT[ch] || FONT[' '])[0].length + 1) * scale;
+  return w - scale;
+}
+function drawText(ctx, str, x, y, color, scale = 1, outline = OUTLINE) {
+  const w = textWidth(str, scale);
+  let cx = Math.round(x - w / 2);
+  y = Math.round(y);
+  for (const ch of str) {
+    const g = FONT[ch] || FONT[' '];
+    const gw = g[0].length;
+    // outline pass
+    ctx.fillStyle = outline;
+    for (let r = 0; r < 5; r++) for (let c = 0; c < gw; c++) {
+      if (g[r][c] !== '1') continue;
+      ctx.fillRect(cx + (c - 1) * scale, y + (r - 1) * scale, scale * 3, scale * 3);
+    }
+    cx += (gw + 1) * scale;
+  }
+  cx = Math.round(x - w / 2);
+  ctx.fillStyle = color;
+  for (const ch of str) {
+    const g = FONT[ch] || FONT[' '];
+    const gw = g[0].length;
+    for (let r = 0; r < 5; r++) for (let c = 0; c < gw; c++) {
+      if (g[r][c] === '1') ctx.fillRect(cx + c * scale, y + r * scale, scale, scale);
+    }
+    cx += (gw + 1) * scale;
+  }
+}
+
+return { OUTLINE, sprite, drawRotated, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW, ICONS, icon, textWidth, drawText, shade };
+})();
+
+__m.render = (() => {
+// Canvas renderer: parallax backgrounds, the battle scene, the campfire scene with
+// animated life-skill stations, clone insets, floaters and rare-drop effects.
+const { sprite, drawRotated, drawText, icon, shade, OUTLINE, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW } = __m.sprites;
+const { ITEMS, TIERS, MONSTERS, TOOL_TIERS, REGIONS } = __m.data;
+const { toolTier } = __m.engine;
+
+const W = 384, H = 216, GROUND = 178;
+const GEAR_COLORS = ['#c8ccd8', '#9ae0a0', '#8ac8ff', '#d8a8ff', '#ffd27a', '#ff8aa8', '#bffcff'];
+
+// Deterministic noise for terrain.
+function noise(i, seed) {
+  const x = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+function smooth(x, seed) {
+  const i = Math.floor(x), f = x - i;
+  const a = noise(i, seed), b = noise(i + 1, seed);
+  return a + (b - a) * (f * f * (3 - 2 * f));
+}
+function mk(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+const lerp = (a, b, t) => a + (b - a) * t;
+function mixHex(a, b, t) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const r = lerp((pa >> 16) & 255, (pb >> 16) & 255, t), g = lerp((pa >> 8) & 255, (pb >> 8) & 255, t), bl = lerp(pa & 255, pb & 255, t);
+  return `rgb(${r | 0},${g | 0},${bl | 0})`;
+}
+
+const THEMES = {
+  meadow: { far: '#7a9ad8', mid: '#5aa85a', mid2: '#3f8a4a', top: '#6ad04a', topD: '#3f9a3a', dirt: '#a8743a', dirtD: '#7a4e24' },
+  swamp: { far: '#6a5a8a', mid: '#4a5a4a', mid2: '#384838', top: '#6a8a4a', topD: '#4a6a3a', dirt: '#5a4a3a', dirtD: '#3a2e24' },
+  ice: { far: '#5a7ab8', mid: '#8ab8e8', mid2: '#6a98d0', top: '#d8f0ff', topD: '#a8d0f0', dirt: '#5a78a8', dirtD: '#3a5888' },
+  tower: { far: '#3a2a5a', mid: '#4a3a6a', mid2: '#2e2448', top: '#8a6ac8', topD: '#5a4a8a', dirt: '#3a2a4a', dirtD: '#24182e' },
+  camp: { far: '#7a8ac8', mid: '#4a8a5a', mid2: '#3a6a4a', top: '#5ac04a', topD: '#3a8a3a', dirt: '#9a6a3a', dirtD: '#6a4424' },
+};
+
+function skyColors(hour, theme) {
+  if (theme === 'ice') return ['#1a2a4a', '#3a5a8a'];
+  if (theme === 'tower') return ['#120a24', '#3a2458'];
+  let top, bot;
+  if (hour >= 20 || hour < 5) { top = '#141a3a'; bot = '#2e3468'; }
+  else if (hour < 7) { top = '#5a6ab8'; bot = '#f6a37a'; }
+  else if (hour < 17) { top = '#5ab4ff'; bot = '#c8ecff'; }
+  else { top = '#6a5a9a'; bot = '#ff9a6a'; }
+  if (theme === 'swamp') { top = mixHex(top, '#4a3a6a', 0.45); bot = mixHex(bot, '#8a9a7a', 0.45); }
+  return [top, bot];
+}
+
+class Renderer {
+  constructor(canvas, overlay, game) {
+    this.cv = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.ov = overlay;
+    this.g = game;
+    this.t = 0;
+    this.scroll = 0;
+    this.floaters = [];
+    this.parts = [];
+    this.pops = [];
+    this.shake = 0;
+    this.flash = 0;
+    this.flashColor = '#fff';
+    this.timeScale = 1;
+    this.fxQueue = [];
+    this.fx = null;
+    this.heroAnim = { swing: 0, hurt: 0, levelUp: 0 };
+    this.monAnim = { hurt: 0, dying: 0, last: null };
+    this.slotVis = [];
+    this.layers = new Map();
+    this.clones = [];
+    this.soot = 0;
+    this.lastMode = null;
+    this.modeFade = 0;
+    this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.makeOverlay();
+  }
+
+  makeOverlay() {
+    this.ov.innerHTML = `
+      <div class="nametag" id="nameTag"><span class="nm">모험가</span><span class="badge" id="titleBadge">새내기</span></div>
+      <div class="monname" id="monName" hidden></div>
+      <div class="bubble" id="bubble" hidden></div>
+      <div class="banner" id="banner" hidden></div>
+      <div class="blackout" id="blackout" hidden></div>`;
+    this.el = {
+      name: this.ov.querySelector('#nameTag'), title: this.ov.querySelector('#titleBadge'),
+      mon: this.ov.querySelector('#monName'), bubble: this.ov.querySelector('#bubble'),
+      banner: this.ov.querySelector('#banner'), blackout: this.ov.querySelector('#blackout'),
+    };
+  }
+
+  // Position an overlay element at internal canvas coordinates.
+  place(el, x, y) {
+    el.style.left = (x / W) * 100 + '%';
+    el.style.top = (y / H) * 100 + '%';
+  }
+
+  say(text, ms = 3500) {
+    const b = this.el.bubble;
+    b.textContent = text;
+    b.hidden = false;
+    clearTimeout(this.sayT);
+    this.sayT = setTimeout(() => { b.hidden = true; }, ms);
+  }
+
+  // ---------- Event intake ----------
+  handle(events) {
+    const s = this.g.s;
+    for (const e of events) {
+      switch (e.t) {
+        case 'hit':
+          if (e.who === 'mon') {
+            this.heroAnim.swing = 0.22;
+            this.monAnim.hurt = 0.15;
+            this.floater(fmtShort(e.dmg) + (e.crit ? '!' : ''), 236 + rnd(-8, 8), 140 + rnd(-6, 4), e.crit ? '#ff6ad5' : '#fff2a8', e.crit ? 2 : 1);
+            if (e.crit && !this.reduced) this.shake = Math.max(this.shake, 0.12);
+          } else {
+            this.heroAnim.hurt = 0.2;
+            this.floater('-' + fmtShort(e.dmg), 150 + rnd(-4, 4), 140, '#ff5a5a', 1);
+          }
+          break;
+        case 'miss': this.floater('MISS', 150, 136, '#a8d8ff', 1); break;
+        case 'kill':
+          this.monAnim.dying = 0.35;
+          this.monAnim.last = e.mon;
+          this.burst(236, 160, MON_BASE_PAL[MONSTERS[e.mon.key].sprite]?.a || '#fff', 10);
+          this.floater('+' + fmtShort(e.gold) + 'g', 236, 128, '#ffd34d', 1);
+          break;
+        case 'lv':
+          this.heroAnim.levelUp = 1.2;
+          this.floater('LV UP', 157, 118, '#ffe066', 2);
+          this.ring(157, 168, '#ffe066');
+          break;
+        case 'drop':
+          if (e.src === 'combat') this.pop(e.id, 236, 160);
+          this.rareFx(e.id);
+          break;
+        case 'gear':
+          if (e.equip) this.say('좋은 장비다! 바로 장착!', 2500);
+          break;
+        case 'act': {
+          const v = this.vis(e.slot);
+          v.last = this.t;
+          v.kind = e.kind || 'ok';
+          v.id = e.id;
+          if (e.k === 'hunt') { v.arrow = 0.35; v.animal = null; }
+          if (e.k === 'alchemy' && e.kind === 'fail' && e.slot === 0) this.soot = 3;
+          if (e.slot === 0 && this.g.s.mode === 'camp') this.pop(e.id, 205, 160, e.n);
+          else if (e.slot > 0) v.pop = { id: e.id, t: 0 };
+          break;
+        }
+        case 'record': this.say(`신기록! ${ITEMS[e.id].name} ${e.w}kg!`, 3500); break;
+        case 'camp': this.say(e.reason === 'death' ? '으윽… 모닥불로 후퇴!' : e.reason === 'tired' ? '헉헉, 잠깐 쉬자…' : '야영 준비!', 2500); break;
+        case 'death': this.flash = 0.25; this.flashColor = '#ff3a3a'; break;
+        case 'secret': this.queueFx({ tier: 5, id: 'x_secret', text: '미지의 레시피 발견!' }); break;
+        case 'rebirth': this.queueFx({ tier: 4, id: 'p_luck', text: `윤회! 모닥불의 재 +${e.gain}` }); break;
+      }
+    }
+  }
+
+  vis(i) {
+    if (!this.slotVis[i]) this.slotVis[i] = { last: -9, kind: 'ok', id: null, arrow: 0, animal: null };
+    return this.slotVis[i];
+  }
+  floater(text, x, y, color, scale) {
+    this.floaters.push({ text, x, y, color, scale, t: 0, life: scale > 1 ? 1.1 : 0.9 });
+    if (this.floaters.length > 40) this.floaters.shift();
+  }
+  burst(x, y, color, n) {
+    if (this.reduced) return;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, sp = 20 + Math.random() * 50;
+      this.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30, g: 120, life: 0.6, t: 0, color, size: 1 + (Math.random() < 0.3) });
+    }
+  }
+  ring(x, y, color) {
+    if (this.reduced) return;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      this.parts.push({ x, y, vx: Math.cos(a) * 40, vy: Math.sin(a) * 18 - 10, g: 0, life: 0.7, t: 0, color, size: 1 });
+    }
+  }
+  pop(id, x, y, n = 1) {
+    const it = ITEMS[id];
+    if (!it) return;
+    this.pops.push({ id, x, y, tx: 157, t: 0, n });
+    if (this.pops.length > 12) this.pops.shift();
+  }
+
+  rareFx(id) {
+    const it = ITEMS[id];
+    if (!it || it.tier < 2) return;
+    if (it.tier === 2) { this.sparkle(205, 150, TIERS[2].color); return; }
+    this.queueFx({ tier: it.tier, id });
+  }
+  sparkle(x, y, color) {
+    if (this.reduced) return;
+    for (let i = 0; i < 8; i++) this.parts.push({ x: x + rnd(-10, 10), y: y + rnd(-10, 6), vx: 0, vy: -15, g: 0, life: 0.8, t: 0, color, size: 1, star: true });
+  }
+  queueFx(f) {
+    if (this.fxQueue.length > 6) return;
+    this.fxQueue.push(f);
+  }
+  // Replay big drops that happened while away (newest first, a few at most).
+  replay(ids) {
+    for (const id of ids.slice(-4)) this.queueFx({ tier: ITEMS[id].tier, id, replay: true });
+  }
+
+  startFx(f) {
+    const it = ITEMS[f.id];
+    const dur = [0, 0, 0, 1.4, 2.4, 3.2, 5][f.tier];
+    this.fx = { ...f, t: 0, dur };
+    const tier = TIERS[f.tier];
+    const b = this.el.banner;
+    const ic = icon(it.icon, it.color);
+    const big = mk(ic.width * 4, ic.height * 4);
+    const bctx = big.getContext('2d');
+    bctx.imageSmoothingEnabled = false;
+    bctx.drawImage(ic, 0, 0, big.width, big.height);
+    const hall = this.g.s.hall.find(h => h.id === f.id);
+    const extra = f.tier === 6 && hall ? `<small>${new Date(hall.at).toLocaleString('ko-KR')} · ${hall.n.toLocaleString()}번째 시도</small>` : '';
+    b.className = 'banner tier' + f.tier;
+    b.innerHTML = `<div class="bn-tier" style="color:${tier.color}">${f.replay ? '자리를 비운 사이 · ' : ''}${tier.name}</div>
+      <div class="bn-body"><span class="bn-icon"></span><span class="bn-name">${f.text || it.name}</span></div>${extra}`;
+    b.querySelector('.bn-icon').appendChild(big);
+    b.hidden = true;
+    if (f.tier >= 4) { this.shake = this.reduced ? 0 : 0.5; this.flash = 0.2; this.flashColor = tier.color; }
+    if (f.tier === 5 && !this.reduced) this.timeScale = 0.3;
+    if (f.tier === 6) { this.el.blackout.hidden = false; this.el.blackout.className = 'blackout on'; }
+    else this.showBanner();
+  }
+  showBanner() {
+    const b = this.el.banner;
+    b.hidden = false;
+    b.style.animation = 'none';
+    void b.offsetWidth;
+    b.style.animation = '';
+  }
+  updateFx(dt) {
+    if (!this.fx && this.fxQueue.length) this.startFx(this.fxQueue.shift());
+    const f = this.fx;
+    if (!f) return;
+    f.t += dt;
+    if (f.tier === 5 && f.t > 1) this.timeScale = 1;
+    if (f.tier === 6 && f.t > 1.6 && !f.revealed) {
+      f.revealed = true;
+      this.el.blackout.className = 'blackout reveal';
+      this.flash = 0.4;
+      this.flashColor = '#ffffff';
+      this.showBanner();
+      for (let i = 0; i < 40; i++) {
+        const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 90;
+        this.parts.push({ x: W / 2, y: H / 2, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: 0, life: 1.4, t: 0, color: `hsl(${(i * 37) % 360} 100% 70%)`, size: 2 });
+      }
+    }
+    if (f.t >= f.dur) {
+      this.fx = null;
+      this.timeScale = 1;
+      this.el.banner.hidden = true;
+      this.el.blackout.hidden = true;
+    }
+  }
+
+  // ---------- Background ----------
+  layer(theme, hour) {
+    const bucket = theme === 'ice' || theme === 'tower' ? 0 : hour >= 20 || hour < 5 ? 1 : hour < 7 ? 2 : hour < 17 ? 3 : 4;
+    const key = theme + bucket;
+    if (this.layers.has(key)) return this.layers.get(key);
+    const T = THEMES[theme];
+    const seed = theme.length * 7 + 3;
+    // Sky + far mountains (static)
+    const sky = mk(W, H);
+    const sc = sky.getContext('2d');
+    const [top, bot] = skyColors(hour, theme);
+    const grd = sc.createLinearGradient(0, 0, 0, GROUND);
+    grd.addColorStop(0, top);
+    grd.addColorStop(1, bot);
+    sc.fillStyle = grd;
+    sc.fillRect(0, 0, W, H);
+    if (bucket === 1 || theme === 'tower' || theme === 'ice') {
+      for (let i = 0; i < 70; i++) {
+        sc.fillStyle = noise(i, 3) > 0.8 ? '#ffffff' : '#a8b8ff';
+        sc.fillRect(Math.floor(noise(i, 1) * W), Math.floor(noise(i, 2) * 120), 1, 1);
+      }
+    }
+    if (theme === 'ice') {
+      // Cave ceiling with icicles
+      sc.fillStyle = '#24365a';
+      for (let x = 0; x < W; x++) {
+        const h = 10 + Math.floor(smooth(x / 9, 5) * 16 + (noise(x, 8) > 0.86 ? 14 : 0));
+        sc.fillRect(x, 0, 1, h);
+      }
+    }
+    // Far: wide wrap-around layer (2x width)
+    const far = mk(W * 2, H);
+    const fc = far.getContext('2d');
+    const farCol = bucket === 1 ? shade(T.far, -0.45) : T.far;
+    for (let x = 0; x < W * 2; x++) {
+      const u = (x / (W * 2)) * 16;
+      const h = 60 + smooth(u, seed) * 50 + smooth(u * 3, seed + 1) * 14;
+      fc.fillStyle = farCol;
+      fc.fillRect(x, GROUND - h, 1, h);
+      if (theme === 'ice' || theme === 'meadow') {
+        fc.fillStyle = shade(farCol, 0.35);
+        fc.fillRect(x, GROUND - h, 1, 2);
+      }
+    }
+    // Mid: hills + decorations + a floating ledge with a rope
+    const mid = mk(W * 2, H);
+    const mc = mid.getContext('2d');
+    const midCol = bucket === 1 ? shade(T.mid, -0.45) : T.mid;
+    const mid2 = bucket === 1 ? shade(T.mid2, -0.45) : T.mid2;
+    for (let x = 0; x < W * 2; x++) {
+      const u = (x / (W * 2)) * 10;
+      const h = 22 + smooth(u, seed + 9) * 28;
+      mc.fillStyle = midCol;
+      mc.fillRect(x, GROUND - h, 1, h);
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = Math.floor(noise(i, seed + 4) * (W * 2 - 30)) + 10;
+      this.decor(mc, theme, x, GROUND - 6 - Math.floor(noise(i, 9) * 14), mid2, i);
+    }
+    // Ledge
+    const lx = Math.floor(W * 0.62), ly = 112;
+    mc.fillStyle = shade(T.dirt, bucket === 1 ? -0.5 : -0.15);
+    mc.fillRect(lx, ly, 86, 10);
+    mc.fillStyle = bucket === 1 ? shade(T.top, -0.5) : T.top;
+    mc.fillRect(lx, ly, 86, 3);
+    mc.fillStyle = OUTLINE;
+    mc.fillRect(lx, ly + 10, 86, 1);
+    mc.fillStyle = '#c8a86a';
+    for (let y = ly + 10; y < GROUND - 2; y += 3) mc.fillRect(lx + 70, y, 1, 2);
+    mc.fillStyle = '#5ab45a';
+    mc.fillRect(lx + 69, GROUND - 6, 3, 3);
+    // Ground strip (tileable)
+    const gr = mk(W * 2, H - GROUND);
+    const gc = gr.getContext('2d');
+    gc.fillStyle = T.dirt;
+    gc.fillRect(0, 0, W * 2, H - GROUND);
+    for (let i = 0; i < 300; i++) {
+      gc.fillStyle = noise(i, 11) > 0.5 ? T.dirtD : shade(T.dirt, 0.15);
+      gc.fillRect(Math.floor(noise(i, 12) * W * 2), 6 + Math.floor(noise(i, 13) * (H - GROUND - 6)), 2, 1);
+    }
+    gc.fillStyle = T.top;
+    gc.fillRect(0, 0, W * 2, 4);
+    gc.fillStyle = T.topD;
+    for (let x = 0; x < W * 2; x += 3) gc.fillRect(x, 4, 2, 1 + (noise(x, 14) > 0.5));
+    gc.fillStyle = OUTLINE;
+    gc.fillRect(0, 0, W * 2, 1);
+    for (let x = 0; x < W * 2; x += 7) if (noise(x, 15) > 0.6) { gc.fillStyle = shade(T.top, 0.25); gc.fillRect(x, 1, 1, 1); }
+    const L = { sky, far, mid, ground: gr };
+    this.layers.set(key, L);
+    return L;
+  }
+
+  decor(c, theme, x, y, col, i) {
+    c.fillStyle = col;
+    if (theme === 'meadow' || theme === 'camp') {
+      c.fillStyle = shade(col, -0.25);
+      c.fillRect(x + 6, y - 2, 3, 10);
+      c.fillStyle = col;
+      for (let r = 0; r < 3; r++) circle(c, x + 4 + r * 3, y - 6 - (r % 2) * 3, 6);
+    } else if (theme === 'swamp') {
+      c.fillRect(x + 5, y - 22, 2, 30);
+      c.fillRect(x + 1, y - 16, 5, 2);
+      c.fillRect(x + 6, y - 12, 6, 2);
+      c.fillRect(x + 1, y - 18, 2, 3);
+    } else if (theme === 'ice') {
+      for (let k = 0; k < 4; k++) c.fillRect(x + k * 2, y - k * 4, 3, k * 4 + 8);
+      c.fillStyle = shade(col, 0.4);
+      c.fillRect(x + 2, y - 8, 1, 10);
+    } else {
+      c.fillRect(x, y - 40, 10, 48);
+      c.fillStyle = shade(col, 0.25);
+      c.fillRect(x - 2, y - 42, 14, 4);
+      c.fillRect(x + 2, y - 30 + (i % 3) * 6, 2, 3);
+    }
+  }
+
+  drawBackground(ctx, theme, hour, scroll) {
+    const L = this.layer(theme, hour);
+    ctx.drawImage(L.sky, 0, 0);
+    const fx = -((scroll * 0.15) % (W * 2));
+    ctx.drawImage(L.far, fx, 0);
+    ctx.drawImage(L.far, fx + W * 2, 0);
+    const mx = -((scroll * 0.45) % (W * 2));
+    ctx.drawImage(L.mid, mx, 0);
+    ctx.drawImage(L.mid, mx + W * 2, 0);
+    const gx = -(scroll % (W * 2));
+    ctx.drawImage(L.ground, gx, GROUND);
+    ctx.drawImage(L.ground, gx + W * 2, GROUND);
+  }
+
+  weather(ctx, env, theme, w = W, h = H) {
+    if (this.reduced) return;
+    const t = this.t;
+    if (theme === 'swamp') {
+      ctx.fillStyle = 'rgba(190,170,230,0.10)';
+      for (let i = 0; i < 4; i++) ctx.fillRect(0, 120 + i * 14 + Math.sin(t * 0.6 + i) * 4, w, 8);
+      for (let i = 0; i < 10; i++) {
+        const fx = (noise(i, 31) * w + t * 6 * (i % 2 ? 1 : -1)) % w;
+        ctx.fillStyle = Math.sin(t * 3 + i) > 0 ? '#d8ff6a' : '#8aa848';
+        ctx.fillRect((fx + w) % w, 100 + noise(i, 32) * 70 + Math.sin(t + i) * 5, 1, 1);
+      }
+    }
+    if (theme === 'ice' || env.weather === 'snow') {
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 40; i++) {
+        const x = (noise(i, 21) * w + Math.sin(t + i) * 6 + t * 4) % w;
+        const y = (noise(i, 22) * h + t * (10 + (i % 5) * 3)) % h;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    } else if (env.weather === 'rain' && theme !== 'tower') {
+      ctx.fillStyle = 'rgba(170,200,255,0.65)';
+      for (let i = 0; i < 50; i++) {
+        const x = (noise(i, 23) * w - t * 60) % w;
+        const y = (noise(i, 24) * h + t * 160) % h;
+        ctx.fillRect((x + w) % w, y, 1, 3);
+      }
+    }
+  }
+
+  // ---------- Actors ----------
+  drawHero(ctx, x, y, opts = {}) {
+    const pal = opts.pal || HERO_PAL;
+    const body = sprite('hero', HERO, pal);
+    const bob = opts.walk ? Math.round(Math.abs(Math.sin(this.t * 10))) : Math.round(Math.sin(this.t * 3) * 0.5 + 0.5);
+    const crouch = opts.crouch ? 2 : 0;
+    const flash = opts.hurt;
+    const top = y - body.height - bob + crouch;
+    if (opts.shadow !== false) {
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.fillRect(x - 6, y - 1, 13, 2);
+    }
+    if (opts.crouch) {
+      ctx.drawImage(body, 0, 0, body.width, 14, x - 7, top, body.width, 14);
+      ctx.drawImage(sprite('heroc', HERO_CROUCH, pal), x - 7, top + 14);
+    } else if (opts.walk && Math.sin(this.t * 10) > 0) {
+      ctx.drawImage(body, 0, 0, body.width, 14, x - 7, top, body.width, 14);
+      ctx.drawImage(sprite('heros', HERO_STEP, pal), x - 7, top + 14);
+    } else ctx.drawImage(body, x - 7, top);
+    if (flash > 0) {
+      ctx.globalAlpha = 0.6;
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = '#ff3a3a';
+      ctx.fillRect(x - 7, top, 14, 18);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+    }
+    if (opts.soot) {
+      ctx.fillStyle = 'rgba(40,30,30,0.75)';
+      ctx.fillRect(x - 3, top + 4, 8, 5);
+    }
+    return { hx: x + 4, hy: top + 12 };
+  }
+
+  drawTool(ctx, kind, hand, angle, color, flip = false) {
+    if (kind === 'bow') return;
+    const img = sprite('tool:' + kind, TOOLS[kind], { ...WOOD_PAL, a: color });
+    const [px, py] = TOOL_PIVOT[kind];
+    drawRotated(ctx, img, hand.hx, hand.hy, px, py, angle, flip);
+    ctx.fillStyle = OUTLINE;
+    ctx.fillRect(hand.hx - 1, hand.hy - 1, 3, 3);
+    ctx.fillStyle = HERO_PAL.s;
+    ctx.fillRect(hand.hx, hand.hy, 1, 1);
+  }
+
+  drawMonster(ctx, mon, x, y, alpha = 1) {
+    const M = MONSTERS[mon.key];
+    let key = M.sprite;
+    if (key === 'bat' && Math.sin(this.t * 14) > 0) key = 'bat2';
+    const pal = { ...MON_BASE_PAL[key], ...M.pal };
+    if (mon.variant === 'golden') { pal.a = '#ffd34d'; pal.r = '#ffd34d'; }
+    if (mon.variant === 'ancient') { pal.a = '#3a2a4a'; pal.r = '#3a2a4a'; pal.e = '#ff3a3a'; }
+    const region = this.g.region(mon.f);
+    if (region.theme === 'tower' && !mon.variant) { pal.a = shade(pal.a || '#888', -0.45); if (pal.r) pal.r = shade(pal.r, -0.45); }
+    const img = sprite('mon:' + key, MON[key], pal);
+    const scale = mon.boss || mon.variant === 'giant' || mon.variant === 'ancient' ? 2 : 1;
+    const w = img.width * scale, h = img.height * scale;
+    const fly = M.fly ? 26 + Math.sin(this.t * 3) * 4 : 0;
+    const squash = key === 'slime' ? Math.sin(this.t * 6) * 0.08 : 0;
+    const hh = h * (1 - squash);
+    const top = y - hh - fly;
+    ctx.globalAlpha = alpha;
+    if (mon.variant === 'ancient' && !this.reduced) {
+      ctx.fillStyle = 'rgba(255,58,90,0.25)';
+      circle(ctx, x, top + hh / 2, w * 0.75 + Math.sin(this.t * 5) * 2);
+    }
+    if (mon.variant === 'golden' && Math.random() < 0.3 && !this.reduced) this.sparkle(x, top + hh / 2, '#ffe066');
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x - w / 2 + 2, y - 1, w - 4, 2);
+    ctx.drawImage(img, Math.round(x - w / 2), Math.round(top), w, Math.round(hh));
+    if (this.monAnim.hurt > 0) {
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillRect(Math.round(x - w / 2), Math.round(top), w, Math.round(hh));
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    if (M.crown || mon.boss) {
+      const cr = sprite('crown', CROWN, { y: '#ffd34d', r: '#ff3a5a' });
+      ctx.drawImage(cr, Math.round(x - cr.width), Math.round(top - 7), cr.width * 2, cr.height * 2);
+    }
+    ctx.globalAlpha = 1;
+    return { top, w };
+  }
+
+  // ---------- Life-skill stations ----------
+  // Draws the actor working at a station. hx = actor x, gy = ground y.
+  drawStation(ctx, k, hx, gy, slot, opts = {}) {
+    const s = this.g.s;
+    const v = this.vis(slot);
+    const t = this.t;
+    const since = t - v.last;
+    const sl = s.slots[slot];
+    const p = sl ? sl.p : 0;
+    const lv = s.skills[k].lv;
+    const tc = TOOL_TIERS[toolTier(lv)].color;
+    const pal = opts.pal;
+    const nx = hx + 24;
+    const hit = since < 0.25;
+    switch (k) {
+      case 'mining': {
+        const spot = s.spots.mining || 0;
+        const ore = ITEMS[['m_copper', 'm_iron', 'm_silver', 'm_mithril', 'm_adamant'][Math.min(spot, 4)]].color;
+        rock(ctx, nx + (hit ? rnd(-1, 1) : 0), gy, ore, hit);
+        const ang = swingAngle(p);
+        const hand = this.drawHero(ctx, hx, gy, { pal });
+        this.drawTool(ctx, 'pick', hand, ang, tc);
+        if (hit && since < 0.05 && !this.reduced) this.burst(nx - 6, gy - 10, ore, 5);
+        break;
+      }
+      case 'wood': {
+        const shake = hit ? Math.sin(since * 60) * 2 : 0;
+        tree(ctx, nx + 4, gy, shake, ['#3f9a4a', '#e8d8a8', '#5a7a3a', '#6a8cff', '#8fe07a'][Math.min(s.spots.wood || 0, 4)]);
+        const hand = this.drawHero(ctx, hx, gy, { pal });
+        this.drawTool(ctx, 'axe', hand, swingAngle(p) * 0.9 + 0.3, tc);
+        if (hit && since < 0.05 && !this.reduced) this.burst(nx + 2, gy - 18, '#5ab45a', 4);
+        break;
+      }
+      case 'forage': {
+        bush(ctx, nx - 4, gy, ITEMS[SPOT_ITEM.forage[Math.min(s.spots.forage || 0, 4)]].color, hit);
+        const hand = this.drawHero(ctx, hx, gy, { pal, crouch: true });
+        this.drawTool(ctx, 'sickle', hand, 1.2 + Math.sin(p * Math.PI * 2) * 0.5, tc);
+        if (hit && since < 0.05 && !this.reduced) this.burst(nx - 4, gy - 6, '#7ad85a', 4);
+        break;
+      }
+      case 'fish': {
+        water(ctx, hx + 14, gy, opts.w || W, t);
+        const hand = this.drawHero(ctx, hx, gy, { pal });
+        const bite = p > 0.8;
+        const ang = hit ? -0.2 : 0.75 + (bite ? Math.sin(t * 30) * 0.06 : 0);
+        this.drawTool(ctx, 'rod', hand, ang, tc);
+        const tipX = hand.hx + Math.sin(ang) * 11, tipY = hand.hy - Math.cos(ang) * 11;
+        const bx = hx + 52, by = gy + 4 + (bite ? Math.round(Math.sin(t * 25)) * 2 : Math.round(Math.sin(t * 2)));
+        if (!hit) {
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          line(ctx, tipX, tipY, bx, by);
+          ctx.fillStyle = '#ff3a3a';
+          ctx.fillRect(bx - 1, by - 2, 3, 2);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(bx - 1, by, 3, 1);
+          if (lv >= 250 && bite) { ctx.fillStyle = 'rgba(255,220,90,0.45)'; ctx.fillRect(bx - 6, by + 4, 12, 3); }
+        } else if (since < 0.05 && !this.reduced) this.burst(bx, gy + 4, '#bfe6ff', 6);
+        break;
+      }
+      case 'hunt': {
+        if (!v.animal) v.animal = { kind: (s.spots.hunt || 0) >= 1 ? 'deer' : 'rabbit' };
+        const ax = lerp((opts.w || W) + 10, hx + 70, Math.min(1, p / 0.6));
+        const animal = sprite('an:' + v.animal.kind, ANIMALS[v.animal.kind], { a: v.animal.kind === 'deer' ? '#c8885a' : '#efe6d8', y: '#e8d8b8', r: '#ff9aa8' });
+        if (!hit) {
+          ctx.save();
+          ctx.translate(Math.round(ax + animal.width / 2), 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(animal, -Math.round(animal.width / 2), gy - animal.height);
+          ctx.restore();
+        } else if (since < 0.05 && !this.reduced) this.burst(hx + 72, gy - 6, '#e8dcc8', 6);
+        this.drawHero(ctx, hx, gy, { pal, crouch: true });
+        const draw = p > 0.6 ? Math.min(1, (p - 0.6) / 0.35) : 0;
+        const bow = sprite('bow', BOW, { a: tc });
+        ctx.drawImage(bow, hx + 5, gy - 18);
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillRect(hx + 6 - Math.round(draw * 3), gy - 17, 1, 8);
+        if (draw > 0 && !hit) { ctx.fillStyle = '#c8a86a'; ctx.fillRect(hx + 3 - Math.round(draw * 3), gy - 13, 10, 1); }
+        if (since < 0.3) {
+          const ax2 = lerp(hx + 12, hx + 72, Math.min(1, since / 0.18));
+          ctx.fillStyle = '#c8a86a';
+          ctx.fillRect(ax2, gy - 13, 8, 1);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(ax2 + 7, gy - 14, 2, 3);
+        }
+        bush(ctx, hx + 10, gy, '#5ab45a', false, true);
+        break;
+      }
+      case 'alchemy': {
+        const r = s.recipe;
+        const liquid = v.kind === 'fail' && since < 1.2 ? '#4a4a4a' : ITEMS[r] ? ITEMS[r].color : '#7ad8ff';
+        cauldron(ctx, nx + 2, gy, liquid, t, (v.kind === 'great' || v.kind === 'miracle') && since < 1.5);
+        const hand = this.drawHero(ctx, hx, gy, { pal, soot: slot === 0 && this.soot > 0 });
+        this.drawTool(ctx, 'ladle', hand, 1.4 + Math.sin(t * 4) * 0.35, tc);
+        if (v.kind === 'fail' && since < 0.05 && !this.reduced) {
+          for (let i = 0; i < 14; i++) this.parts.push({ x: nx + 2, y: gy - 16, vx: rnd(-40, 40), vy: rnd(-70, -20), g: 30, life: 1, t: 0, color: '#6a6a6a', size: 3 });
+        }
+        if (sl && sl.blocked && Math.sin(t * 4) > 0) drawText(ctx, '!', nx + 2, gy - 34, '#ff5a5a', 2);
+        break;
+      }
+    }
+  }
+
+  // ---------- Frame ----------
+  frame(dtReal) {
+    const dt = dtReal * this.timeScale;
+    this.t += dt;
+    const ctx = this.ctx;
+    const g = this.g, s = g.s, c = s.char;
+    ctx.imageSmoothingEnabled = false;
+    if (this.lastMode !== s.mode) { this.modeFade = 0.35; this.lastMode = s.mode; }
+    const env = g.env;
+    const region = g.region(c.floor);
+    const camp = s.mode === 'camp';
+    const theme = camp ? 'camp' : region.theme;
+    const mon = g.mon;
+    const walking = !camp && (!mon || mon.approach > 0);
+    if (walking && !this.reduced) this.scroll += dt * 40;
+
+    ctx.save();
+    if (this.shake > 0) ctx.translate(Math.round(rnd(-2, 2)), Math.round(rnd(-2, 2)));
+    this.drawBackground(ctx, theme, env.hour, this.scroll);
+
+    if (camp) this.drawCamp(ctx, env);
+    else this.drawFight(ctx, mon, walking);
+
+    this.drawPops(ctx, dt);
+    this.drawParts(ctx, dt);
+    this.drawFloaters(ctx, dt);
+    this.weather(ctx, env, theme);
+    if (env.night && theme !== 'ice' && theme !== 'tower') {
+      ctx.fillStyle = 'rgba(20,24,70,0.28)';
+      ctx.fillRect(0, 0, W, H);
+      if (camp) { // fire light
+        const grd = ctx.createRadialGradient(54, 168, 4, 54, 168, 90);
+        grd.addColorStop(0, 'rgba(255,170,80,0.35)');
+        grd.addColorStop(1, 'rgba(255,170,80,0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 60, 200, 156);
+      }
+    }
+    if (this.flash > 0) {
+      ctx.globalAlpha = Math.min(0.7, this.flash * 3);
+      ctx.fillStyle = this.flashColor;
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+    if (this.modeFade > 0) {
+      ctx.globalAlpha = Math.min(1, this.modeFade * 3);
+      ctx.fillStyle = '#0c0a14';
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+
+    // timers
+    this.shake = Math.max(0, this.shake - dtReal);
+    this.flash = Math.max(0, this.flash - dtReal);
+    this.modeFade = Math.max(0, this.modeFade - dtReal);
+    this.soot = Math.max(0, this.soot - dtReal);
+    for (const k in this.heroAnim) this.heroAnim[k] = Math.max(0, this.heroAnim[k] - dt);
+    this.monAnim.hurt = Math.max(0, this.monAnim.hurt - dt);
+    this.monAnim.dying = Math.max(0, this.monAnim.dying - dt);
+    this.updateFx(dtReal);
+
+    // overlay positions
+    this.place(this.el.name, 157, GROUND + 3);
+    this.place(this.el.bubble, 157, 112);
+    this.renderClones(dt);
+  }
+
+  // Background monsters of the current region that wander around (decoration only).
+  drawAmbient(ctx, region) {
+    if (!this.ambient || this.ambient.region !== region.name) {
+      const mobs = region.mobs;
+      this.ambient = {
+        region: region.name,
+        list: [0, 1, 2, 3].map(i => ({ key: mobs[i % mobs.length], x: 250 + i * 70, ledge: i === 1, dir: i % 2 ? 1 : -1, ph: i * 1.7 })),
+      };
+    }
+    for (const a of this.ambient.list) {
+      const M = MONSTERS[a.key];
+      let key = M.sprite;
+      if (key === 'bat' && Math.sin(this.t * 14 + a.ph) > 0) key = 'bat2';
+      const pal = { ...MON_BASE_PAL[key], ...M.pal };
+      if (region.theme === 'tower') { pal.a = shade(pal.a || '#888', -0.45); if (pal.r) pal.r = shade(pal.r, -0.45); }
+      const img = sprite('mon:' + key, MON[key], pal);
+      const lx = a.ledge ? 246 : 0;
+      const range = a.ledge ? [lx + 8, lx + 70] : [262, W + 40];
+      a.x += a.dir * 6 * (1 / 60);
+      if (a.x < range[0] || a.x > range[1]) a.dir *= -1;
+      const sx = a.ledge ? a.x : ((a.x - this.scroll * 0.0) % (W + 80) + W + 80) % (W + 80) - 20;
+      const gy = a.ledge ? 112 : GROUND - 1;
+      const hop = Math.max(0, Math.sin(this.t * 4 + a.ph)) * 2 + (M.fly ? 30 : 0);
+      ctx.globalAlpha = 0.9;
+      ctx.save();
+      if (a.dir > 0) { ctx.translate(Math.round(sx), 0); ctx.scale(-1, 1); ctx.drawImage(img, -Math.round(img.width / 2), Math.round(gy - img.height - hop)); }
+      else ctx.drawImage(img, Math.round(sx - img.width / 2), Math.round(gy - img.height - hop));
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  drawFight(ctx, mon, walking) {
+    const g = this.g, c = g.s.char;
+    this.drawAmbient(ctx, g.region(c.floor));
+    const hurt = this.heroAnim.hurt;
+    const hand = this.drawHero(ctx, 157, GROUND, { walk: walking, hurt });
+    const sw = this.heroAnim.swing;
+    const ang = sw > 0 ? lerp(1.9, -0.9, sw / 0.22) : 0.5 + Math.sin(this.t * 3) * 0.05;
+    const wt = c.gear.weapon ? c.gear.weapon.tier : 0;
+    this.drawTool(ctx, 'sword', hand, ang, GEAR_COLORS[wt]);
+    if (sw > 0.12 && !this.reduced) {
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      for (let i = 0; i < 5; i++) ctx.fillRect(hand.hx + 6 + i * 2, hand.hy - 14 + i * 3, 2, 2);
+    }
+    const nameEl = this.el.mon;
+    if (mon) {
+      const x = 236 + (mon.approach > 0 ? (mon.approach / 0.8) * 150 : 0) + (this.monAnim.hurt > 0 ? 3 : 0);
+      const { top } = this.drawMonster(ctx, mon, x, GROUND);
+      const bw = 26, frac = Math.max(0, mon.hp / mon.maxHp);
+      const by = Math.round(top - (mon.boss ? 12 : 6));
+      ctx.fillStyle = OUTLINE;
+      ctx.fillRect(Math.round(x - bw / 2) - 1, by - 1, bw + 2, 4);
+      ctx.fillStyle = '#4a1a24';
+      ctx.fillRect(Math.round(x - bw / 2), by, bw, 2);
+      ctx.fillStyle = mon.boss ? '#ff5a8a' : '#ff5a5a';
+      ctx.fillRect(Math.round(x - bw / 2), by, Math.round(bw * frac), 2);
+      nameEl.hidden = false;
+      nameEl.textContent = (mon.boss ? '👑 ' : '') + mon.name;
+      nameEl.className = 'monname' + (mon.variant ? ' v-' + mon.variant : '') + (mon.boss ? ' boss' : '');
+      this.place(nameEl, x, by - 2);
+    } else nameEl.hidden = true;
+    if (this.monAnim.dying > 0 && this.monAnim.last) {
+      this.drawMonster(ctx, this.monAnim.last, 236, GROUND + (0.35 - this.monAnim.dying) * 20, this.monAnim.dying / 0.35);
+    }
+  }
+
+  drawCamp(ctx, env) {
+    this.el.mon.hidden = true;
+    tent(ctx, 26, GROUND);
+    campfire(ctx, 54, GROUND, this.t);
+    if (!this.reduced && Math.random() < 0.25) this.parts.push({ x: 54 + rnd(-2, 2), y: GROUND - 10, vx: rnd(-4, 4), vy: -18, g: 0, life: 1.2, t: 0, color: Math.random() < 0.5 ? '#ffb84a' : '#ff6a3a', size: 1 });
+    const k = this.g.s.slots[0].k;
+    this.drawStation(ctx, k, 157, GROUND, 0, { w: W });
+  }
+
+  drawPops(ctx, dt) {
+    for (const p of this.pops) {
+      p.t += dt;
+      const f = Math.min(1, p.t / 0.7);
+      const x = lerp(p.x, p.tx, f), y = p.y - 26 * Math.sin(f * Math.PI) - f * 6;
+      const it = ITEMS[p.id];
+      ctx.globalAlpha = 1 - Math.max(0, (p.t - 0.6) / 0.3);
+      ctx.drawImage(icon(it.icon, it.color), Math.round(x - 6), Math.round(y - 12));
+      if (p.t < 0.6 && it.tier >= 1) {
+        ctx.fillStyle = TIERS[it.tier].color;
+        ctx.fillRect(Math.round(x - 1), Math.round(y - 15), 2, 2);
+      }
+      ctx.globalAlpha = 1;
+    }
+    this.pops = this.pops.filter(p => p.t < 0.9);
+  }
+  drawParts(ctx, dt) {
+    for (const p of this.parts) {
+      p.t += dt;
+      p.vy += p.g * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      ctx.globalAlpha = Math.max(0, 1 - p.t / p.life);
+      ctx.fillStyle = p.color;
+      if (p.star) { ctx.fillRect(Math.round(p.x), Math.round(p.y) - 1, 1, 3); ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y), 3, 1); }
+      else ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+    }
+    ctx.globalAlpha = 1;
+    this.parts = this.parts.filter(p => p.t < p.life);
+    if (this.parts.length > 400) this.parts.splice(0, this.parts.length - 400);
+  }
+  drawFloaters(ctx, dt) {
+    for (const f of this.floaters) {
+      f.t += dt;
+      ctx.globalAlpha = Math.max(0, 1 - Math.max(0, f.t - f.life * 0.6) / (f.life * 0.4));
+      drawText(ctx, f.text, f.x, f.y - f.t * 22, f.color, f.scale);
+    }
+    ctx.globalAlpha = 1;
+    this.floaters = this.floaters.filter(f => f.t < f.life);
+  }
+
+  // Small canvases showing clones working at their own stations.
+  setCloneCanvases(list) { this.clones = list; }
+  renderClones() {
+    const s = this.g.s;
+    this.clones.forEach((cv, i) => {
+      const slot = i + 1;
+      if (!s.slots[slot]) return;
+      const ctx = cv.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      const w = cv.width, h = cv.height, gy = h - 14;
+      const k = s.slots[slot].k;
+      const [top, bot] = skyColors(this.g.env.hour, 'camp');
+      const grd = ctx.createLinearGradient(0, 0, 0, gy);
+      grd.addColorStop(0, top);
+      grd.addColorStop(1, bot);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#4a8a5a';
+      for (let x = 0; x < w; x++) ctx.fillRect(x, gy - 10 - Math.floor(smooth(x / 18, 7 + slot) * 14), 1, 30);
+      ctx.fillStyle = '#9a6a3a';
+      ctx.fillRect(0, gy, w, h - gy);
+      ctx.fillStyle = '#5ac04a';
+      ctx.fillRect(0, gy, w, 3);
+      ctx.fillStyle = OUTLINE;
+      ctx.fillRect(0, gy, w, 1);
+      this.drawStation(ctx, k, 40, gy, slot, { pal: CLONE_PAL, w });
+      const v = this.vis(slot);
+      if (v.pop) {
+        v.pop.t += 1 / 60;
+        const it = ITEMS[v.pop.id];
+        if (it && v.pop.t < 0.8) {
+          ctx.globalAlpha = 1 - v.pop.t / 0.8;
+          ctx.drawImage(icon(it.icon, it.color), 58, gy - 34 - v.pop.t * 14);
+          ctx.globalAlpha = 1;
+        } else v.pop = null;
+      }
+    });
+  }
+}
+
+const SPOT_ITEM = { forage: ['f_dandelion', 'f_berry', 'f_firefly', 'f_poppy', 'f_fairyshroom'] };
+
+// ---------- Primitive pixel shapes ----------
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function circle(ctx, cx, cy, r) {
+  for (let y = -r; y <= r; y++) {
+    const w = Math.floor(Math.sqrt(r * r - y * y));
+    ctx.fillRect(Math.round(cx - w), Math.round(cy + y), w * 2 + 1, 1);
+  }
+}
+function ellipse(ctx, cx, cy, rx, ry) {
+  for (let y = -ry; y <= ry; y++) {
+    const w = Math.floor(rx * Math.sqrt(1 - (y * y) / (ry * ry)));
+    ctx.fillRect(Math.round(cx - w), Math.round(cy + y), w * 2 + 1, 1);
+  }
+}
+function line(ctx, x0, y0, x1, y1) {
+  x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+  const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy;
+  for (let i = 0; i < 400; i++) {
+    ctx.fillRect(x0, y0, 1, 1);
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; x0 += sx; }
+    if (e2 <= dx) { err += dx; y0 += sy; }
+  }
+}
+function swingAngle(p) {
+  // Raise slowly, strike fast near the end of each action.
+  if (p < 0.75) return lerp(0.6, -1.4, p / 0.75);
+  return lerp(-1.4, 1.5, (p - 0.75) / 0.25);
+}
+function rock(ctx, x, gy, ore, hit) {
+  ctx.fillStyle = OUTLINE;
+  ellipse(ctx, x, gy - 8, 13, 9);
+  ctx.fillStyle = hit ? '#b8b8c4' : '#8a8a96';
+  ellipse(ctx, x, gy - 8, 12, 8);
+  ctx.fillStyle = '#6a6a76';
+  ctx.fillRect(x - 10, gy - 4, 21, 3);
+  ctx.fillStyle = '#a8a8b4';
+  ctx.fillRect(x - 6, gy - 14, 6, 2);
+  ctx.fillStyle = ore;
+  for (const [dx, dy] of [[-5, -8], [3, -11], [6, -5], [-1, -4], [8, -9]]) ctx.fillRect(x + dx, gy + dy, 2, 2);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x + 3, gy - 11, 1, 1);
+}
+function tree(ctx, x, gy, shake, leaf) {
+  ctx.fillStyle = OUTLINE;
+  ctx.fillRect(x - 4, gy - 30, 9, 30);
+  ctx.fillStyle = '#8a5a2e';
+  ctx.fillRect(x - 3, gy - 30, 7, 30);
+  ctx.fillStyle = '#6a4424';
+  ctx.fillRect(x - 1, gy - 26, 1, 20);
+  ctx.fillStyle = '#e8c88a';
+  ctx.fillRect(x - 3, gy - 12, 2, 4);
+  const sx = Math.round(shake);
+  ctx.fillStyle = OUTLINE;
+  circle(ctx, x + sx, gy - 42, 15);
+  circle(ctx, x - 9 + sx, gy - 34, 10);
+  circle(ctx, x + 10 + sx, gy - 34, 10);
+  ctx.fillStyle = leaf;
+  circle(ctx, x + sx, gy - 42, 14);
+  circle(ctx, x - 9 + sx, gy - 34, 9);
+  circle(ctx, x + 10 + sx, gy - 34, 9);
+  ctx.fillStyle = shade(leaf, 0.3);
+  circle(ctx, x - 4 + sx, gy - 47, 5);
+}
+function bush(ctx, x, gy, flower, hit, front) {
+  ctx.fillStyle = OUTLINE;
+  circle(ctx, x, gy - 6, 8);
+  circle(ctx, x - 6, gy - 3, 6);
+  circle(ctx, x + 6, gy - 3, 6);
+  ctx.fillStyle = front ? '#3f8a3f' : hit ? '#7ad86a' : '#4caf50';
+  circle(ctx, x, gy - 6, 7);
+  circle(ctx, x - 6, gy - 3, 5);
+  circle(ctx, x + 6, gy - 3, 5);
+  if (!front) {
+    ctx.fillStyle = flower;
+    for (const [dx, dy] of [[-4, -9], [3, -11], [6, -5], [-7, -4]]) ctx.fillRect(x + dx, gy + dy, 2, 2);
+  }
+}
+function water(ctx, x, gy, w, t) {
+  ctx.fillStyle = OUTLINE;
+  ctx.fillRect(x, gy, w - x, 1);
+  ctx.fillStyle = '#3a7ad8';
+  ctx.fillRect(x, gy + 1, w - x, H);
+  ctx.fillStyle = '#5a9ae8';
+  ctx.fillRect(x, gy + 1, w - x, 2);
+  ctx.fillStyle = '#bfe6ff';
+  for (let i = 0; i < 12; i++) {
+    const wx = x + ((i * 37 + t * 8) % Math.max(1, w - x));
+    ctx.fillRect(Math.round(wx), gy + 6 + (i % 4) * 5, 4, 1);
+  }
+  ctx.fillStyle = '#8a5a2e';
+  ctx.fillRect(x - 2, gy - 1, 18, 3);
+  ctx.fillStyle = OUTLINE;
+  ctx.fillRect(x - 2, gy + 2, 18, 1);
+  ctx.fillRect(x + 2, gy + 3, 2, 8);
+  ctx.fillRect(x + 12, gy + 3, 2, 8);
+}
+function cauldron(ctx, x, gy, liquid, t, rainbow) {
+  ctx.fillStyle = OUTLINE;
+  ellipse(ctx, x, gy - 9, 13, 10);
+  ctx.fillStyle = '#3a3a48';
+  ellipse(ctx, x, gy - 9, 12, 9);
+  ctx.fillStyle = '#5a5a6a';
+  ctx.fillRect(x - 9, gy - 12, 3, 6);
+  ctx.fillStyle = OUTLINE;
+  ctx.fillRect(x - 13, gy - 18, 27, 4);
+  ctx.fillStyle = rainbow ? `hsl(${(t * 300) % 360} 90% 60%)` : liquid;
+  ctx.fillRect(x - 12, gy - 17, 25, 2);
+  for (let i = 0; i < 3; i++) {
+    const by = gy - 20 - ((t * 14 + i * 7) % 18);
+    ctx.globalAlpha = 0.8;
+    ctx.fillRect(x - 6 + i * 6, Math.round(by), 2, 2);
+    ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = '#ff8a2a';
+  ctx.fillRect(x - 6, gy - 1, 3, 1);
+  ctx.fillRect(x + 3, gy - 1, 3, 1);
+}
+function tent(ctx, x, gy) {
+  ctx.fillStyle = OUTLINE;
+  for (let i = 0; i < 26; i++) ctx.fillRect(x - i, gy - 26 + i, i * 2 + 1, 1);
+  ctx.fillStyle = '#c8433b';
+  for (let i = 1; i < 25; i++) ctx.fillRect(x - i + 1, gy - 26 + i, i * 2 - 1, 1);
+  ctx.fillStyle = '#8a2a2a';
+  for (let i = 6; i < 25; i++) ctx.fillRect(x - 2, gy - 26 + i, 5, 1);
+  ctx.fillStyle = '#ffd34d';
+  ctx.fillRect(x, gy - 26, 1, 3);
+}
+function campfire(ctx, x, gy, t) {
+  ctx.fillStyle = '#6a4424';
+  ctx.fillRect(x - 8, gy - 3, 16, 3);
+  ctx.fillStyle = OUTLINE;
+  ctx.fillRect(x - 8, gy - 1, 16, 1);
+  const f = Math.sin(t * 12) * 1.5;
+  ctx.fillStyle = '#ff6a3a';
+  ellipse(ctx, x, gy - 8, 5, 6 + Math.round(f));
+  ctx.fillStyle = '#ffb84a';
+  ellipse(ctx, x, gy - 6, 3, 4 + Math.round(f / 2));
+  ctx.fillStyle = '#fff2a8';
+  ctx.fillRect(x - 1, gy - 6, 2, 3);
+  ctx.fillStyle = '#8a8a96';
+  for (const dx of [-10, -6, 6, 10]) ctx.fillRect(x + dx - 1, gy - 2, 3, 2);
+}
+
+function fmtShort(n) {
+  if (!isFinite(n)) return '∞';
+  const a = Math.abs(n);
+  if (a < 1000) return String(Math.round(n));
+  const u = ['K', 'M', 'B', 'T'];
+  let i = -1, v = a;
+  while (v >= 1000 && i < u.length - 1) { v /= 1000; i++; }
+  if (v >= 1000) return n.toExponential(1).replace('e+', 'E');
+  return (n < 0 ? '-' : '') + (v < 10 ? v.toFixed(1) : Math.round(v)) + u[i];
+}
+
+return { W, Renderer, fmtShort };
+})();
+
+__m.ui = (() => {
+// DOM UI: bottom bar, Idleon-style panels, toasts and modals.
+const { TIERS, SKILLS, LIFE_SKILLS, ITEMS, SPOTS, SPOT_LV, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES, PERKS, PERK_TREES, MEMORIES, PRESETS, STAT_NAMES, TOOL_TIERS, MASTER_TITLE, GIMMICK_TEXT, LUCK_CAP } = __m.data;
+const { xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, nextMilestones, perkCost, ashFor, gearName, gearValue, charmValue, enhanceCost, pity } = __m.engine;
+const { icon, sprite, HERO, HERO_PAL } = __m.sprites;
+const { fmtShort } = __m.render;
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = n => fmtShort(n);
+const pct = (x, d = 1) => (x * 100).toFixed(d) + '%';
+
+function iconCanvas(tpl, color, size = 36, extra) {
+  const src = icon(tpl, color, extra);
+  const c = document.createElement('canvas');
+  c.width = src.width;
+  c.height = src.height;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(src, 0, 0);
+  c.className = 'px';
+  c.style.width = size + 'px';
+  c.style.height = size + 'px';
+  return c;
+}
+function itemIcon(id, size = 36) {
+  const it = ITEMS[id];
+  return iconCanvas(it.icon, it.color, size);
+}
+const SKILL_ICON = { combat: ['sword', '#c8ccd8'], mining: ['pick', '#b8c4d0'], wood: ['axe', '#b8c4d0'], forage: ['leaf', '#6bbf5a'], fish: ['fish', '#5ab4ff'], hunt: ['bow', '#a8743a'], alchemy: ['potion', '#c27bff'] };
+const skillIcon = (k, size = 32) => iconCanvas(...SKILL_ICON[k], size);
+
+class UI {
+  constructor(game, renderer, hooks) {
+    this.g = game;
+    this.r = renderer;
+    this.hooks = hooks;
+    this.panel = null;
+    this.tab = {};
+    this.sel = { skill: 'mining', item: null, codex: 'mining', bag: 'mat' };
+    this.pointerDown = false;
+    this.confirm = null;
+    document.addEventListener('pointerdown', () => { this.pointerDown = true; });
+    document.addEventListener('pointerup', () => { this.pointerDown = false; setTimeout(() => this.refreshPanel(), 50); });
+    this.buildBar();
+    this.buildPanel();
+  }
+
+  // ---------- Bottom bar ----------
+  buildBar() {
+    const bar = $('#bar');
+    bar.innerHTML = `
+      <div class="who">
+        <canvas id="portrait" class="px" width="14" height="18"></canvas>
+        <div class="who-txt"><div class="who-nm">모험가</div><div class="who-sub" id="whoSub"></div></div>
+      </div>
+      <div class="bars">
+        <div class="meter hp"><i id="hpFill"></i><span id="hpTxt"></span><b>HP</b></div>
+        <div class="meter sta"><i id="staFill"></i><span id="staTxt"></span><b>ST</b></div>
+        <div class="meter xp"><i id="xpFill"></i><span id="xpTxt"></span><b>XP</b></div>
+      </div>
+      <nav class="btns" id="btns"></nav>`;
+    const pc = $('#portrait').getContext('2d');
+    pc.drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
+    const btns = [
+      ['mode', 'camp', '#ff8a3a', '순환'],
+      ['char', 'person', '#3f9a5c', '캐릭터'],
+      ['life', 'axe', '#b8c4d0', '생활'],
+      ['bag', 'bag', '#c8913a', '가방'],
+      ['codex', 'book', '#4a6ab8', '도감'],
+      ['rebirth', 'cycle', '#ffb84a', '윤회'],
+      ['log', 'scroll', '#e8dcc8', '일지'],
+      ['menu', 'gear', '#8a8a96', '설정'],
+    ];
+    const nav = $('#btns');
+    for (const [id, tpl, col, label] of btns) {
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.id = 'b-' + id;
+      b.type = 'button';
+      b.appendChild(iconCanvas(tpl, col, 30, { h: '#3f9a5c', s: '#ffd8b0', t: '#efe9d8' }));
+      const l = document.createElement('span');
+      l.className = 'lbl';
+      l.textContent = label;
+      b.appendChild(l);
+      const dot = document.createElement('i');
+      dot.className = 'dot';
+      dot.hidden = true;
+      b.appendChild(dot);
+      b.addEventListener('click', () => (id === 'mode' ? this.toggleFocus() : this.toggle(id)));
+      nav.appendChild(b);
+    }
+  }
+
+  toggleFocus() {
+    const s = this.g.s;
+    s.focus = !s.focus;
+    if (s.focus && s.mode === 'fight') this.g.enterCamp('focus');
+    this.toast(s.focus ? '생활 집중: 전투를 멈추고 야영지에서 생활만 합니다' : '순환: 싸우고, 지치면 야영합니다');
+    this.updateBar();
+  }
+
+  updateBar() {
+    const g = this.g, s = g.s, c = s.char, d = g.d;
+    $('#whoSub').textContent = `윤회 ${s.rb.count}회 · LV ${c.lv}`;
+    const set = (id, v, max, txt) => {
+      $('#' + id + 'Fill').style.width = Math.max(0, Math.min(100, (v / max) * 100)) + '%';
+      $('#' + id + 'Txt').textContent = txt;
+    };
+    set('hp', c.hp, d.hp, `${fmt(Math.max(0, c.hp))} / ${fmt(d.hp)}`);
+    set('sta', c.sta, d.sta, `${Math.floor(c.sta)} / ${Math.floor(d.sta)}`);
+    const need = charXpNeed(c.lv);
+    set('xp', c.xp, need, `${fmt(c.xp)} / ${fmt(need)} (${((c.xp / need) * 100).toFixed(1)}%)`);
+    const mb = $('#b-mode .lbl');
+    mb.textContent = s.focus ? '생활집중' : '순환';
+    $('#b-mode').classList.toggle('on', s.focus);
+    $('#b-char .dot').hidden = !(c.pts > 0 && !c.auto);
+    $('#b-rebirth .dot').hidden = !(s.rb.choices || (g.canRebirth() && s.rb.count === 0));
+    $('#b-life .dot').hidden = !s.slots.some(x => x.blocked);
+    for (const id of ['char', 'life', 'bag', 'codex', 'rebirth', 'log', 'menu']) $('#b-' + id).classList.toggle('active', this.panel === id);
+    this.updateHud();
+  }
+
+  updateHud() {
+    const g = this.g, s = g.s, c = s.char, env = g.env;
+    const reg = g.region(c.floor);
+    const gm = s.mode === 'fight' ? g.gimmick(c.floor) : null;
+    const boss = c.floor % 10 === 0;
+    const timeIcon = env.night ? '🌙' : '☀️';
+    const w = env.weather === 'rain' ? ' · 🌧 비 (채집 +20%)' : env.weather === 'snow' ? ' · ❄ 눈' : '';
+    $('#hudTL').innerHTML = `
+      <div class="reg">${esc(s.mode === 'camp' ? '모닥불 야영지' : reg.name)}</div>
+      <div class="fl">${s.mode === 'camp' ? `${esc(SKILLS[s.slots[0].k].name)} 중${s.focus ? ' · 생활 집중' : ''}` : `${c.floor}층 ${boss ? '· 보스' : `· ${c.kills}/10`}`}</div>
+      <div class="env">${timeIcon} ${SEASON_NAME[env.season]}${w}${env.night ? ' · 밤낚시 희귀 ×1.3' : ''}</div>
+      ${gm ? `<div class="gm ${s.pot[gm === 'poison' ? 'antidote' : 'warm'] || g.d.res[gm] >= 1 ? 'ok' : ''}">${esc(GIMMICK_TEXT[gm])}</div>` : ''}
+      ${s.catUntil > s.time ? `<div class="env">✨ 행운의 촉매 ${Math.ceil((s.catUntil - s.time) / 60)}분</div>` : ''}`;
+    $('#goals').innerHTML = g.goals().map(t => `<li>${esc(t)}</li>`).join('');
+    // Clone insets
+    const holder = $('#clones');
+    const n = s.slots.length - 1;
+    if (holder.childElementCount !== n) {
+      holder.innerHTML = '';
+      const list = [];
+      for (let i = 0; i < n; i++) {
+        const box = document.createElement('div');
+        box.className = 'clone';
+        const cv = document.createElement('canvas');
+        cv.width = 160;
+        cv.height = 90;
+        cv.className = 'px';
+        box.appendChild(cv);
+        const lb = document.createElement('div');
+        lb.className = 'clone-lb';
+        box.appendChild(lb);
+        holder.appendChild(box);
+        list.push(cv);
+      }
+      this.r.setCloneCanvases(list);
+    }
+    holder.querySelectorAll('.clone-lb').forEach((lb, i) => {
+      const k = s.slots[i + 1].k;
+      lb.textContent = `분신 ${i + 1} · ${SKILLS[k].name} Lv.${s.skills[k].lv}`;
+    });
+  }
+
+  toast(text, tier = 0) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.style.setProperty('--tc', TIERS[Math.min(6, tier)].color);
+    t.textContent = text;
+    $('#toasts').appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+    const all = $('#toasts').children;
+    if (all.length > 4) all[0].remove();
+  }
+
+  handle(events) {
+    for (const e of events) {
+      if (e.t === 'slv' && (e.lv % 10 === 0 || e.lv < 10)) this.toast(`${SKILLS[e.k].name} Lv.${e.lv}${e.m ? ' · ' + e.m : ''}`, e.lv % 100 === 0 ? 4 : 1);
+      else if (e.t === 'codex') { const it = ITEMS[e.id]; this.toast(`도감 등록 · ${it.name}`, it.tier); }
+      else if (e.t === 'gear' && e.equip && e.g.tier >= 1) this.toast(`장착 · [${TIERS[e.g.tier].name}] ${gearName(e.g)}`, e.g.tier);
+      else if (e.t === 'floor' && e.floor % 10 === 1) this.toast(`${e.floor}층 · ${this.g.region(e.floor).name}`, 2);
+    }
+  }
+
+  // ---------- Panel ----------
+  buildPanel() {
+    $('#panelClose').addEventListener('click', () => this.close());
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (!$('#modal').hidden && !this.modalLocked) this.closeModal();
+        else this.close();
+      }
+    });
+  }
+  toggle(id) {
+    if (this.panel === id) this.close();
+    else this.open(id);
+  }
+  open(id) {
+    this.panel = id;
+    $('#panel').hidden = false;
+    $('#panel').dataset.kind = id;
+    this.confirm = null;
+    this.renderPanel();
+    this.updateBar();
+  }
+  close() {
+    this.panel = null;
+    $('#panel').hidden = true;
+    this.updateBar();
+  }
+  refreshPanel() {
+    if (!this.panel || this.pointerDown) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) return;
+    this.renderPanel();
+  }
+  renderPanel() {
+    const body = $('#panelBody');
+    const scroll = body.scrollTop;
+    const focusId = document.activeElement && body.contains(document.activeElement) ? document.activeElement.dataset.fid : null;
+    const titles = { char: '캐릭터 정보', life: '생활 스킬', bag: '가방', codex: '도감', rebirth: '윤회', log: '모험 일지', menu: '설정' };
+    $('#panelTitle').textContent = titles[this.panel];
+    body.innerHTML = '';
+    this['p_' + this.panel](body);
+    body.scrollTop = scroll;
+    if (focusId) { const el = body.querySelector(`[data-fid="${focusId}"]`); if (el) el.focus(); }
+  }
+  act(fn) {
+    fn();
+    this.g.calc();
+    this.renderPanel();
+    this.updateBar();
+  }
+  btn(label, onClick, opts = {}) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pbtn' + (opts.cls ? ' ' + opts.cls : '');
+    b.innerHTML = label;
+    if (opts.fid) b.dataset.fid = opts.fid;
+    b.disabled = !!opts.disabled;
+    b.addEventListener('click', () => this.act(onClick));
+    return b;
+  }
+  section(parent, title) {
+    const sec = document.createElement('section');
+    sec.className = 'psec';
+    if (title) {
+      const h = document.createElement('h3');
+      h.textContent = title;
+      sec.appendChild(h);
+    }
+    parent.appendChild(sec);
+    return sec;
+  }
+  html(parent, markup, cls) {
+    const d = document.createElement('div');
+    if (cls) d.className = cls;
+    d.innerHTML = markup;
+    parent.appendChild(d);
+    return d;
+  }
+
+  // ----- Character
+  p_char(body) {
+    const g = this.g, s = g.s, c = s.char, d = g.d;
+    const top = this.html(body, '', 'char-top');
+    const pic = document.createElement('canvas');
+    pic.width = 14; pic.height = 18;
+    pic.className = 'px char-pic';
+    pic.getContext('2d').drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
+    top.appendChild(pic);
+    const titles = Object.keys(MASTER_TITLE).filter(k => s.skills[k].lv >= 1000).map(k => MASTER_TITLE[k]);
+    this.html(top, `<div class="char-nm">모험가 <span class="lv">LV ${c.lv}</span></div>
+      <div class="char-sub">윤회 ${s.rb.count}회 · 최고 ${s.rb.bestFloor}층${titles.length ? ' · ' + titles.join(', ') : ''}</div>
+      <div class="char-sub">${s.rb.memory ? `전생의 기억: <b>${esc(MEMORIES[s.rb.memory].name)}</b> (${esc(MEMORIES[s.rb.memory].desc)})` : '전생의 기억 없음'}</div>`, 'char-meta');
+
+    const st = this.section(body, '능력치');
+    const rows = [
+      ['최대 HP', fmt(d.hp)], ['공격력', fmt(d.atk)], ['공격 간격', d.interval.toFixed(2) + '초'],
+      ['치명타 확률', pct(d.critC)], ['치명타 피해', '×' + d.critD.toFixed(2)], ['회피', pct(d.dodge)],
+      ['최대 스태미나', Math.floor(d.sta)], ['행운 배율', `×${d.luck.toFixed(2)} (상한 ×${d.luckCap.toFixed(1)})`],
+      ['도감 보너스', '+' + pct(d.codex)], ['골드', fmt(c.gold)],
+    ];
+    this.html(st, rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join(''), 'statlist');
+
+    const al = this.section(body, `스탯 분배 · 남은 포인트 ${c.pts}`);
+    const grid = this.html(al, '', 'alloc');
+    for (const k of Object.keys(STAT_NAMES)) {
+      const row = this.html(grid, `<span>${STAT_NAMES[k]}</span><b>${c.st[k]}</b>`, 'alloc-row');
+      row.appendChild(this.btn('+1', () => g.allocate(k, 1), { disabled: c.pts < 1, fid: 'a1' + k }));
+      row.appendChild(this.btn('+10', () => g.allocate(k, 10), { disabled: c.pts < 1, fid: 'a10' + k }));
+    }
+    const pr = this.html(al, '', 'chips');
+    for (const [k, p] of Object.entries(PRESETS)) {
+      pr.appendChild(this.btn(p.name, () => { c.preset = k; if (c.auto) g.respec(); }, { cls: c.preset === k ? 'chip on' : 'chip' }));
+    }
+    pr.appendChild(this.btn(c.auto ? '자동 분배 켜짐' : '자동 분배 꺼짐', () => { c.auto = !c.auto; if (c.auto) g.autoAllocate(); }, { cls: c.auto ? 'chip on' : 'chip' }));
+    pr.appendChild(this.btn('초기화', () => g.respec(), { cls: 'chip' }));
+
+    const ge = this.section(body, '장비 (윤회 시 초기화)');
+    for (const slot of ['weapon', 'armor', 'charm']) {
+      const gg = c.gear[slot];
+      const row = this.html(ge, '', 'gear-row');
+      row.appendChild(iconCanvas(slot === 'weapon' ? 'sword' : slot === 'armor' ? 'armor' : 'charm', gg ? TIERS[gg.tier].color : '#5a5a66', 32));
+      if (gg) {
+        const val = slot === 'charm' ? `행운 +${charmValue(gg).luck.toFixed(3)} · 치명 +${pct(charmValue(gg).crit)}` : `${slot === 'weapon' ? '공격력' : 'HP'} +${fmt(gearValue(gg))}`;
+        this.html(row, `<b style="color:${TIERS[gg.tier].color}">[${TIERS[gg.tier].name}] ${esc(gearName(gg))}</b><small>${gg.f}층 · ${val}</small>`, 'gear-txt');
+        const cost = enhanceCost(gg);
+        row.appendChild(this.btn(`강화 ${fmt(cost)}g`, () => g.enhance(slot), { disabled: c.gold < cost, fid: 'en' + slot }));
+      } else this.html(row, '<b>비어 있음</b><small>몬스터를 쓰러뜨리면 3% 확률로 떨어집니다</small>', 'gear-txt');
+    }
+  }
+
+  // ----- Life skills
+  p_life(body) {
+    const g = this.g, s = g.s;
+    const sl = this.section(body, '배치 · 야영 중에는 야영 슬롯, 분신은 항상 일합니다');
+    const chips = this.html(sl, '', 'slots');
+    s.slots.forEach((x, i) => {
+      const el = this.html(chips, `<small>${i === 0 ? '야영' : '분신 ' + i}</small><b>${SKILLS[x.k].name}</b>${x.blocked ? '<em>재료 부족</em>' : ''}`, 'slot' + (i === 0 ? ' main' : ''));
+      el.prepend(skillIcon(x.k, 26));
+    });
+    if (s.slots.length < 3) this.html(sl, `<p class="hint">분신 슬롯은 윤회 특성 「분신술」로 늘어납니다 (${s.slots.length - 1}/2)</p>`);
+
+    const grid = this.html(body, '', 'skill-grid');
+    for (const k of Object.keys(SKILLS)) {
+      const sk = s.skills[k];
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'skill-card' + (this.sel.skill === k ? ' sel' : '');
+      card.dataset.fid = 'sk' + k;
+      card.appendChild(skillIcon(k, 30));
+      const need = xpNeed(sk.lv);
+      card.insertAdjacentHTML('beforeend', `<div class="sc-nm">${SKILLS[k].name}</div><div class="sc-lv">Lv.${sk.lv}</div>
+        <div class="sc-bar"><i style="width:${(sk.xp / need) * 100}%"></i></div>
+        <div class="sc-tool">${k === 'combat' ? '처치로 성장' : TOOL_TIERS[toolTier(sk.lv)].name + ' 도구'}</div>`);
+      card.addEventListener('click', () => { this.sel.skill = k; this.renderPanel(); });
+      grid.appendChild(card);
+    }
+    this.skillDetail(body, this.sel.skill);
+  }
+
+  skillDetail(body, k) {
+    const g = this.g, s = g.s, sk = s.skills[k];
+    const det = this.section(body, `${SKILLS[k].name} Lv.${sk.lv}`);
+    const need = xpNeed(sk.lv);
+    const pb = skillPassive(sk.lv);
+    const speed = k === 'combat' ? null : g.skillSpeed(k);
+    const mult = g.rareMult(k);
+    const eP = 1 / (1e-6 * Math.sqrt(mult));
+    this.html(det, `
+      <div><span>경험치</span><b>${fmt(sk.xp)} / ${fmt(need)}</b></div>
+      <div><span>패시브 (${esc(SKILLS[k].stat)})</span><b>+${k === 'fish' ? (sk.lv * 0.0005 + Math.floor(sk.lv / 10) * 0.005).toFixed(3) + ' 행운' : pct(pb)}</b></div>
+      ${speed ? `<div><span>작업 속도</span><b>×${speed.toFixed(2)}</b></div>` : ''}
+      <div><span>희귀 이상 확률 배율</span><b>×${mult.toFixed(2)}</b></div>
+      <div><span>누적 행동</span><b>${sk.n.toLocaleString()}회</b></div>
+      <div><span>불운 게이지 (태초)</span><b>${((sk.dryP / eP) * 100).toFixed(1)}%${pity(sk.dryP / eP) > 1 ? ` · 확률 ×${pity(sk.dryP / eP).toFixed(2)}` : ''}</b></div>`, 'statlist');
+    if (k !== 'combat') {
+      const row = this.html(det, '', 'chips');
+      s.slots.forEach((x, i) => {
+        row.appendChild(this.btn(x.k === k ? `${i === 0 ? '야영' : '분신 ' + i} 배치됨` : `${i === 0 ? '야영' : '분신 ' + i}에 배치`, () => g.setSlotSkill(i, k), { cls: x.k === k ? 'chip on' : 'chip', fid: 'as' + i }));
+      });
+    }
+    // Milestones
+    const ms = nextMilestones(k, sk.lv, 5);
+    this.html(det, `<h4>다음 보상</h4><ul class="ms">${ms.map(m => `<li class="${m.lv % 100 === 0 || m.lv >= 250 ? 'big' : ''}"><b>Lv.${m.lv}</b> ${esc(m.text)}</li>`).join('')}</ul>`);
+    // Spots
+    if (SPOTS[k]) {
+      const sp = this.section(body, '장소');
+      const unlocked = spotsUnlocked(sk.lv);
+      SPOTS[k].forEach((spot, i) => {
+        const locked = i >= unlocked;
+        const row = this.html(sp, '', 'spot' + (s.spots[k] === i ? ' on' : '') + (locked ? ' locked' : ''));
+        const icons = this.html(row, '', 'spot-icons');
+        for (const id of spot.items) icons.appendChild(s.codex[id] || !locked ? itemIcon(id, 22) : iconCanvas(ITEMS[id].icon, '#2a2a34', 22));
+        this.html(row, `<b>${esc(spot.name)}</b><small>${locked ? `Lv.${SPOT_LV[i]} 필요` : `경험치 ${[8, 14, 24, 40, 65][i]}/회`}</small>`, 'spot-txt');
+        if (!locked) row.appendChild(this.btn(s.spots[k] === i ? '선택됨' : '선택', () => { s.spots[k] = i; }, { cls: 'chip' + (s.spots[k] === i ? ' on' : ''), fid: 'sp' + i }));
+      });
+    }
+    if (k === 'alchemy') this.alchemyDetail(body);
+    // Skill-wide rares
+    const rr = this.section(body, '희귀 보상 (모든 장소 공통)');
+    const ul = this.html(rr, '', 'rares');
+    SKILL_RARES[k].forEach((id, i) => {
+      const it = ITEMS[id], known = s.codex[id];
+      const r = this.html(ul, `<div><b style="color:${TIERS[it.tier].color}">${known ? esc(it.name) : '???'}</b><small>${TIERS[it.tier].name} · ${['0.3%', '0.02%', '0.002%', '0.0001%'][i]}${it.effect && known ? ' · ' + esc(it.effect) : ''}${known ? ` · 보유 ${s.items[id] || 0}` : ''}</small></div>`, 'rare-row');
+      r.prepend(known ? itemIcon(id, 26) : iconCanvas(it.icon, '#2a2a34', 26));
+    });
+  }
+
+  alchemyDetail(body) {
+    const g = this.g, s = g.s, lv = s.skills.alchemy.lv;
+    const sec = this.section(body, '레시피');
+    for (const r of RECIPES) {
+      if (r.secret && !s.secret) continue;
+      const it = ITEMS[r.id];
+      const locked = lv < r.lv;
+      const done = r.max && g.crafted(r) >= r.max;
+      const row = this.html(sec, '', 'recipe' + (s.recipe === r.id ? ' on' : '') + (locked ? ' locked' : ''));
+      row.appendChild(itemIcon(r.id, 30));
+      const ins = Object.entries(r.in).map(([id, n]) => {
+        const have = s.items[id] || 0;
+        return `<span class="${have >= n ? 'ok' : 'no'}">${esc(ITEMS[id].name)} ${fmt(have)}/${n}</span>`;
+      }).join('');
+      this.html(row, `<b>${esc(it.name)}${r.max ? ` <small>(${g.crafted(r)}/${r.max})</small>` : ` <small>보유 ${s.items[r.id] || 0}</small>`}</b>
+        <small>${esc(it.desc || '')}</small><div class="ins">${locked ? `연금술 Lv.${r.lv} 필요` : ins}</div>`, 'recipe-txt');
+      if (!locked && !done) row.appendChild(this.btn(s.recipe === r.id ? '제작 중' : '선택', () => { s.recipe = r.id; }, { cls: 'chip' + (s.recipe === r.id ? ' on' : ''), fid: 'rc' + r.id }));
+    }
+    const pa = this.section(body, '물약 자동 사용 (전투 시작 시 1개씩)');
+    const chips = this.html(pa, '', 'chips');
+    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_antidote', 'p_warm']) {
+      const type = ITEMS[id].potion;
+      chips.appendChild(this.btn(`${ITEMS[id].name} ${s.potAuto[type] ? 'ON' : 'OFF'} · ${s.items[id] || 0}`, () => { s.potAuto[type] = !s.potAuto[type]; }, { cls: 'chip' + (s.potAuto[type] ? ' on' : ''), fid: 'pa' + id }));
+    }
+    this.html(pa, '<p class="hint">해독·온기 물약은 해당 지역에서 저항이 부족할 때만 사용됩니다. 실패해도 경험치는 1.5배를 받습니다.</p>');
+  }
+
+  // ----- Bag
+  p_bag(body) {
+    const s = this.g.s;
+    const tabs = this.html(body, '', 'chips');
+    const cats = { mat: '재료', pot: '물약·영약', rare: '영웅 이상' };
+    for (const [k, v] of Object.entries(cats)) tabs.appendChild(this.btn(v, () => { this.sel.bag = k; this.sel.item = null; }, { cls: 'chip' + (this.sel.bag === k ? ' on' : ''), fid: 'bt' + k }));
+    const ids = Object.keys(s.items).filter(id => s.items[id] > 0).filter(id => {
+      const it = ITEMS[id];
+      if (this.sel.bag === 'rare') return it.tier >= 3;
+      if (this.sel.bag === 'pot') return it.skill === 'alchemy' && it.tier < 3;
+      return it.tier < 3 && it.skill !== 'alchemy';
+    }).sort((a, b) => ITEMS[b].tier - ITEMS[a].tier || (ITEMS[a].skill > ITEMS[b].skill ? 1 : -1));
+    const grid = this.html(body, '', 'slotgrid');
+    if (!ids.length) this.html(grid, '<p class="hint">아직 비어 있어요. 야영지에서 생활 스킬을 돌려보세요.</p>');
+    for (const id of ids) {
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'cell t' + ITEMS[id].tier + (this.sel.item === id ? ' sel' : '');
+      cell.dataset.fid = 'it' + id;
+      cell.appendChild(itemIcon(id, 34));
+      cell.insertAdjacentHTML('beforeend', `<span class="cnt">${fmt(s.items[id])}</span>`);
+      cell.addEventListener('click', () => { this.sel.item = id; this.renderPanel(); });
+      grid.appendChild(cell);
+    }
+    if (this.sel.item && s.items[this.sel.item] > 0) this.itemInfo(body, this.sel.item);
+  }
+  itemInfo(body, id) {
+    const s = this.g.s, it = ITEMS[id];
+    const box = this.section(body);
+    box.classList.add('iteminfo');
+    box.appendChild(itemIcon(id, 40));
+    const src = it.skill === 'combat' ? '전투' : SKILLS[it.skill].name;
+    this.html(box, `<b style="color:${TIERS[it.tier].color}">${esc(it.name)}</b>
+      <small>${TIERS[it.tier].name} · ${src} · 보유 ${fmt(s.items[id] || 0)}${s.records[id] ? ` · 최고 ${s.records[id]}kg` : ''}</small>
+      <small>${esc(it.effect || it.desc || '도감 보너스 +' + pct(TIERS[it.tier].codex))}</small>`, 'ii-txt');
+    if (id === 'x_cat') box.appendChild(this.btn('사용', () => this.g.useItem('x_cat'), { fid: 'use' }));
+  }
+
+  // ----- Codex
+  p_codex(body) {
+    const g = this.g, s = g.s;
+    const all = Object.keys(ITEMS);
+    const found = all.filter(id => s.codex[id]).length;
+    this.html(body, `<div class="codex-head"><b>${found} / ${all.length}</b> 등록 · 도감 보너스 <b>+${pct(g.d.codex)}</b> (공격력·HP)</div>`);
+    const tabs = this.html(body, '', 'chips');
+    for (const k of Object.keys(SKILLS)) tabs.appendChild(this.btn(SKILLS[k].short, () => { this.sel.codex = k; this.sel.item = null; }, { cls: 'chip' + (this.sel.codex === k ? ' on' : ''), fid: 'cx' + k }));
+    const ids = all.filter(id => ITEMS[id].skill === this.sel.codex);
+    const n = ids.filter(id => s.codex[id]).length;
+    this.html(body, `<p class="hint">${SKILLS[this.sel.codex].name}: ${n}/${ids.length} · 등급별 보너스 일반 +0.2% … 태초 +20%${this.sel.codex === 'fish' ? ' · 계절 물고기는 해당 계절에만 낚입니다' : ''}</p>`);
+    const grid = this.html(body, '', 'slotgrid');
+    for (const id of ids) {
+      const it = ITEMS[id], known = s.codex[id];
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'cell t' + it.tier + (known ? '' : ' unknown') + (this.sel.item === id ? ' sel' : '');
+      cell.dataset.fid = 'cx' + id;
+      cell.appendChild(known ? itemIcon(id, 34) : iconCanvas(it.icon, '#22222c', 34));
+      cell.addEventListener('click', () => { this.sel.item = id; this.renderPanel(); });
+      grid.appendChild(cell);
+    }
+    const id = this.sel.item;
+    if (id && ITEMS[id].skill === this.sel.codex) {
+      if (s.codex[id]) this.itemInfo(body, id);
+      else {
+        const it = ITEMS[id];
+        const season = it.season !== undefined ? ` · ${SEASON_NAME[it.season]} 한정` : '';
+        this.html(this.section(body), `<b>??? </b><small>${TIERS[it.tier].name}${season} · 아직 발견하지 못했습니다</small>`, 'ii-txt');
+      }
+    }
+    if (this.sel.codex === 'fish') {
+      const recs = Object.entries(s.records).sort((a, b) => b[1] / ITEMS[b[0]].w - a[1] / ITEMS[a[0]].w).slice(0, 8);
+      if (recs.length) this.html(this.section(body, '어종별 최고 기록'), recs.map(([fid, w]) => `<div><span>${esc(ITEMS[fid].name)}</span><b>${w}kg</b></div>`).join(''), 'statlist');
+    }
+  }
+
+  // ----- Rebirth
+  p_rebirth(body) {
+    const g = this.g, s = g.s, rb = s.rb, c = s.char;
+    if (rb.choices) {
+      const sec = this.section(body, '전생의 기억을 하나 고르세요 (이번 회차 동안 적용)');
+      const row = this.html(sec, '', 'memories');
+      for (const k of rb.choices) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'memory';
+        b.innerHTML = `<b>${esc(MEMORIES[k].name)}</b><small>${esc(MEMORIES[k].desc)}</small>`;
+        b.addEventListener('click', () => this.act(() => g.chooseMemory(k)));
+        row.appendChild(b);
+      }
+    }
+    const gain = ashFor(c.maxFloor);
+    const top = this.section(body, '모닥불의 재');
+    this.html(top, `<div class="ash"><b>${fmt(rb.ash)}</b><small>보유 · 누적 ${fmt(rb.totalAsh)}</small></div>
+      <div class="statlist"><div><span>이번 회차 최고층</span><b>${c.maxFloor}층</b></div>
+      <div><span>지금 윤회하면</span><b>재 +${gain}</b></div></div>
+      <p class="hint">유지: 생활·전투 숙련 레벨, 도감, 재료, 영약, 기록 · 초기화: 캐릭터 레벨, 스탯, 장비, 골드, 층</p>`);
+    if (!g.canRebirth()) this.html(top, '<p class="hint">21층에 도달하면 윤회할 수 있습니다. 재는 (최고층 ÷ 5)^1.5 만큼 얻습니다.</p>');
+    else if (this.confirm === 'rebirth') {
+      const row = this.html(top, '<p class="warn">정말 윤회할까요? 장비와 레벨이 초기화됩니다.</p>', 'confirm');
+      row.appendChild(this.btn('윤회한다', () => { g.rebirth(); this.confirm = null; }, { cls: 'danger', fid: 'rbyes' }));
+      row.appendChild(this.btn('취소', () => { this.confirm = null; }, { fid: 'rbno' }));
+    } else top.appendChild(this.btn(`윤회하기 (재 +${gain})`, () => { this.confirm = 'rebirth'; }, { cls: 'big', fid: 'rb' }));
+
+    const trees = this.html(body, '', 'perk-trees');
+    for (const [tk, tname] of Object.entries(PERK_TREES)) {
+      const col = this.section(trees, tname);
+      col.classList.add('tree-' + tk);
+      for (const [id, p] of Object.entries(PERKS)) {
+        if (p.tree !== tk) continue;
+        const lv = rb.perks[id] || 0;
+        const maxed = p.max && lv >= p.max;
+        const cost = perkCost(id, lv);
+        const row = this.html(col, `<div><b>${esc(p.name)} <small>Lv.${lv}${p.max ? '/' + p.max : ''}</small></b><small>${esc(p.desc)}</small></div>`, 'perk');
+        row.appendChild(this.btn(maxed ? '최대' : `재 ${fmt(cost)}`, () => g.buyPerk(id), { disabled: maxed || rb.ash < cost, fid: 'pk' + id }));
+      }
+    }
+  }
+
+  // ----- Log
+  p_log(body) {
+    const s = this.g.s;
+    const hall = this.section(body, '명예의 전당 (전설 이상)');
+    if (!s.hall.length) this.html(hall, '<p class="hint">아직 기록이 없습니다. 전설 등급(0.02%)부터 이곳에 영원히 남습니다.</p>');
+    for (const h of s.hall.slice(0, 20)) {
+      const it = ITEMS[h.id];
+      const row = this.html(hall, `<div><b style="color:${TIERS[it.tier].color}">[${TIERS[it.tier].name}] ${esc(it.name)}</b>
+        <small>${new Date(h.at).toLocaleString('ko-KR')} · ${esc(SKILLS[h.src] ? SKILLS[h.src].name : '')} ${h.n.toLocaleString()}번째 시도</small></div>`, 'hall-row');
+      row.prepend(itemIcon(h.id, 28));
+    }
+    const lg = this.section(body, '최근 일지');
+    this.html(lg, s.log.slice(0, 40).map(l => `<li><time>${new Date(l.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time><span style="color:${TIERS[Math.min(6, l.tier)].color}">${esc(l.text)}</span></li>`).join('') || '<li>아직 기록이 없습니다.</li>', 'loglist');
+    const st = s.stats;
+    this.html(this.section(body, '누적 기록'), `<div><span>처치</span><b>${st.kills.toLocaleString()}</b></div><div><span>보스</span><b>${st.bosses}</b></div>
+      <div><span>쓰러짐</span><b>${st.deaths}</b></div><div><span>생활 행동</span><b>${st.actions.toLocaleString()}</b></div>
+      <div><span>플레이 시간</span><b>${(s.time / 3600).toFixed(1)}시간</b></div>`, 'statlist');
+  }
+
+  // ----- Settings
+  p_menu(body) {
+    const g = this.g, s = g.s;
+    const sv = this.section(body, '저장');
+    this.html(sv, `<p class="hint">10초마다 이 브라우저에 자동 저장됩니다. 브라우저 데이터를 지우면 사라지니, 오래 플레이하려면 내보내기 문자열을 따로 보관하세요. 오프라인 진행 상한: ${(g.offlineCapSec() / 3600).toFixed(0)}시간.</p>`);
+    sv.appendChild(this.btn('지금 저장', () => { this.hooks.save(); this.toast('저장했습니다'); }, { fid: 'save' }));
+    const ex = this.section(body, '내보내기');
+    const ta = document.createElement('textarea');
+    ta.id = 'exportBox';
+    ta.readOnly = true;
+    ta.rows = 3;
+    ta.value = this.hooks.exportSave();
+    ta.dataset.fid = 'ex';
+    ex.appendChild(ta);
+    ex.appendChild(this.btn('복사', () => {
+      const t = $('#exportBox');
+      navigator.clipboard.writeText(t.value).then(() => this.toast('복사했습니다'), () => { t.select(); this.toast('텍스트를 선택했습니다. 직접 복사하세요'); });
+    }, { fid: 'copy' }));
+    const im = this.section(body, '가져오기');
+    const ti = document.createElement('textarea');
+    ti.id = 'importBox';
+    ti.rows = 3;
+    ti.placeholder = '내보낸 문자열을 붙여넣으세요';
+    ti.dataset.fid = 'im';
+    im.appendChild(ti);
+    im.appendChild(this.btn('불러오기', () => {
+      const ok = this.hooks.importSave($('#importBox').value.trim());
+      this.toast(ok ? '불러왔습니다' : '문자열을 읽을 수 없습니다. 내보내기로 만든 문자열 전체를 붙여넣었는지 확인하세요', ok ? 2 : 5);
+    }, { fid: 'load' }));
+    const rs = this.section(body, '처음부터');
+    if (this.confirm === 'reset') {
+      const row = this.html(rs, '<p class="warn">모든 진행이 사라집니다. 정말 초기화할까요?</p>', 'confirm');
+      row.appendChild(this.btn('초기화', () => this.hooks.reset(), { cls: 'danger', fid: 'rsyes' }));
+      row.appendChild(this.btn('취소', () => { this.confirm = null; }, { fid: 'rsno' }));
+    } else rs.appendChild(this.btn('데이터 초기화', () => { this.confirm = 'reset'; }, { cls: 'danger', fid: 'rs' }));
+  }
+
+  // ---------- Modals ----------
+  showModal(html, buttons = [], locked = false) {
+    const m = $('#modal');
+    m.innerHTML = `<div class="modal-box">${html}<div class="modal-btns"></div></div>`;
+    const row = m.querySelector('.modal-btns');
+    for (const [label, fn] of buttons) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pbtn big';
+      b.textContent = label;
+      b.addEventListener('click', () => { if (fn) fn(); this.closeModal(); });
+      row.appendChild(b);
+    }
+    this.modalLocked = locked;
+    m.hidden = false;
+    const first = row.querySelector('button');
+    if (first) first.focus();
+  }
+  closeModal() { $('#modal').hidden = true; this.modalLocked = false; }
+
+  offlineReport(sm, rng) {
+    const h = sm.sec / 3600;
+    const time = h >= 1 ? `${Math.floor(h)}시간 ${Math.round((h % 1) * 60)}분` : `${Math.round(sm.sec / 60)}분`;
+    const jokes = [
+      `모닥불에 소시지를 ${1 + Math.floor(rng() * Math.max(1, h * 3))}번 태웠습니다.`,
+      `슬라임에게 ${Math.floor(sm.kills / 37) + 1}번 미끄러졌습니다.`,
+      `별을 ${Math.floor(h * 11) + 3}개 세다가 잠들었습니다.`,
+      `전설의 메기를 ${Math.floor(rng() * 3) + 1}번 놓쳤습니다.`,
+      `혼잣말을 ${Math.floor(h * 40) + 5}번 했습니다.`,
+    ];
+    const joke = jokes[Math.floor(rng() * jokes.length)];
+    const drops = sm.drops.map((n, i) => (n ? `<span style="color:${TIERS[i].color}">${TIERS[i].name} ${fmt(n)}</span>` : '')).filter(Boolean).join(' · ');
+    const best = [...new Set(sm.best)].sort((a, b) => ITEMS[b].tier - ITEMS[a].tier).slice(0, 6)
+      .map(id => `<li style="color:${TIERS[ITEMS[id].tier].color}">[${TIERS[ITEMS[id].tier].name}] ${esc(ITEMS[id].name)}</li>`).join('');
+    const skills = sm.skills.map(x => `<li>${esc(SKILLS[x.k].name)} Lv.${x.from} → <b>${x.to}</b></li>`).join('');
+    this.showModal(`
+      <h2>📜 귀환 일지</h2>
+      <p class="lead">당신이 자리를 비운 <b>${time}</b> 동안, 모험가는…</p>
+      <ul class="report">
+        <li>몬스터 <b>${sm.kills.toLocaleString()}</b>마리를 쓰러뜨렸고${sm.deaths ? `, ${sm.deaths}번 쓰러졌다가 일어났습니다` : '습니다'}.</li>
+        ${sm.charLv[1] > sm.charLv[0] ? `<li>레벨이 ${sm.charLv[0]} → <b>${sm.charLv[1]}</b> 올랐습니다.</li>` : ''}
+        ${sm.floor[1] > sm.floor[0] ? `<li>최고 ${sm.floor[0]}층 → <b>${sm.floor[1]}층</b>까지 올랐습니다.</li>` : ''}
+        <li>골드 <b>${fmt(sm.gold)}</b>를 모았습니다.</li>
+        ${sm.records ? `<li>물고기 크기 신기록을 <b>${sm.records}</b>번 세웠습니다.</li>` : ''}
+        <li>${joke}</li>
+      </ul>
+      ${skills ? `<h4>성장한 스킬</h4><ul class="report">${skills}</ul>` : ''}
+      ${drops ? `<h4>얻은 것</h4><p>${drops}</p>` : ''}
+      ${best ? `<h4>눈에 띄는 획득</h4><ul class="report">${best}</ul>` : ''}
+      ${sm.codex.length ? `<p>도감에 <b>${sm.codex.length}</b>종이 새로 등록되었습니다.</p>` : ''}`, [['계속하기', null]]);
+  }
+}
+
+return { fmt, UI };
+})();
+
+__m.main = (() => {
+// Boot: load or create a save, catch up offline time, then run the logic
+// loop (10 Hz, wall-clock based) and the render loop (requestAnimationFrame).
+const { Game, newState, migrate } = __m.engine;
+const { Renderer } = __m.render;
+const { UI } = __m.ui;
+const { LINES, ITEMS } = __m.data;
+
+const KEY = 'campfire-chronicle-save-v1';
+
+function readSave() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+function encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+function decode(str) { return decodeURIComponent(escape(atob(str))); }
+
+function start(hotData = {}) {
+  let raw = null;
+  try { raw = hotData.save ? JSON.parse(hotData.save) : readSave(); } catch { raw = null; }
+  const state = raw ? migrate(raw) : newState();
+  const fresh = !raw;
+  let game = new Game(state);
+  const canvas = document.getElementById('scene');
+  const renderer = new Renderer(canvas, document.getElementById('overlay'), game);
+
+  const save = () => {
+    try { localStorage.setItem(KEY, game.serialize()); } catch { /* storage blocked: keep playing */ }
+  };
+  const hooks = {
+    save,
+    exportSave: () => encode(game.serialize()),
+    importSave: str => {
+      try {
+        const data = migrate(JSON.parse(decode(str)));
+        if (!data.char || !data.skills) return false;
+        swap(new Game(data));
+        save();
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    reset: () => {
+      swap(new Game(newState()));
+      save();
+      ui.close();
+      ui.toast('새 모험을 시작합니다');
+    },
+  };
+  const ui = new UI(game, renderer, hooks);
+  function swap(g) {
+    game = g;
+    renderer.g = g;
+    ui.g = g;
+    renderer.slotVis = [];
+  }
+
+  // Offline catch-up
+  const catchUp = (sec, report) => {
+    const capped = Math.min(sec, game.offlineCapSec());
+    if (capped < 1) return;
+    const sm = game.fastForward(capped);
+    game.events.length = 0;
+    if (report && capped >= 60) {
+      ui.offlineReport(sm, Math.random);
+      renderer.replay(sm.best.filter(id => ITEMS[id].tier >= 4));
+    }
+  };
+  if (!fresh && !hotData.save) {
+    const away = (Date.now() - state.lastSeen) / 1000;
+    catchUp(away, true);
+  }
+  if (fresh) {
+    ui.showModal(`<h2>🔥 모닥불 연대기</h2>
+      <p class="lead">한 명의 모험가가 끝없는 길을 오릅니다.</p>
+      <ul class="report">
+        <li>싸우다 지치면 <b>모닥불 야영지</b>에서 쉬며 생활 스킬을 합니다.</li>
+        <li>광질·벌목·채집·낚시·사냥·연금술의 레벨은 <b>윤회해도 사라지지 않고</b> 전투를 영원히 강하게 만듭니다.</li>
+        <li>모든 행동에 운이 있습니다. 가장 귀한 것은 <b>0.0001%</b>.</li>
+        <li>창을 닫아도 최대 12시간까지 모험은 계속됩니다.</li>
+      </ul>`, [['모험 시작', null]]);
+  }
+
+  // Logic loop
+  let last = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    const dt = (now - last) / 1000;
+    last = now;
+    if (dt > 3) catchUp(dt, dt > 60); // tab was throttled in the background
+    else game.advance(dt, true);
+    if (game.events.length) {
+      renderer.handle(game.events);
+      ui.handle(game.events);
+      game.events.length = 0;
+    }
+  }, 100);
+
+  // Render loop
+  let lastF = performance.now();
+  let uiT = 0, panelT = 0, talkT = 8;
+  const frame = now => {
+    const dt = Math.min(0.05, (now - lastF) / 1000);
+    lastF = now;
+    renderer.frame(dt);
+    uiT += dt; panelT += dt; talkT -= dt;
+    if (uiT > 0.2) { uiT = 0; ui.updateBar(); }
+    if (panelT > 1.5) { panelT = 0; ui.refreshPanel(); }
+    if (talkT < 0) {
+      talkT = 14 + Math.random() * 14;
+      const s = game.s;
+      const pool = s.mode === 'camp' ? [...LINES.camp, ...LINES[s.slots[0].k]] : LINES.fight;
+      renderer.say(pool[Math.floor(Math.random() * pool.length)]);
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+
+  setInterval(save, 10000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  addEventListener('pagehide', save);
+  window.claude?.hot?.snapshot?.(() => ({ save: game.serialize() }));
+  if (location.hash === '#debug') window.__cc = { game: () => game, renderer, ui };
+  ui.updateBar();
+}
+
+if (window.claude?.hot?.ready) window.claude.hot.ready(start);
+else start(window.claude?.hot?.data ?? {});
+
+return {  };
+})();
+})();
+</script>
