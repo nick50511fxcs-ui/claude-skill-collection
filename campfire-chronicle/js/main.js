@@ -81,13 +81,52 @@ function start(hotData = {}) {
     renderer.slotVis = [];
   }
 
-  // Offline catch-up
-  const catchUp = (sec, report) => {
-    const capped = Math.min(sec, game.offlineCapSec());
-    if (capped < 1) return;
-    const sm = game.fastForward(capped);
+  // Offline catch-up. There is no cap: a day of absence computes in well under
+  // a second, so long absences run in one-day chunks behind a progress note
+  // instead of freezing the page.
+  let catching = false;
+  const merge = parts => {
+    const first = parts[0], lastPart = parts.at(-1), skills = {};
+    for (const p of parts) for (const x of p.skills) skills[x.k] = { k: x.k, from: skills[x.k] ? skills[x.k].from : x.from, to: x.to };
+    return {
+      sec: parts.reduce((a, p) => a + p.sec, 0),
+      kills: parts.reduce((a, p) => a + p.kills, 0),
+      deaths: parts.reduce((a, p) => a + p.deaths, 0),
+      drops: first.drops.map((_, i) => parts.reduce((a, p) => a + p.drops[i], 0)),
+      best: parts.flatMap(p => p.best),
+      records: parts.reduce((a, p) => a + p.records, 0),
+      codex: parts.flatMap(p => p.codex),
+      fails: parts.reduce((a, p) => a + p.fails, 0),
+      gold: parts.reduce((a, p) => a + p.gold, 0),
+      charLv: [first.charLv[0], lastPart.charLv[1]],
+      floor: [first.floor[0], lastPart.floor[1]],
+      skills: Object.values(skills),
+    };
+  };
+  const catchUp = async (sec, report) => {
+    if (catching || sec < 1) return;
+    catching = true;
+    const parts = [];
+    try {
+      if (sec <= 2 * 86400) parts.push(game.fastForward(sec));
+      else {
+        ui.showModal('<h2>📜 귀환 중…</h2><p class="lead" id="ffProgress"></p>', [], true);
+        for (let done = 0; done < sec;) {
+          const chunk = Math.min(86400, sec - done);
+          parts.push(game.fastForward(chunk));
+          done += chunk;
+          const el = document.getElementById('ffProgress');
+          if (el) el.textContent = `자리를 비운 ${Math.ceil(sec / 86400)}일을 정리하는 중… ${Math.round((done / sec) * 100)}%`;
+          await new Promise(r => setTimeout(r, 0));
+        }
+        ui.closeModal();
+      }
+    } finally {
+      catching = false;
+    }
     game.events.length = 0;
-    if (report && capped >= 60) {
+    const sm = merge(parts);
+    if (report && sec >= 60) {
       ui.offlineReport(sm, Math.random);
       renderer.replay(sm.best.filter(id => ITEMS[id].tier >= 4));
     }
@@ -103,7 +142,7 @@ function start(hotData = {}) {
         <li>싸우다 지치면 <b>모닥불 야영지</b>에서 쉬며 생활 스킬을 합니다.</li>
         <li>광질·벌목·채집·낚시·사냥·연금술의 레벨은 <b>윤회해도 사라지지 않고</b> 전투를 영원히 강하게 만듭니다.</li>
         <li>모든 행동에 운이 있습니다. 가장 귀한 것은 <b>0.0001%</b>.</li>
-        <li>창을 닫아도 최대 12시간까지 모험은 계속됩니다.</li>
+        <li>창을 닫아도 모험은 계속됩니다. 몇 시간이든 며칠이든, 돌아오면 그동안의 일을 정리해 드려요.</li>
       </ul>`, [['모험 시작', null]]);
   }
 
@@ -113,6 +152,7 @@ function start(hotData = {}) {
     const now = performance.now();
     const dt = (now - last) / 1000;
     last = now;
+    if (catching) return;
     if (dt > 3) catchUp(dt, dt > 60); // tab was throttled in the background
     else game.advance(dt, true);
     if (game.events.length) {

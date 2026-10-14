@@ -308,7 +308,7 @@ export const PERKS = {
   a_xp: { tree: 'art', name: '장인의 눈', desc: '생활 경험치 +5%', base: 2, grow: 1.45, max: 20 },
   a_luck: { tree: 'art', name: '행운의 불씨', desc: '행운 배율 +0.05', base: 3, grow: 1.6, max: 10 },
   r_clone: { tree: 'wan', name: '분신술', desc: '분신 슬롯 +1 (분신은 생활만, 속도 60%)', base: 10, grow: 6, max: 2 },
-  r_offline: { tree: 'wan', name: '긴 여정', desc: '오프라인 상한 +2시간', base: 3, grow: 1.6, max: 18 },
+  r_offline: { tree: 'wan', name: '긴 여정', desc: '분신 작업 속도 +5%', base: 3, grow: 1.6, max: 8 },
   r_gold: { tree: 'wan', name: '방랑 상인', desc: '골드 +20%', base: 1, grow: 1.4 },
 };
 export const PERK_TREES = { war: '전사의 불', art: '장인의 불', wan: '방랑자의 불' };

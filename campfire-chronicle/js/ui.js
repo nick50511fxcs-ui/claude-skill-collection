@@ -565,7 +565,7 @@ export class UI {
     const cl = this.hooks.cloudStatus();
     this.html(sv, `<div class="statlist"><div><span>브라우저 저장</span><b>10초마다</b></div>
       <div><span>클라우드 저장</span><b>${esc(cl.ok ? '1분마다 · ' + (cl.lastAt ? new Date(cl.lastAt).toLocaleTimeString('ko-KR') + ' 저장' : '연결됨') : cl.status)}</b></div></div>
-      <p class="hint">클라우드 저장은 로그인한 사람마다 따로 보관되어 다른 기기에서도 이어집니다. 그래도 오래 플레이한다면 내보내기 문자열을 따로 보관해 두세요. 오프라인 진행 상한: ${(g.offlineCapSec() / 3600).toFixed(0)}시간.</p>`);
+      <p class="hint">클라우드 저장은 로그인한 사람마다 따로 보관되어 다른 기기에서도 이어집니다. 그래도 오래 플레이한다면 내보내기 문자열을 따로 보관해 두세요. 창을 닫아 둔 시간은 제한 없이 모두 진행됩니다.</p>`);
     sv.appendChild(this.btn('지금 저장', () => { this.hooks.save(); this.toast('저장했습니다'); }, { fid: 'save' }));
     const ex = this.section(body, '내보내기');
     const ta = document.createElement('textarea');
@@ -620,7 +620,7 @@ export class UI {
 
   offlineReport(sm, rng) {
     const h = sm.sec / 3600;
-    const time = h >= 1 ? `${Math.floor(h)}시간 ${Math.round((h % 1) * 60)}분` : `${Math.round(sm.sec / 60)}분`;
+    const time = h >= 48 ? `${Math.floor(h / 24)}일 ${Math.floor(h % 24)}시간` : h >= 1 ? `${Math.floor(h)}시간 ${Math.round((h % 1) * 60)}분` : `${Math.round(sm.sec / 60)}분`;
     const jokes = [
       `모닥불에 소시지를 ${1 + Math.floor(rng() * Math.max(1, h * 3))}번 태웠습니다.`,
       `슬라임에게 ${Math.floor(sm.kills / 37) + 1}번 미끄러졌습니다.`,

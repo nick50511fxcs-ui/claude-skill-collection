@@ -29,7 +29,7 @@ browsers may clear site data.
 | Alchemy: 10 recipes, potions auto-used per fight, permanent elixirs, great success / miracle / failure, secret recipe | done |
 | Rarity: common → primordial (0.0001%), luck stat with cap, sqrt luck on myth/primordial, soft pity, stacking primordials | done |
 | Rebirth (ash, 3 perk trees, clone slots), memory cards (1 of 3 per life) | done |
-| Offline progress (12 h base, perk +2 h/level) with a "return journal" report and replay of big drops | done |
+| Offline progress with no cap (long absences compute in one-day chunks behind a progress note), "return journal" report, replay of big drops | done |
 | Codex with permanent bonuses, hall of fame, log, export / import, seeded RNG stored in the save | done |
 | Second and third prestige layers, crafting gear from materials, cooking, cloud save, sound | not yet |
 

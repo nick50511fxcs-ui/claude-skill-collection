@@ -8,7 +8,6 @@ import {
 import { makeRng, hash32 } from './rng.js';
 
 export const VERSION = 1;
-export const OFFLINE_BASE_H = 12;
 export const ACTION_TIME = 3;
 export const ALCH_TIME = 4;
 export const CLONE_SPEED = 0.6;
@@ -288,7 +287,8 @@ export class Game {
       this.dirty = true;
     }
     if (this.dirty) this.calc();
-    for (let i = 1; i < s.slots.length; i++) this.lifeTick(s.slots[i], i, dt * CLONE_SPEED);
+    const cloneSpeed = CLONE_SPEED * (1 + 0.05 * this.P('r_offline'));
+    for (let i = 1; i < s.slots.length; i++) this.lifeTick(s.slots[i], i, dt * cloneSpeed);
     if (s.mode === 'fight') this.fightStep(dt);
     else this.campStep(dt);
   }
@@ -774,7 +774,6 @@ export class Game {
   }
 
   // ---------- UI helpers ----------
-  offlineCapSec() { return (OFFLINE_BASE_H + 2 * this.P('r_offline')) * 3600; }
   goals() {
     const s = this.s, c = s.char, out = [];
     if (s.rb.choices) out.push('전생의 기억을 골라주세요 (윤회 탭)');

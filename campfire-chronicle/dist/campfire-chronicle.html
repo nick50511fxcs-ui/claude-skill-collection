@@ -680,7 +680,7 @@ const PERKS = {
   a_xp: { tree: 'art', name: '장인의 눈', desc: '생활 경험치 +5%', base: 2, grow: 1.45, max: 20 },
   a_luck: { tree: 'art', name: '행운의 불씨', desc: '행운 배율 +0.05', base: 3, grow: 1.6, max: 10 },
   r_clone: { tree: 'wan', name: '분신술', desc: '분신 슬롯 +1 (분신은 생활만, 속도 60%)', base: 10, grow: 6, max: 2 },
-  r_offline: { tree: 'wan', name: '긴 여정', desc: '오프라인 상한 +2시간', base: 3, grow: 1.6, max: 18 },
+  r_offline: { tree: 'wan', name: '긴 여정', desc: '분신 작업 속도 +5%', base: 3, grow: 1.6, max: 8 },
   r_gold: { tree: 'wan', name: '방랑 상인', desc: '골드 +20%', base: 1, grow: 1.4 },
 };
 const PERK_TREES = { war: '전사의 불', art: '장인의 불', wan: '방랑자의 불' };
@@ -729,7 +729,6 @@ const { TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_R
 const { makeRng, hash32 } = __m.rng;
 
 const VERSION = 1;
-const OFFLINE_BASE_H = 12;
 const ACTION_TIME = 3;
 const ALCH_TIME = 4;
 const CLONE_SPEED = 0.6;
@@ -1009,7 +1008,8 @@ class Game {
       this.dirty = true;
     }
     if (this.dirty) this.calc();
-    for (let i = 1; i < s.slots.length; i++) this.lifeTick(s.slots[i], i, dt * CLONE_SPEED);
+    const cloneSpeed = CLONE_SPEED * (1 + 0.05 * this.P('r_offline'));
+    for (let i = 1; i < s.slots.length; i++) this.lifeTick(s.slots[i], i, dt * cloneSpeed);
     if (s.mode === 'fight') this.fightStep(dt);
     else this.campStep(dt);
   }
@@ -1495,7 +1495,6 @@ class Game {
   }
 
   // ---------- UI helpers ----------
-  offlineCapSec() { return (OFFLINE_BASE_H + 2 * this.P('r_offline')) * 3600; }
   goals() {
     const s = this.s, c = s.char, out = [];
     if (s.rb.choices) out.push('전생의 기억을 골라주세요 (윤회 탭)');
@@ -1510,7 +1509,7 @@ class Game {
   }
 }
 
-return { VERSION, OFFLINE_BASE_H, ACTION_TIME, ALCH_TIME, CLONE_SPEED, KILLS_PER_FLOOR, MON_INTERVAL, xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, perkCost, pity, ashFor, monHp, monAtk, GEAR_GROWTH, gearValue, charmValue, gearScore, gearName, enhanceCost, milestoneAt, nextMilestones, newState, migrate, Game };
+return { VERSION, ACTION_TIME, ALCH_TIME, CLONE_SPEED, KILLS_PER_FLOOR, MON_INTERVAL, xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, perkCost, pity, ashFor, monHp, monAtk, GEAR_GROWTH, gearValue, charmValue, gearScore, gearName, enhanceCost, milestoneAt, nextMilestones, newState, migrate, Game };
 })();
 
 __m.sprites = (() => {
@@ -4077,7 +4076,7 @@ class UI {
     const cl = this.hooks.cloudStatus();
     this.html(sv, `<div class="statlist"><div><span>브라우저 저장</span><b>10초마다</b></div>
       <div><span>클라우드 저장</span><b>${esc(cl.ok ? '1분마다 · ' + (cl.lastAt ? new Date(cl.lastAt).toLocaleTimeString('ko-KR') + ' 저장' : '연결됨') : cl.status)}</b></div></div>
-      <p class="hint">클라우드 저장은 로그인한 사람마다 따로 보관되어 다른 기기에서도 이어집니다. 그래도 오래 플레이한다면 내보내기 문자열을 따로 보관해 두세요. 오프라인 진행 상한: ${(g.offlineCapSec() / 3600).toFixed(0)}시간.</p>`);
+      <p class="hint">클라우드 저장은 로그인한 사람마다 따로 보관되어 다른 기기에서도 이어집니다. 그래도 오래 플레이한다면 내보내기 문자열을 따로 보관해 두세요. 창을 닫아 둔 시간은 제한 없이 모두 진행됩니다.</p>`);
     sv.appendChild(this.btn('지금 저장', () => { this.hooks.save(); this.toast('저장했습니다'); }, { fid: 'save' }));
     const ex = this.section(body, '내보내기');
     const ta = document.createElement('textarea');
@@ -4132,7 +4131,7 @@ class UI {
 
   offlineReport(sm, rng) {
     const h = sm.sec / 3600;
-    const time = h >= 1 ? `${Math.floor(h)}시간 ${Math.round((h % 1) * 60)}분` : `${Math.round(sm.sec / 60)}분`;
+    const time = h >= 48 ? `${Math.floor(h / 24)}일 ${Math.floor(h % 24)}시간` : h >= 1 ? `${Math.floor(h)}시간 ${Math.round((h % 1) * 60)}분` : `${Math.round(sm.sec / 60)}분`;
     const jokes = [
       `모닥불에 소시지를 ${1 + Math.floor(rng() * Math.max(1, h * 3))}번 태웠습니다.`,
       `슬라임에게 ${Math.floor(sm.kills / 37) + 1}번 미끄러졌습니다.`,
@@ -4250,13 +4249,52 @@ function start(hotData = {}) {
     renderer.slotVis = [];
   }
 
-  // Offline catch-up
-  const catchUp = (sec, report) => {
-    const capped = Math.min(sec, game.offlineCapSec());
-    if (capped < 1) return;
-    const sm = game.fastForward(capped);
+  // Offline catch-up. There is no cap: a day of absence computes in well under
+  // a second, so long absences run in one-day chunks behind a progress note
+  // instead of freezing the page.
+  let catching = false;
+  const merge = parts => {
+    const first = parts[0], lastPart = parts.at(-1), skills = {};
+    for (const p of parts) for (const x of p.skills) skills[x.k] = { k: x.k, from: skills[x.k] ? skills[x.k].from : x.from, to: x.to };
+    return {
+      sec: parts.reduce((a, p) => a + p.sec, 0),
+      kills: parts.reduce((a, p) => a + p.kills, 0),
+      deaths: parts.reduce((a, p) => a + p.deaths, 0),
+      drops: first.drops.map((_, i) => parts.reduce((a, p) => a + p.drops[i], 0)),
+      best: parts.flatMap(p => p.best),
+      records: parts.reduce((a, p) => a + p.records, 0),
+      codex: parts.flatMap(p => p.codex),
+      fails: parts.reduce((a, p) => a + p.fails, 0),
+      gold: parts.reduce((a, p) => a + p.gold, 0),
+      charLv: [first.charLv[0], lastPart.charLv[1]],
+      floor: [first.floor[0], lastPart.floor[1]],
+      skills: Object.values(skills),
+    };
+  };
+  const catchUp = async (sec, report) => {
+    if (catching || sec < 1) return;
+    catching = true;
+    const parts = [];
+    try {
+      if (sec <= 2 * 86400) parts.push(game.fastForward(sec));
+      else {
+        ui.showModal('<h2>📜 귀환 중…</h2><p class="lead" id="ffProgress"></p>', [], true);
+        for (let done = 0; done < sec;) {
+          const chunk = Math.min(86400, sec - done);
+          parts.push(game.fastForward(chunk));
+          done += chunk;
+          const el = document.getElementById('ffProgress');
+          if (el) el.textContent = `자리를 비운 ${Math.ceil(sec / 86400)}일을 정리하는 중… ${Math.round((done / sec) * 100)}%`;
+          await new Promise(r => setTimeout(r, 0));
+        }
+        ui.closeModal();
+      }
+    } finally {
+      catching = false;
+    }
     game.events.length = 0;
-    if (report && capped >= 60) {
+    const sm = merge(parts);
+    if (report && sec >= 60) {
       ui.offlineReport(sm, Math.random);
       renderer.replay(sm.best.filter(id => ITEMS[id].tier >= 4));
     }
@@ -4272,7 +4310,7 @@ function start(hotData = {}) {
         <li>싸우다 지치면 <b>모닥불 야영지</b>에서 쉬며 생활 스킬을 합니다.</li>
         <li>광질·벌목·채집·낚시·사냥·연금술의 레벨은 <b>윤회해도 사라지지 않고</b> 전투를 영원히 강하게 만듭니다.</li>
         <li>모든 행동에 운이 있습니다. 가장 귀한 것은 <b>0.0001%</b>.</li>
-        <li>창을 닫아도 최대 12시간까지 모험은 계속됩니다.</li>
+        <li>창을 닫아도 모험은 계속됩니다. 몇 시간이든 며칠이든, 돌아오면 그동안의 일을 정리해 드려요.</li>
       </ul>`, [['모험 시작', null]]);
   }
 
@@ -4282,6 +4320,7 @@ function start(hotData = {}) {
     const now = performance.now();
     const dt = (now - last) / 1000;
     last = now;
+    if (catching) return;
     if (dt > 3) catchUp(dt, dt > 60); // tab was throttled in the background
     else game.advance(dt, true);
     if (game.events.length) {
