@@ -30,6 +30,25 @@ function start(hotData = {}) {
   const save = () => {
     try { localStorage.setItem(KEY, game.serialize()); } catch { /* storage blocked: keep playing */ }
   };
+  // Cloud save: one private document per signed-in viewer (data/users/<id>/save).
+  // Browser storage stays the fast local copy; the cloud copy follows the player across devices.
+  const cloud = { ref: null, ok: false, busy: false, lastAt: 0, status: '연결 중…' };
+  const cloudSave = async () => {
+    if (!cloud.ok || cloud.busy) return;
+    cloud.busy = true;
+    try {
+      await cloud.ref.set({ json: game.serialize(), time: game.s.time, at: Date.now() });
+      cloud.lastAt = Date.now();
+      cloud.status = '연결됨';
+    } catch (e) {
+      if (e && (e.code === 'invalid_argument' || e.code === 'revoked' || e.code === 'not_granted' || e.code === 'quota_exceeded')) {
+        cloud.ok = false;
+        cloud.status = e.code === 'invalid_argument' ? '이 페이지에 저장 권한이 없어 브라우저에만 저장됩니다' : '사용할 수 없어 브라우저에만 저장됩니다';
+      }
+    } finally {
+      cloud.busy = false;
+    }
+  };
   const hooks = {
     save,
     exportSave: () => encode(game.serialize()),
@@ -39,14 +58,17 @@ function start(hotData = {}) {
         if (!data.char || !data.skills) return false;
         swap(new Game(data));
         save();
+        cloudSave();
         return true;
       } catch {
         return false;
       }
     },
+    cloudStatus: () => cloud,
     reset: () => {
       swap(new Game(newState()));
       save();
+      cloudSave();
       ui.close();
       ui.toast('새 모험을 시작합니다');
     },
@@ -121,7 +143,32 @@ function start(hotData = {}) {
   requestAnimationFrame(frame);
 
   setInterval(save, 10000);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  setInterval(cloudSave, 60000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); cloudSave(); } });
+  (async () => {
+    try {
+      if (!window.claude?.use) { cloud.status = '이 환경에서는 브라우저에만 저장됩니다'; return; }
+      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      const uid = user ? await user.id() : null;
+      if (!db || !uid) { cloud.status = '로그인하면 클라우드 저장을 쓸 수 있습니다'; return; }
+      cloud.ref = db.doc('data/users/' + uid + '/save');
+      const snap = await cloud.ref.get();
+      if (snap.exists) {
+        const raw = JSON.parse(snap.data().json);
+        if (raw && raw.time > game.s.time + 30) {
+          swap(new Game(migrate(raw)));
+          catchUp((Date.now() - raw.lastSeen) / 1000, true);
+          save();
+          ui.toast('클라우드에 저장된 진행을 불러왔습니다', 2);
+        }
+      }
+      cloud.ok = true;
+      cloud.status = '연결됨';
+      cloudSave();
+    } catch {
+      cloud.status = '사용할 수 없어 브라우저에만 저장됩니다';
+    }
+  })();
   addEventListener('pagehide', save);
   window.claude?.hot?.snapshot?.(() => ({ save: game.serialize() }));
   if (location.hash === '#debug') window.__cc = { game: () => game, renderer, ui };

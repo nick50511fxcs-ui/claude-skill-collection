@@ -562,7 +562,10 @@ export class UI {
   p_menu(body) {
     const g = this.g, s = g.s;
     const sv = this.section(body, '저장');
-    this.html(sv, `<p class="hint">10초마다 이 브라우저에 자동 저장됩니다. 브라우저 데이터를 지우면 사라지니, 오래 플레이하려면 내보내기 문자열을 따로 보관하세요. 오프라인 진행 상한: ${(g.offlineCapSec() / 3600).toFixed(0)}시간.</p>`);
+    const cl = this.hooks.cloudStatus();
+    this.html(sv, `<div class="statlist"><div><span>브라우저 저장</span><b>10초마다</b></div>
+      <div><span>클라우드 저장</span><b>${esc(cl.ok ? '1분마다 · ' + (cl.lastAt ? new Date(cl.lastAt).toLocaleTimeString('ko-KR') + ' 저장' : '연결됨') : cl.status)}</b></div></div>
+      <p class="hint">클라우드 저장은 로그인한 사람마다 따로 보관되어 다른 기기에서도 이어집니다. 그래도 오래 플레이한다면 내보내기 문자열을 따로 보관해 두세요. 오프라인 진행 상한: ${(g.offlineCapSec() / 3600).toFixed(0)}시간.</p>`);
     sv.appendChild(this.btn('지금 저장', () => { this.hooks.save(); this.toast('저장했습니다'); }, { fid: 'save' }));
     const ex = this.section(body, '내보내기');
     const ta = document.createElement('textarea');
