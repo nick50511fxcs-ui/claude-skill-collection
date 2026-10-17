@@ -150,6 +150,40 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
 @keyframes heartbeat { 0%, 100% { background: #000; } 30% { background: #2a0010; } 45% { background: #000; } 60% { background: #1a0010; } }
 @keyframes reveal { from { opacity: 1; } to { opacity: 0; } }
 
+/* Boss bar and warning */
+.bossbar { left: 50% !important; top: 4% !important; transform: translateX(-50%) !important; width: min(46%, 420px); display: flex; flex-direction: column; gap: 3px; align-items: stretch; }
+.bb-name { text-align: center; font-size: clamp(11px, 1.4vw, 16px); color: #fff; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bb-track { height: clamp(8px, 1.2vw, 14px); background: #1a0a12; border: 2px solid #000; box-shadow: 0 0 0 1px #ff8aa8; border-radius: 3px; overflow: hidden; }
+.bb-track i { display: block; height: 100%; background: linear-gradient(#ff8a9a, #e8244a 60%, #8a1028); transition: width 0.15s linear; }
+.bossbar.elite .bb-track { box-shadow: 0 0 0 1px #ffd27a; }
+.bossbar.elite .bb-track i { background: linear-gradient(#ffe0a0, #ffb84a 60%, #b8701a); }
+.bosswarn { left: 50% !important; top: 42% !important; transform: translate(-50%, -50%) !important; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 28px; background: rgba(40, 0, 12, 0.82); border-top: 3px solid #ff2a4a; border-bottom: 3px solid #ff2a4a; width: 100%; animation: warn 0.6s ease; }
+.bosswarn b { font-family: var(--pixel); letter-spacing: 0.2em; color: #ff5a7a; font-size: clamp(16px, 3vw, 34px); font-weight: 400; animation: blink 0.5s steps(2) 4; }
+.bosswarn span { color: #fff; font-size: clamp(13px, 1.8vw, 20px); }
+.bosswarn.elite { background: rgba(40, 24, 0, 0.75); border-color: #ffb84a; }
+.bosswarn.elite b { color: #ffd27a; font-family: var(--font); letter-spacing: 0.05em; }
+@keyframes warn { from { opacity: 0; transform: translate(-50%, -50%) scaleY(0.2) !important; } to { opacity: 1; } }
+@keyframes blink { 50% { opacity: 0.25; } }
+
+/* Tutorial */
+.tut-hl { position: relative; z-index: 30 !important; outline: 3px solid #ffd27a !important; outline-offset: 3px; border-radius: 6px; animation: tutpulse 1.2s ease-in-out infinite; }
+@keyframes tutpulse { 50% { outline-color: rgba(255, 210, 122, 0.25); } }
+#tutor {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40;
+  width: min(560px, calc(100% - 32px)); box-sizing: border-box;
+  display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start;
+  background: #16204a; border: 2px solid #ffd27a; box-shadow: 0 0 0 2px #0a0e22, 0 12px 30px rgba(0, 0, 0, 0.6); border-radius: 6px; padding: 12px 14px;
+}
+#tutor .tt-icon { width: 44px; height: 44px; }
+#tutor .tt-step { font-family: var(--pixel); font-size: 10px; color: var(--ember); letter-spacing: 0.1em; }
+#tutor .tt-text { font-size: 15px; line-height: 1.5; margin: 2px 0 8px; }
+#tutor .tt-text b { color: #ffe0a0; font-weight: 400; }
+#tutor .tt-btns { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+#tutor .tt-skip { background: none; border: none; color: var(--ink-dim); font-size: 13px; text-decoration: underline; }
+.skill-card.locked { background: #2e2e3a; border-color: #22222c; }
+.skill-card.locked .sc-nm, .skill-card.locked .sc-lv { color: #8a8aa0; }
+.skill-card .sc-lock { grid-column: span 2; font-size: 11px; color: #ffb0b0; }
+
 /* ---------- Command bar ---------- */
 #bar {
   display: grid; grid-template-columns: auto minmax(180px, 1fr) auto; gap: 14px; align-items: center;
@@ -456,7 +490,7 @@ it('m_stardia', '별빛 다이아', 2, 'gem', '#ffffff', 'mining');
 it('m_fossil', '고대 화석', 3, 'shell', '#d8c39a', 'mining');
 it('m_dragonstone', '용의 비늘석', 4, 'scale', '#ff6a3d', 'mining');
 it('m_timecrystal', '시간의 결정', 5, 'orb', '#9effe0', 'mining');
-it('m_prim', '별의 심장석', 6, 'star', '#fff3a0', 'mining', { effect: '공격력 ×1.5 (중복 획득마다 +0.1)' });
+it('m_prim', '별의 심장석', 6, 'star', '#fff3a0', 'mining', { effect: '공격력 ×1.5 (중복 획득마다 +0.1, 최대 10회)' });
 
 // ---- Woodcutting
 it('w_oak', '참나무 원목', 0, 'log', '#c08a4a', 'wood');
@@ -477,7 +511,7 @@ it('w_glowleaf', '빛나는 잎', 2, 'leaf', '#c8ff6a', 'wood');
 it('w_ring', '천년 나이테', 3, 'log', '#ffcf87', 'wood');
 it('w_entheart', '엔트의 심장', 4, 'orb', '#6bbf3a', 'wood');
 it('w_rainbow', '무지개 송진', 5, 'drop', '#ff7ae0', 'wood');
-it('w_prim', '세계수의 묘목', 6, 'sprout', '#7dff7a', 'wood', { effect: '모든 생활 속도 ×1.25 (중복마다 +0.05)' });
+it('w_prim', '세계수의 묘목', 6, 'sprout', '#7dff7a', 'wood', { effect: '모든 생활 속도 ×1.25 (중복마다 +0.05, 최대 10회)' });
 
 // ---- Foraging
 it('f_mugwort', '쑥', 0, 'leaf', '#6bbf5a', 'forage');
@@ -498,7 +532,7 @@ it('f_fairyshroom', '요정 버섯', 2, 'mushroom', '#ff8ae8', 'forage');
 it('f_goldacorn', '황금 도토리', 3, 'seed', '#ffcf3a', 'forage');
 it('f_phoenix', '불사조 깃털', 4, 'feather', '#ff5a2a', 'forage');
 it('f_oldginseng', '천년 산삼', 5, 'root', '#ffe9b0', 'forage');
-it('f_prim', '일곱 빛 네잎클로버', 6, 'clover', '#7dff9a', 'forage', { effect: '행운 상한 +0.5 (중복마다 +0.1)' });
+it('f_prim', '일곱 빛 네잎클로버', 6, 'clover', '#7dff9a', 'forage', { effect: '행운 상한 +0.5 (중복마다 +0.1, 최대 10회)' });
 
 // ---- Fishing (w = base weight in kg for size records)
 it('s_minnow', '피라미', 0, 'fish', '#b8c8d8', 'fish', { w: 0.05 });
@@ -523,7 +557,7 @@ it('s_winter', '얼음 빙어', 2, 'fish', '#bff2ff', 'fish', { w: 0.1, season: 
 it('s_chest', '물에 젖은 보물상자', 3, 'chest', '#c8913a', 'fish');
 it('s_mermaid', '인어의 비늘', 4, 'scale', '#6affe8', 'fish');
 it('s_kraken', '크라켄의 촉수', 5, 'tentacle', '#c83aff', 'fish');
-it('s_prim', '달을 삼킨 고래', 6, 'whale', '#6a7aff', 'fish', { effect: '밤 동안 모든 경험치 ×1.3 (중복마다 +0.05)' });
+it('s_prim', '달을 삼킨 고래', 6, 'whale', '#6a7aff', 'fish', { effect: '밤 동안 모든 경험치 ×1.3 (중복마다 +0.05, 최대 10회)' });
 
 // ---- Hunting
 it('h_rabbitmeat', '토끼 고기', 0, 'meat', '#e88a7a', 'hunt');
@@ -544,7 +578,7 @@ it('h_kirin', '기린 비늘', 2, 'scale', '#7affb8', 'hunt');
 it('h_white', '백색 변이 가죽', 3, 'hide', '#ffffff', 'hunt');
 it('h_goldantler', '황금 사슴뿔', 4, 'horn', '#ffd34d', 'hunt');
 it('h_gumiho', '구미호 꼬리', 5, 'feather', '#ff9a3a', 'hunt');
-it('h_prim', '하얀 사슴 왕', 6, 'deer', '#f0ffff', 'hunt', { effect: '치명타 피해 +100% (중복마다 +20%)' });
+it('h_prim', '하얀 사슴 왕', 6, 'deer', '#f0ffff', 'hunt', { effect: '치명타 피해 +100% (중복마다 +20%, 최대 10회)' });
 
 // ---- Combat (region materials + skill-wide rares)
 it('c_jelly', '슬라임 젤리', 0, 'jelly', '#7ae05a', 'combat');
@@ -562,7 +596,7 @@ it('c_voideye', '공허의 눈', 2, 'orb', '#ff3aff', 'combat');
 it('c_core', '몬스터 핵', 3, 'orb', '#ff4a4a', 'combat');
 it('c_seal', '마왕의 인장', 4, 'charm', '#ffcf3a', 'combat');
 it('c_tear', '고대 신의 눈물', 5, 'drop', '#aaffff', 'combat');
-it('c_prim', '잊혀진 신의 파편', 6, 'star', '#ffffff', 'combat', { effect: '모든 스탯 +5% (중복마다 +2%)' });
+it('c_prim', '잊혀진 신의 파편', 6, 'star', '#ffffff', 'combat', { effect: '모든 스탯 +5% (중복마다 +2%, 최대 10회)' });
 
 // ---- Alchemy (products + skill-wide rares)
 it('p_str', '힘의 물약', 0, 'potion', '#ff4a4a', 'alchemy', { potion: 'str', desc: '이번 전투 동안 공격력 +25%' });
@@ -578,7 +612,7 @@ it('x_secret', '???의 영약', 4, 'elixir', '#ffffff', 'alchemy', { elixir: 'al
 it('a_salt', '현자의 소금', 3, 'gem', '#f0f0f0', 'alchemy');
 it('a_essence', '엘릭서 원액', 4, 'potion', '#ff9aff', 'alchemy');
 it('a_homunculus', '호문쿨루스 플라스크', 5, 'potion', '#9aff9a', 'alchemy');
-it('a_prim', '현자의 돌', 6, 'stone', '#ff2a3a', 'alchemy', { effect: '물약 효과 ×2 (중복마다 +0.1), 연금 실패 없음' });
+it('a_prim', '현자의 돌', 6, 'stone', '#ff2a3a', 'alchemy', { effect: '물약 효과 ×2 (중복마다 +0.1, 최대 10회), 연금 실패 없음' });
 
 const ITEMS = I;
 
@@ -651,20 +685,22 @@ const RECIPES = [
 const MONSTERS = {
   slime: { name: '슬라임', sprite: 'slime', pal: { a: '#7ae05a' }, hp: 1, atk: 1 },
   shroom: { name: '버섯돌이', sprite: 'shroom', pal: { r: '#e8553d' }, hp: 1.2, atk: 0.9 },
-  kingslime: { name: '왕 슬라임', sprite: 'slime', pal: { a: '#5ad0e0' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  kingslime: { name: '숲의 수호자 트렌트', sprite: 'treant', pal: {}, hp: 1, atk: 1, unique: true },
   frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#9a5ad8' }, hp: 1, atk: 1.1 },
   pshroom: { name: '독버섯', sprite: 'shroom', pal: { r: '#a83ad8' }, hp: 1.3, atk: 0.9 },
-  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#6a3ab8' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#6a3ab8' }, hp: 1, atk: 1, crown: true, scale: 3 },
   bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#6a8ab8' }, hp: 0.8, atk: 1.2, fly: true },
   yeti: { name: '설인', sprite: 'yeti', pal: { a: '#e8f0ff' }, hp: 1.4, atk: 1 },
-  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#bfe0ff' }, hp: 1, atk: 1, crown: true, scale: 1.6 },
+  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#bfe0ff' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  knight: { name: '그림자 기사', sprite: 'knight', pal: {}, hp: 1, atk: 1, unique: true },
+  eye: { name: '심연의 눈', sprite: 'eye', pal: {}, hp: 1, atk: 1, unique: true, fly: true },
 };
 
 const REGIONS = [
   { name: '햇살 초원', from: 1, mobs: ['slime', 'shroom'], boss: 'kingslime', mats: ['c_jelly', 'c_spore', 'c_crown'], gimmick: null, theme: 'meadow' },
   { name: '독안개 숲', from: 11, mobs: ['frog', 'pshroom'], boss: 'frogking', mats: ['c_slime', 'c_poisonspore', 'c_venom'], gimmick: 'poison', theme: 'swamp' },
   { name: '얼음 동굴', from: 21, mobs: ['bat', 'yeti'], boss: 'yetiking', mats: ['c_batwing', 'c_yetifur', 'c_icecore'], gimmick: 'ice', theme: 'ice' },
-  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'yetiking', mats: ['c_shadow', 'c_abyss', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
+  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'knight', bosses: ['knight', 'eye', 'frogking', 'yetiking', 'kingslime'], mats: ['c_shadow', 'c_abyss', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
 ];
 const GIMMICK_TEXT = {
   poison: '독안개: 스태미나 소모 ×2.5 (채집 Lv 60 또는 해독 물약으로 무효)',
@@ -707,6 +743,18 @@ const MEMORIES = {
   warrior: { name: '전생에 검투사였다', desc: '전투 숙련 경험치 ×2, 공격력 +15%' },
 };
 
+// Life skills open one after another: each needs the previous one at a level.
+const UNLOCKS = {
+  mining: null,
+  wood: { skill: 'mining', lv: 10 },
+  forage: { skill: 'wood', lv: 10 },
+  fish: { skill: 'forage', lv: 15 },
+  hunt: { skill: 'fish', lv: 15 },
+  alchemy: { skill: 'hunt', lv: 20 },
+};
+const BOSS_EVERY = 10;
+const ELITE_EVERY = 5;
+
 const STAT_NAMES = { str: '힘', agi: '민첩', vit: '체력', luk: '행운' };
 const PRESETS = {
   balanced: { name: '균형형', w: { str: 4, agi: 2, vit: 3, luk: 1 } },
@@ -726,13 +774,13 @@ const LINES = {
   alchemy: ['색이 변하고 있어…!', '이번엔 안 터지겠지', '킁킁, 냄새가 수상한데'],
 };
 
-return { TIERS, TIER_P, LUCK_CAP, SKILLS, LIFE_SKILLS, GATHER_SKILLS, TOOL_TIERS, AWAKENINGS, MASTER_BONUS, MASTER_TITLE, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES, MONSTERS, REGIONS, GIMMICK_TEXT, GEAR_NAMES, GEAR_TIER_MULT, PERKS, PERK_TREES, MEMORIES, STAT_NAMES, PRESETS, LINES };
+return { TIERS, TIER_P, LUCK_CAP, SKILLS, LIFE_SKILLS, GATHER_SKILLS, TOOL_TIERS, AWAKENINGS, MASTER_BONUS, MASTER_TITLE, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES, MONSTERS, REGIONS, GIMMICK_TEXT, GEAR_NAMES, GEAR_TIER_MULT, PERKS, PERK_TREES, MEMORIES, UNLOCKS, BOSS_EVERY, ELITE_EVERY, STAT_NAMES, PRESETS, LINES };
 })();
 
 __m.engine = (() => {
 // Pure game logic. No DOM access, so the same code runs in the browser and in
 // the Node balance simulator (sim/simulate.mjs).
-const { TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, RECIPES, MONSTERS, REGIONS, GEAR_NAMES, GEAR_TIER_MULT, PERKS, MEMORIES, PRESETS, AWAKENINGS, TOOL_TIERS, MASTER_BONUS } = __m.data;
+const { TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, RECIPES, MONSTERS, REGIONS, GEAR_NAMES, GEAR_TIER_MULT, PERKS, MEMORIES, PRESETS, AWAKENINGS, TOOL_TIERS, MASTER_BONUS, UNLOCKS, BOSS_EVERY, ELITE_EVERY } = __m.data;
 const { makeRng, hash32 } = __m.rng;
 
 const VERSION = 1;
@@ -819,8 +867,16 @@ function newState(seed = (Math.random() * 4294967296) >>> 0) {
     pot: {}, catUntil: 0, elixirs: { atk: 0, hp: 0, all: 0 },
     rb: { count: 0, ash: 0, totalAsh: 0, perks: {}, memory: null, choices: null, bestFloor: 1 },
     stats: { kills: 0, deaths: 0, bosses: 0, actions: 0, gold: 0 },
-    hall: [], log: [],
+    hall: [], log: [], firstKills: {},
+    tut: { step: 0, done: false, tips: {} },
   };
+}
+
+// A life skill is open once the skill before it reached its level (or it was already played).
+function isUnlocked(s, k) {
+  const u = UNLOCKS[k];
+  if (!u) return true;
+  return s.skills[u.skill].lv >= u.lv || s.skills[k].lv > 1;
 }
 
 // Fill in fields added in later versions so old saves keep loading.
@@ -833,6 +889,7 @@ function migrate(raw) {
   s.stats = { ...base.stats, ...(raw.stats || {}) };
   s.potAuto = { ...base.potAuto, ...(raw.potAuto || {}) };
   s.elixirs = { ...base.elixirs, ...(raw.elixirs || {}) };
+  s.tut = { ...base.tut, ...(raw.tut || {}), tips: { ...((raw.tut && raw.tut.tips) || {}) } };
   s.v = VERSION;
   return s;
 }
@@ -878,7 +935,8 @@ class Game {
   }
   has(id) { return !!this.s.codex[id]; }
   // Primordial items stack: every duplicate adds a little more to its effect.
-  prim(id, base, per) { const n = this.s.items[id] || 0; return n ? base + per * (n - 1) : 0; }
+  // Capped at 10 duplicates so faster gathering cannot feed itself without limit.
+  prim(id, base, per) { const n = Math.min(11, this.s.items[id] || 0); return n ? base + per * (n - 1) : 0; }
   P(id) { return this.s.rb.perks[id] || 0; }
   serialize() {
     this.s.rng = this.rng.getState();
@@ -1213,6 +1271,13 @@ class Game {
       this.dirty = true;
       const m = milestoneAt(k, sk.lv);
       this.emit({ t: 'slv', k, lv: sk.lv, m });
+      for (const k2 in UNLOCKS) {
+        const u = UNLOCKS[k2];
+        if (u && u.skill === k && u.lv === sk.lv && this.s.skills[k2].lv === 1) {
+          this.log(`새 생활 스킬 해금: ${SKILLS[k2].name}`, 4);
+          this.emit({ t: 'unlock', k: k2 });
+        }
+      }
       if (m && (sk.lv % 10 !== 0 || sk.lv % 50 === 0)) this.log(`${SKILLS[k].name} Lv.${sk.lv} · ${m}`, sk.lv % 100 === 0 ? 3 : 2);
     }
   }
@@ -1237,27 +1302,31 @@ class Game {
   }
 
   spawn() {
-    const c = this.s.char, f = c.floor, reg = this.region(f), boss = f % 10 === 0;
-    const key = boss ? reg.boss : reg.mobs[Math.floor(this.rng() * reg.mobs.length)];
+    const c = this.s.char, f = c.floor, reg = this.region(f), boss = f % BOSS_EVERY === 0;
+    const elite = !boss && f % ELITE_EVERY === 0;
+    // Tower bosses rotate starting at its first boss floor (40 = the first entry).
+    const key = boss ? (reg.bosses ? reg.bosses.at((Math.floor(f / BOSS_EVERY) - Math.ceil(reg.from / BOSS_EVERY)) % reg.bosses.length) : reg.boss)
+      : reg.mobs[Math.floor(this.rng() * reg.mobs.length)];
     const M = MONSTERS[key];
     let variant = null;
-    if (!boss) {
+    if (!boss && !elite) {
       const vr = this.rng() / this.d.luck;
       if (vr < 0.00001) variant = 'ancient';
       else if (vr < 0.001) variant = 'giant';
       else if (vr < 0.01) variant = 'golden';
     }
     const vm = VARIANTS[variant] || NO_VARIANT;
-    const hp = monHp(f) * M.hp * (boss ? 10 : 1) * vm.hp;
+    const hp = monHp(f) * M.hp * (boss ? 10 : elite ? 4 : 1) * vm.hp;
     this.mon = {
-      key, boss, variant, f, hp, maxHp: hp,
-      name: vm.name + (reg.theme === 'tower' ? '심연의 ' : '') + M.name,
-      atk: monAtk(f) * M.atk * (boss ? 2.2 : 1) * vm.atk,
+      key, boss, elite, variant, f, hp, maxHp: hp, hits: 0,
+      name: (elite ? '정예 ' : '') + vm.name + (reg.theme === 'tower' && !M.unique ? '심연의 ' : '') + M.name,
+      atk: monAtk(f) * M.atk * (boss ? 2.2 : elite ? 1.5 : 1) * vm.atk,
       approach: 0.8,
     };
     this.heroTimer = 0.15;
     this.monTimer = 0.9;
     if (variant === 'ancient') this.log(`고대 개체 출현! ${this.mon.name}`, 5);
+    if (boss) this.log(`${f}층 보스 등장: ${this.mon.name}`, 3);
     this.emit({ t: 'spawn', mon: this.mon });
   }
 
@@ -1294,16 +1363,19 @@ class Game {
   monHit() {
     const c = this.s.char, m = this.mon;
     if (this.rng() < this.d.dodge) { this.emit({ t: 'miss' }); return; }
-    const dmg = m.atk * (0.9 + 0.2 * this.rng());
+    m.hits++;
+    // Bosses telegraph nothing but hit hard every fourth swing.
+    const slam = m.boss && m.hits % 4 === 0;
+    const dmg = m.atk * (0.9 + 0.2 * this.rng()) * (slam ? 2.2 : 1);
     c.hp -= dmg;
-    this.emit({ t: 'hit', who: 'hero', dmg });
+    this.emit({ t: 'hit', who: 'hero', dmg, slam });
     if (c.hp <= 0) this.die();
   }
 
   kill() {
     const s = this.s, c = s.char, d = this.d, m = this.mon;
     const vm = VARIANTS[m.variant] || NO_VARIANT;
-    const bossMul = m.boss ? 10 : 1;
+    const bossMul = m.boss ? 10 : m.elite ? 4 : 1;
     s.stats.kills++;
     this.mon = null;
     this.charXp(4 * Math.pow(1.14, m.f - 1) * bossMul * vm.xp * d.charXp);
@@ -1317,7 +1389,13 @@ class Game {
       const t = this.rollTier('combat', d.luck * (m.variant ? 2 : 1));
       this.gain(t >= 3 ? SKILL_RARES.combat[t - 3] : reg.mats[t], 1, 'combat');
     }
-    const sure = m.boss || m.variant === 'giant' || m.variant === 'ancient';
+    const sure = m.boss || m.elite || m.variant === 'giant' || m.variant === 'ancient';
+    const first = (m.boss || m.elite) && !s.firstKills[m.f];
+    if (first) {
+      s.firstKills[m.f] = 1;
+      this.dropGear(m, m.boss ? 3 : 2);
+      this.log(`${m.f}층 ${m.boss ? '보스' : '정예'} 첫 처치 보상!`, m.boss ? 4 : 3);
+    }
     if (sure || this.rng() < 0.03) this.dropGear(m);
     this.emit({ t: 'kill', mon: m, gold });
     if (m.boss) {
@@ -1325,7 +1403,7 @@ class Game {
       this.log(`${m.f}층 보스 ${m.name} 처치!`, 3);
     }
     c.kills++;
-    if (m.boss || c.kills >= KILLS_PER_FLOOR) {
+    if (m.boss || m.elite || c.kills >= KILLS_PER_FLOOR) {
       c.kills = 0;
       if (s.time >= c.farmUntil) {
         c.floor++;
@@ -1360,10 +1438,10 @@ class Game {
     return Math.max(min, r < TIER_P[1] ? 1 : 0);
   }
 
-  dropGear(m) {
+  dropGear(m, minTier = 0) {
     const s = this.s, c = s.char;
     const slot = ['weapon', 'armor', 'charm'][Math.floor(this.rng() * 3)];
-    const tier = this.rollGearTier(this.d.luck, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0);
+    const tier = this.rollGearTier(this.d.luck, Math.max(minTier, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0));
     const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0 };
     const cur = c.gear[slot];
     if (gearScore(g) > gearScore(cur)) {
@@ -1436,7 +1514,9 @@ class Game {
   }
 
   // ---------- Slots & settings ----------
+  unlocked(k) { return isUnlocked(this.s, k); }
   setSlotSkill(i, k) {
+    if (!this.unlocked(k)) return false;
     const sl = this.s.slots;
     const other = sl.findIndex((x, j) => j !== i && x.k === k);
     if (other >= 0) sl[other].k = sl[i].k; // swap so one skill never runs twice
@@ -1446,7 +1526,7 @@ class Game {
   }
   freeSkill() {
     const used = new Set(this.s.slots.map(x => x.k));
-    return ['fish', 'wood', 'forage', 'hunt', 'mining', 'alchemy'].find(k => !used.has(k));
+    return ['fish', 'wood', 'forage', 'hunt', 'mining', 'alchemy'].find(k => !used.has(k) && this.unlocked(k)) || 'mining';
   }
 
   // ---------- Rebirth ----------
@@ -1507,8 +1587,10 @@ class Game {
     if (s.rb.choices) out.push('전생의 기억을 골라주세요 (윤회 탭)');
     if (c.pts > 0 && !c.auto) out.push(`스탯 포인트 ${c.pts}개를 분배하세요`);
     if (this.canRebirth() && s.rb.count === 0) out.push('윤회 가능! 윤회 탭을 열어보세요');
-    const nextBoss = Math.ceil((c.floor + (c.floor % 10 === 0 ? 0 : 0)) / 10) * 10 || 10;
-    out.push(`${nextBoss}층 보스 처치`);
+    const nextG = Math.ceil(c.floor / ELITE_EVERY) * ELITE_EVERY;
+    out.push(`${nextG}층 ${nextG % BOSS_EVERY === 0 ? '보스' : '정예 몬스터'} 처치`);
+    const locked = Object.keys(UNLOCKS).find(k => !this.unlocked(k));
+    if (locked) { const u = UNLOCKS[locked]; out.push(`${SKILLS[u.skill].name} Lv.${u.lv} → ${SKILLS[locked].name} 해금`); }
     if (c.maxFloor <= 20 && s.rb.count === 0) out.push('21층 도달 시 윤회 해금');
     const k = s.slots[0].k, nm = nextMilestones(k, s.skills[k].lv, 1)[0];
     if (nm) out.push(`${SKILLS[k].name} Lv.${nm.lv} · ${nm.text}`);
@@ -1516,7 +1598,7 @@ class Game {
   }
 }
 
-return { VERSION, ACTION_TIME, ALCH_TIME, CLONE_SPEED, KILLS_PER_FLOOR, MON_INTERVAL, xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, perkCost, pity, ashFor, monHp, monAtk, GEAR_GROWTH, gearValue, charmValue, gearScore, gearName, enhanceCost, milestoneAt, nextMilestones, newState, migrate, Game };
+return { VERSION, ACTION_TIME, ALCH_TIME, CLONE_SPEED, KILLS_PER_FLOOR, MON_INTERVAL, xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, perkCost, pity, ashFor, monHp, monAtk, GEAR_GROWTH, gearValue, charmValue, gearScore, gearName, enhanceCost, milestoneAt, nextMilestones, newState, isUnlocked, migrate, Game };
 })();
 
 __m.sprites = (() => {
@@ -1733,8 +1815,79 @@ const MON = {
     '...oaaao.oaaao..',
     '...ooooo.ooooo..',
   ],
+  treant: [
+    '......GGGGGGGG........',
+    '....GGgggggggGGG......',
+    '...GgggGgggggggGG.....',
+    '..GgggggggGgggggGG....',
+    '..GggGgggggggggggG....',
+    '.GgggggggggGggggggG...',
+    '.GgggGggggggggGgggG...',
+    '..GGgggggggggggggG....',
+    '...oGGGGGGGGGGGGo.....',
+    '....oaaaaaaaaaao......',
+    '...oaabaaaaaabaao.....',
+    '...oaayyaaaayyaao.....',
+    '...oaayyaaaayyaao.....',
+    '...oaaaaaaaaaaaao.....',
+    '..oaaaammmmmmaaaao....',
+    '..oaaaamwmmwmaaaao....',
+    '.oaoaaaaaaaaaaaoao....',
+    'oaaooaaaabaaaaooaao...',
+    'oao.oaaaaaaaaao.oao...',
+    '.o..oaabaaaaaao..o....',
+    '....oaaaaaaabao.......',
+    '...oaaaooooaaaao......',
+    '..oaaao....oaaao......',
+    '.oaaao......oaaao.....',
+    '.oooo........oooo.....',
+  ],
+  knight: [
+    '.......rr.........',
+    '......rrrr........',
+    '.....oooooo.......',
+    '....oaaaaaao......',
+    '....oaccccao......',
+    '....oayoayao......',
+    '....oaaaaaao......',
+    '.....oaaaao.....w.',
+    '...oooaaaaooo..ww.',
+    '..oaaaaaaaaaao.ww.',
+    '.oaacaaaaaacaaoww.',
+    '.oaaoaaccaaoaaow..',
+    '.oao.oaaaao.oao...',
+    '.ooo.oaaaao.ooo...',
+    '.....oaaaao.......',
+    '.....oabbao.......',
+    '....oaao.oaao.....',
+    '....oaao.oaao.....',
+    '...oaaao.oaaao....',
+    '...ooooo.ooooo....',
+  ],
+  eye: [
+    '......oooooooo......',
+    '....oowwwwwwwwoo....',
+    '...owwwwwwwwwwwwo...',
+    '..owwmwwwrrrwwwmwo..',
+    '.owwwwwwrrrrrwwwwwo.',
+    '.owwwwwrrreerrwwwwo.',
+    'owwwwwwrreeeerrwwwwo',
+    'owmwwwwrreeeerrwwmwo',
+    '.owwwwwrrreerrwwwwo.',
+    '.owwwwwwrrrrrwwwwwo.',
+    '..owwmwwwrrrwwwmwo..',
+    '...owwwwwwwwwwwwo...',
+    '....oowwwwwwwwoo....',
+    '.....oaoaooaoao.....',
+    '....oa.oa..ao.ao....',
+    '...oa..oa..ao..ao...',
+    '...o....o..o....o...',
+  ],
 };
 const MON_BASE_PAL = {
+  treant: { a: '#7a5432', y: '#ffe066', m: '#2a1a10' },
+  knight: { a: '#4a4060', r: '#ff3a5a', y: '#ff5aff' },
+  eye: { r: '#c83aff', m: '#ff6a8a', a: '#6a3a8a', w: '#f4eef8' },
   slime: { a: '#7ae05a' },
   shroom: { r: '#e8553d', s: '#f6e6cc', S: '#d8c0a0' },
   frog: { a: '#9a5ad8' },
@@ -1752,6 +1905,45 @@ const CROWN = [
 
 // Animals for hunting.
 const ANIMALS = {
+  boar: [
+    '....oooooo......',
+    '..ooaaaaaaoo....',
+    '.oaaaaaaaaaaoo..',
+    'oaaaaaaaaaaaaeo.',
+    'oaaaaaaaaaaaaaao',
+    'oaaaaaaaaaaawwmo',
+    '.oaaaaaaaaaaaoo.',
+    '..oaaaaaaaaao...',
+    '..oao.oao.oao...',
+    '..oo..oo..oo....',
+  ],
+  wolf: [
+    '.............oo.',
+    '............oao.',
+    '.ooooooooooooaao',
+    'oaaaaaaaaaaaaaeo',
+    '.oaaaaaaaaaaaaamo',
+    '..oaaaaaaaaaaoo.',
+    '..oaaoooaaaao...',
+    '..oao..oaoao....',
+    '..oo...oo.oo....',
+  ],
+  unicorn: [
+    '..............y.',
+    '.............y..',
+    '...........pooo.',
+    '..........ppaaao',
+    '..........paaeao',
+    '.........ppaaaao',
+    '..ooooooopaaao..',
+    '.oaaaaaaaaaao...',
+    'paaaaaaaaaaao...',
+    'p.oaaaaaaaaao...',
+    '..oaaaaaaaao....',
+    '..oao.oao.oao...',
+    '..oao.oao.oao...',
+    '..oo..oo..oo....',
+  ],
   rabbit: [
     '...oo.oo..',
     '...oaooao.',
@@ -2526,8 +2718,8 @@ __m.render = (() => {
 // Canvas renderer: parallax backgrounds, the battle scene, the campfire scene with
 // animated life-skill stations, clone insets, floaters and rare-drop effects.
 const { sprite, drawRotated, drawText, icon, shade, OUTLINE, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW } = __m.sprites;
-const { ITEMS, TIERS, MONSTERS, TOOL_TIERS, REGIONS } = __m.data;
-const { toolTier } = __m.engine;
+const { ITEMS, TIERS, MONSTERS, TOOL_TIERS, REGIONS, SPOTS } = __m.data;
+const { toolTier, spotsUnlocked } = __m.engine;
 
 const W = 384, H = 216, GROUND = 178;
 const GEAR_COLORS = ['#c8ccd8', '#9ae0a0', '#8ac8ff', '#d8a8ff', '#ffd27a', '#ff8aa8', '#bffcff'];
@@ -2609,11 +2801,15 @@ class Renderer {
       <div class="monname" id="monName" hidden></div>
       <div class="bubble" id="bubble" hidden></div>
       <div class="banner" id="banner" hidden></div>
+      <div class="bossbar" id="bossBar" hidden><div class="bb-name" id="bossName"></div><div class="bb-track"><i id="bossFill"></i></div></div>
+      <div class="bosswarn" id="bossWarn" hidden></div>
       <div class="blackout" id="blackout" hidden></div>`;
     this.el = {
       name: this.ov.querySelector('#nameTag'), title: this.ov.querySelector('#titleBadge'),
       mon: this.ov.querySelector('#monName'), bubble: this.ov.querySelector('#bubble'),
       banner: this.ov.querySelector('#banner'), blackout: this.ov.querySelector('#blackout'),
+      bossBar: this.ov.querySelector('#bossBar'), bossName: this.ov.querySelector('#bossName'),
+      bossFill: this.ov.querySelector('#bossFill'), bossWarn: this.ov.querySelector('#bossWarn'),
     };
   }
 
@@ -2644,10 +2840,14 @@ class Renderer {
             if (e.crit && !this.reduced) this.shake = Math.max(this.shake, 0.12);
           } else {
             this.heroAnim.hurt = 0.2;
-            this.floater('-' + fmtShort(e.dmg), 150 + rnd(-4, 4), 140, '#ff5a5a', 1);
+            this.floater('-' + fmtShort(e.dmg) + (e.slam ? '!' : ''), 150 + rnd(-4, 4), 140, '#ff5a5a', e.slam ? 2 : 1);
+            if (e.slam && !this.reduced) { this.shake = Math.max(this.shake, 0.35); this.flash = 0.12; this.flashColor = '#ff3a3a'; }
           }
           break;
         case 'miss': this.floater('MISS', 150, 136, '#a8d8ff', 1); break;
+        case 'spawn':
+          if (e.mon.boss || e.mon.elite) this.bossIntro(e.mon);
+          break;
         case 'kill':
           this.monAnim.dying = 0.35;
           this.monAnim.last = e.mon;
@@ -2684,6 +2884,20 @@ class Renderer {
         case 'rebirth': this.queueFx({ tier: 4, id: 'p_luck', text: `윤회! 모닥불의 재 +${e.gain}` }); break;
       }
     }
+  }
+
+  bossIntro(mon) {
+    const w = this.el.bossWarn;
+    w.className = 'bosswarn' + (mon.boss ? ' boss' : ' elite');
+    w.innerHTML = `<b>${mon.boss ? 'WARNING · BOSS' : '정예 몬스터'}</b><span>${mon.f}층 · ${mon.name}</span>`;
+    w.hidden = false;
+    w.style.animation = 'none';
+    void w.offsetWidth;
+    w.style.animation = '';
+    clearTimeout(this.warnT);
+    this.warnT = setTimeout(() => { w.hidden = true; }, mon.boss ? 2600 : 1800);
+    if (mon.boss && !this.reduced) { this.shake = 0.45; this.flash = 0.2; this.flashColor = '#ff2a4a'; }
+    this.say(mon.boss ? '저 녀석… 보통이 아니야!' : '조금 강해 보이는데?', 2400);
   }
 
   vis(i) {
@@ -3003,7 +3217,7 @@ class Renderer {
     const region = this.g.region(mon.f);
     if (region.theme === 'tower' && !mon.variant) { pal.a = shade(pal.a || '#888', -0.45); if (pal.r) pal.r = shade(pal.r, -0.45); }
     const img = sprite('mon:' + key, MON[key], pal);
-    const scale = mon.boss || mon.variant === 'giant' || mon.variant === 'ancient' ? 2 : 1;
+    const scale = mon.boss ? M.scale || 2 : mon.variant === 'giant' || mon.variant === 'ancient' ? 2 : 1;
     const w = img.width * scale, h = img.height * scale;
     const fly = M.fly ? 26 + Math.sin(this.t * 3) * 4 : 0;
     const squash = key === 'slime' ? Math.sin(this.t * 6) * 0.08 : 0;
@@ -3015,6 +3229,12 @@ class Renderer {
       circle(ctx, x, top + hh / 2, w * 0.75 + Math.sin(this.t * 5) * 2);
     }
     if (mon.variant === 'golden' && Math.random() < 0.3 && !this.reduced) this.sparkle(x, top + hh / 2, '#ffe066');
+    if ((mon.boss || mon.elite) && !this.reduced) {
+      ctx.globalAlpha = 0.18 + 0.08 * Math.sin(this.t * 4);
+      ctx.fillStyle = mon.boss ? '#ff2a4a' : '#ffb84a';
+      circle(ctx, x, top + hh / 2, Math.max(w, hh) * 0.62);
+      ctx.globalAlpha = alpha;
+    }
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fillRect(x - w / 2 + 2, y - 1, w - 4, 2);
     ctx.drawImage(img, Math.round(x - w / 2), Math.round(top), w, Math.round(hh));
@@ -3024,9 +3244,10 @@ class Renderer {
       ctx.fillRect(Math.round(x - w / 2), Math.round(top), w, Math.round(hh));
       ctx.globalCompositeOperation = 'source-over';
     }
-    if (M.crown || mon.boss) {
-      const cr = sprite('crown', CROWN, { y: '#ffd34d', r: '#ff3a5a' });
-      ctx.drawImage(cr, Math.round(x - cr.width), Math.round(top - 7), cr.width * 2, cr.height * 2);
+    if ((M.crown && mon.boss) || mon.elite) {
+      const cr = sprite('crown', CROWN, { y: mon.elite ? '#c8ccd8' : '#ffd34d', r: '#ff3a5a' });
+      const cs = mon.elite ? 1 : 2;
+      ctx.drawImage(cr, Math.round(x - (cr.width * cs) / 2), Math.round(top - 4 * cs), cr.width * cs, cr.height * cs);
     }
     ctx.globalAlpha = 1;
     return { top, w };
@@ -3046,34 +3267,33 @@ class Renderer {
     const pal = opts.pal;
     const nx = hx + 24;
     const hit = since < 0.25;
+    const fx = !opts.mini && !this.reduced;
+    const spot = SPOTS[k] ? Math.min(s.spots[k] || 0, spotsUnlocked(lv) - 1) : 0;
     switch (k) {
       case 'mining': {
-        const spot = s.spots.mining || 0;
-        const ore = ITEMS[['m_copper', 'm_iron', 'm_silver', 'm_mithril', 'm_adamant'][Math.min(spot, 4)]].color;
-        rock(ctx, nx + (hit ? rnd(-1, 1) : 0), gy, ore, hit);
-        const ang = swingAngle(p);
+        rock(ctx, nx + (hit ? rnd(-1, 1) : 0), gy, spot, hit, t);
         const hand = this.drawHero(ctx, hx, gy, { pal });
-        this.drawTool(ctx, 'pick', hand, ang, tc);
-        if (hit && since < 0.05 && !this.reduced) this.burst(nx - 6, gy - 10, ore, 5);
+        this.drawTool(ctx, 'pick', hand, swingAngle(p), tc);
+        if (hit && since < 0.05 && fx) this.burst(nx - 6, gy - 10, ROCK_ORE[spot], 5 + spot * 2);
         break;
       }
       case 'wood': {
         const shake = hit ? Math.sin(since * 60) * 2 : 0;
-        tree(ctx, nx + 4, gy, shake, ['#3f9a4a', '#e8d8a8', '#5a7a3a', '#6a8cff', '#8fe07a'][Math.min(s.spots.wood || 0, 4)]);
+        tree(ctx, nx + 6, gy, shake, spot, t);
         const hand = this.drawHero(ctx, hx, gy, { pal });
         this.drawTool(ctx, 'axe', hand, swingAngle(p) * 0.9 + 0.3, tc);
-        if (hit && since < 0.05 && !this.reduced) this.burst(nx + 2, gy - 18, '#5ab45a', 4);
+        if (hit && since < 0.05 && fx) this.burst(nx + 2, gy - 20, TREES[spot].leaf, 4 + spot * 2);
         break;
       }
       case 'forage': {
-        bush(ctx, nx - 4, gy, ITEMS[SPOT_ITEM.forage[Math.min(s.spots.forage || 0, 4)]].color, hit);
+        bush(ctx, nx - 2, gy, spot, hit, t, false);
         const hand = this.drawHero(ctx, hx, gy, { pal, crouch: true });
         this.drawTool(ctx, 'sickle', hand, 1.2 + Math.sin(p * Math.PI * 2) * 0.5, tc);
-        if (hit && since < 0.05 && !this.reduced) this.burst(nx - 4, gy - 6, '#7ad85a', 4);
+        if (hit && since < 0.05 && fx) this.burst(nx - 4, gy - 6, BUSH_SPARK[spot], 4 + spot * 2);
         break;
       }
       case 'fish': {
-        water(ctx, hx + 14, gy, opts.w || W, t);
+        water(ctx, hx + 14, gy, opts.w || W, t, spot);
         const hand = this.drawHero(ctx, hx, gy, { pal });
         const bite = p > 0.8;
         const ang = hit ? -0.2 : 0.75 + (bite ? Math.sin(t * 30) * 0.06 : 0);
@@ -3083,25 +3303,28 @@ class Renderer {
         if (!hit) {
           ctx.fillStyle = 'rgba(255,255,255,0.8)';
           line(ctx, tipX, tipY, bx, by);
-          ctx.fillStyle = '#ff3a3a';
+          ctx.fillStyle = spot === 4 ? '#7affe8' : '#ff3a3a';
           ctx.fillRect(bx - 1, by - 2, 3, 2);
           ctx.fillStyle = '#fff';
           ctx.fillRect(bx - 1, by, 3, 1);
           if (lv >= 250 && bite) { ctx.fillStyle = 'rgba(255,220,90,0.45)'; ctx.fillRect(bx - 6, by + 4, 12, 3); }
-        } else if (since < 0.05 && !this.reduced) this.burst(bx, gy + 4, '#bfe6ff', 6);
+        } else if (since < 0.05 && fx) this.burst(bx, gy + 4, spot === 4 ? '#7affe8' : '#bfe6ff', 6 + spot * 2);
         break;
       }
       case 'hunt': {
-        if (!v.animal) v.animal = { kind: (s.spots.hunt || 0) >= 1 ? 'deer' : 'rabbit' };
+        const kind = ANIMAL_BY_SPOT[spot];
+        if (!v.animal || v.animal.kind !== kind) v.animal = { kind };
+        huntGround(ctx, hx, gy, opts.w || W, spot, t);
         const ax = lerp((opts.w || W) + 10, hx + 70, Math.min(1, p / 0.6));
-        const animal = sprite('an:' + v.animal.kind, ANIMALS[v.animal.kind], { a: v.animal.kind === 'deer' ? '#c8885a' : '#efe6d8', y: '#e8d8b8', r: '#ff9aa8' });
+        const animal = sprite('an:' + kind, ANIMALS[kind], ANIMAL_PAL[kind]);
         if (!hit) {
+          if (spot === 4) { ctx.globalAlpha = 0.25 + 0.1 * Math.sin(t * 4); ctx.fillStyle = '#ffe8ff'; circle(ctx, ax + animal.width / 2, gy - animal.height / 2, animal.width * 0.7); ctx.globalAlpha = 1; }
           ctx.save();
           ctx.translate(Math.round(ax + animal.width / 2), 0);
           ctx.scale(-1, 1);
           ctx.drawImage(animal, -Math.round(animal.width / 2), gy - animal.height);
           ctx.restore();
-        } else if (since < 0.05 && !this.reduced) this.burst(hx + 72, gy - 6, '#e8dcc8', 6);
+        } else if (since < 0.05 && fx) this.burst(hx + 72, gy - 6, ANIMAL_PAL[kind].a, 6 + spot * 2);
         this.drawHero(ctx, hx, gy, { pal, crouch: true });
         const draw = p > 0.6 ? Math.min(1, (p - 0.6) / 0.35) : 0;
         const bow = sprite('bow', BOW, { a: tc });
@@ -3116,16 +3339,16 @@ class Renderer {
           ctx.fillStyle = '#fff';
           ctx.fillRect(ax2 + 7, gy - 14, 2, 3);
         }
-        bush(ctx, hx + 10, gy, '#5ab45a', false, true);
+        bush(ctx, hx + 10, gy, 0, false, t, true);
         break;
       }
       case 'alchemy': {
         const r = s.recipe;
         const liquid = v.kind === 'fail' && since < 1.2 ? '#4a4a4a' : ITEMS[r] ? ITEMS[r].color : '#7ad8ff';
-        cauldron(ctx, nx + 2, gy, liquid, t, (v.kind === 'great' || v.kind === 'miracle') && since < 1.5);
+        cauldron(ctx, nx + 2, gy, liquid, t, (v.kind === 'great' || v.kind === 'miracle') && since < 1.5, toolTier(lv));
         const hand = this.drawHero(ctx, hx, gy, { pal, soot: slot === 0 && this.soot > 0 });
         this.drawTool(ctx, 'ladle', hand, 1.4 + Math.sin(t * 4) * 0.35, tc);
-        if (v.kind === 'fail' && since < 0.05 && !this.reduced) {
+        if (v.kind === 'fail' && since < 0.05 && fx) {
           for (let i = 0; i < 14; i++) this.parts.push({ x: nx + 2, y: gy - 16, vx: rnd(-40, 40), vy: rnd(-70, -20), g: 30, life: 1, t: 0, color: '#6a6a6a', size: 3 });
         }
         if (sl && sl.blocked && Math.sin(t * 4) > 0) drawText(ctx, '!', nx + 2, gy - 34, '#ff5a5a', 2);
@@ -3263,7 +3486,14 @@ class Renderer {
       nameEl.textContent = (mon.boss ? '👑 ' : '') + mon.name;
       nameEl.className = 'monname' + (mon.variant ? ' v-' + mon.variant : '') + (mon.boss ? ' boss' : '');
       this.place(nameEl, x, by - 2);
-    } else nameEl.hidden = true;
+      const big = mon.boss || mon.elite;
+      this.el.bossBar.hidden = !big;
+      if (big) {
+        this.el.bossBar.className = 'bossbar' + (mon.boss ? ' boss' : ' elite');
+        this.el.bossName.textContent = `${mon.f}층 ${mon.boss ? '보스' : '정예'} · ${mon.name}`;
+        this.el.bossFill.style.width = Math.max(0, (mon.hp / mon.maxHp) * 100) + '%';
+      }
+    } else { nameEl.hidden = true; this.el.bossBar.hidden = true; }
     if (this.monAnim.dying > 0 && this.monAnim.last) {
       this.drawMonster(ctx, this.monAnim.last, 236, GROUND + (0.35 - this.monAnim.dying) * 20, this.monAnim.dying / 0.35);
     }
@@ -3271,6 +3501,7 @@ class Renderer {
 
   drawCamp(ctx, env) {
     this.el.mon.hidden = true;
+    this.el.bossBar.hidden = true;
     tent(ctx, 26, GROUND);
     campfire(ctx, 54, GROUND, this.t);
     if (!this.reduced && Math.random() < 0.25) this.parts.push({ x: 54 + rnd(-2, 2), y: GROUND - 10, vx: rnd(-4, 4), vy: -18, g: 0, life: 1.2, t: 0, color: Math.random() < 0.5 ? '#ffb84a' : '#ff6a3a', size: 1 });
@@ -3285,6 +3516,13 @@ class Renderer {
       const x = lerp(p.x, p.tx, f), y = p.y - 26 * Math.sin(f * Math.PI) - f * 6;
       const it = ITEMS[p.id];
       ctx.globalAlpha = 1 - Math.max(0, (p.t - 0.6) / 0.3);
+      if (it.tier >= 1) {
+        const a = ctx.globalAlpha;
+        ctx.globalAlpha = a * (0.25 + 0.1 * it.tier);
+        ctx.fillStyle = TIERS[it.tier].color;
+        circle(ctx, Math.round(x), Math.round(y - 6), 6 + it.tier * 2);
+        ctx.globalAlpha = a;
+      }
       ctx.drawImage(icon(it.icon, it.color), Math.round(x - 6), Math.round(y - 12));
       if (p.t < 0.6 && it.tier >= 1) {
         ctx.fillStyle = TIERS[it.tier].color;
@@ -3344,7 +3582,7 @@ class Renderer {
       ctx.fillRect(0, gy, w, 3);
       ctx.fillStyle = OUTLINE;
       ctx.fillRect(0, gy, w, 1);
-      this.drawStation(ctx, k, 40, gy, slot, { pal: CLONE_PAL, w });
+      this.drawStation(ctx, k, 40, gy, slot, { pal: CLONE_PAL, w, mini: true });
       const v = this.vis(slot);
       if (v.pop) {
         v.pop.t += 1 / 60;
@@ -3359,7 +3597,6 @@ class Renderer {
   }
 }
 
-const SPOT_ITEM = { forage: ['f_dandelion', 'f_berry', 'f_firefly', 'f_poppy', 'f_fairyshroom'] };
 
 // ---------- Primitive pixel shapes ----------
 function rnd(a, b) { return a + Math.random() * (b - a); }
@@ -3392,66 +3629,263 @@ function swingAngle(p) {
   if (p < 0.75) return lerp(0.6, -1.4, p / 0.75);
   return lerp(-1.4, 1.5, (p - 0.75) / 0.25);
 }
-function rock(ctx, x, gy, ore, hit) {
-  ctx.fillStyle = OUTLINE;
-  ellipse(ctx, x, gy - 8, 13, 9);
-  ctx.fillStyle = hit ? '#b8b8c4' : '#8a8a96';
-  ellipse(ctx, x, gy - 8, 12, 8);
-  ctx.fillStyle = '#6a6a76';
-  ctx.fillRect(x - 10, gy - 4, 21, 3);
-  ctx.fillStyle = '#a8a8b4';
-  ctx.fillRect(x - 6, gy - 14, 6, 2);
-  ctx.fillStyle = ore;
-  for (const [dx, dy] of [[-5, -8], [3, -11], [6, -5], [-1, -4], [8, -9]]) ctx.fillRect(x + dx, gy + dy, 2, 2);
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(x + 3, gy - 11, 1, 1);
+// ---------- Gathering stations: one look per spot, flashier as the spot rises ----------
+const ROCK_ORE = ['#e08a4a', '#b07a6a', '#5a9aff', '#7fe3ff', '#ff8a3d'];
+const BUSH_SPARK = ['#ffe14d', '#4a5cff', '#d8ff5a', '#e8f6ff', '#ff8ae8'];
+const ANIMAL_BY_SPOT = ['rabbit', 'deer', 'boar', 'wolf', 'unicorn'];
+const ANIMAL_PAL = {
+  rabbit: { a: '#efe6d8', r: '#ff9aa8' },
+  deer: { a: '#c8885a', y: '#e8d8b8', r: '#ff9aa8' },
+  boar: { a: '#7a5040', m: '#d88a8a' },
+  wolf: { a: '#d8e0f0', m: '#3a3a4a' },
+  unicorn: { a: '#ffffff', p: '#ff9ae8', y: '#ffd34d' },
+};
+const TREES = [
+  { trunk: '#8a5a2e', tw: 7, th: 30, leaf: '#3f9a4a', R: 14 },
+  { trunk: '#efe9d8', tw: 6, th: 32, leaf: '#e8c84a', R: 13, birch: true },
+  { trunk: '#5a3a22', tw: 11, th: 30, leaf: '#2e6a3a', R: 17, owl: true, roots: true },
+  { trunk: '#4a4a9a', tw: 8, th: 32, leaf: '#6ae8ff', R: 15, glow: '#6ae8ff', roots: true },
+  { trunk: '#a87a3a', tw: 14, th: 40, leaf: '#8fe07a', R: 20, glow: '#ffd34d', gold: true, roots: true },
+];
+function sparkle(ctx, x, y, t, seed, col) {
+  if (Math.sin(t * 3 + seed * 1.7) < 0.35) return;
+  ctx.fillStyle = col;
+  ctx.fillRect(Math.round(x), Math.round(y) - 1, 1, 3);
+  ctx.fillRect(Math.round(x) - 1, Math.round(y), 3, 1);
 }
-function tree(ctx, x, gy, shake, leaf) {
-  ctx.fillStyle = OUTLINE;
-  ctx.fillRect(x - 4, gy - 30, 9, 30);
-  ctx.fillStyle = '#8a5a2e';
-  ctx.fillRect(x - 3, gy - 30, 7, 30);
-  ctx.fillStyle = '#6a4424';
-  ctx.fillRect(x - 1, gy - 26, 1, 20);
-  ctx.fillStyle = '#e8c88a';
-  ctx.fillRect(x - 3, gy - 12, 2, 4);
-  const sx = Math.round(shake);
-  ctx.fillStyle = OUTLINE;
-  circle(ctx, x + sx, gy - 42, 15);
-  circle(ctx, x - 9 + sx, gy - 34, 10);
-  circle(ctx, x + 10 + sx, gy - 34, 10);
-  ctx.fillStyle = leaf;
-  circle(ctx, x + sx, gy - 42, 14);
-  circle(ctx, x - 9 + sx, gy - 34, 9);
-  circle(ctx, x + 10 + sx, gy - 34, 9);
-  ctx.fillStyle = shade(leaf, 0.3);
-  circle(ctx, x - 4 + sx, gy - 47, 5);
+function glowBlob(ctx, x, y, rx, ry, col, t, base = 0.18) {
+  ctx.globalAlpha = base + 0.08 * Math.sin(t * 3);
+  ctx.fillStyle = col;
+  ellipse(ctx, x, y, rx, ry);
+  ctx.globalAlpha = 1;
 }
-function bush(ctx, x, gy, flower, hit, front) {
+function shard(ctx, cx, baseY, h, w, col) {
   ctx.fillStyle = OUTLINE;
-  circle(ctx, x, gy - 6, 8);
-  circle(ctx, x - 6, gy - 3, 6);
-  circle(ctx, x + 6, gy - 3, 6);
-  ctx.fillStyle = front ? '#3f8a3f' : hit ? '#7ad86a' : '#4caf50';
-  circle(ctx, x, gy - 6, 7);
-  circle(ctx, x - 6, gy - 3, 5);
-  circle(ctx, x + 6, gy - 3, 5);
-  if (!front) {
-    ctx.fillStyle = flower;
-    for (const [dx, dy] of [[-4, -9], [3, -11], [6, -5], [-7, -4]]) ctx.fillRect(x + dx, gy + dy, 2, 2);
+  for (let i = 0; i <= h; i++) { const ww = Math.max(1, Math.round(w * (1 - i / h))) + 1; ctx.fillRect(cx - ww, baseY - i, ww * 2 + 1, 1); }
+  ctx.fillStyle = col;
+  for (let i = 0; i < h; i++) { const ww = Math.max(0, Math.round(w * (1 - i / h))); ctx.fillRect(cx - ww, baseY - i, ww * 2 + 1, 1); }
+  ctx.fillStyle = shade(col, 0.55);
+  ctx.fillRect(cx, baseY - h + 2, 1, h - 3);
+}
+function rock(ctx, x, gy, spot, hit, t) {
+  const R = 12 + spot, H = 8 + Math.min(3, spot);
+  const base = ['#8a8a96', '#6e6a72', '#7a8494', '#2e2840', '#4a2a24'][spot];
+  if (spot >= 2) glowBlob(ctx, x, gy - H, R + 9, H + 8, ROCK_ORE[spot], t);
+  ctx.fillStyle = OUTLINE;
+  ellipse(ctx, x, gy - H, R + 1, H + 1);
+  ctx.fillStyle = hit ? shade(base, 0.35) : base;
+  ellipse(ctx, x, gy - H, R, H);
+  ctx.fillStyle = shade(base, -0.3);
+  ctx.fillRect(x - R + 2, gy - 4, R * 2 - 3, 3);
+  ctx.fillStyle = shade(base, 0.25);
+  ctx.fillRect(x - Math.round(R / 2), gy - H * 2 + 2, Math.round(R / 2), 2);
+  if (spot === 0) {
+    ctx.fillStyle = ROCK_ORE[0];
+    for (const [dx, dy] of [[-5, -8], [3, -11], [6, -5], [-1, -4], [8, -9]]) ctx.fillRect(x + dx, gy + dy, 2, 2);
+  } else if (spot === 1) {
+    ctx.fillStyle = '#c08a7a';
+    ctx.fillRect(x - 8, gy - 10, 7, 1); ctx.fillRect(x + 1, gy - 13, 6, 1); ctx.fillRect(x + 2, gy - 6, 7, 1); ctx.fillRect(x - 6, gy - 5, 4, 1);
+    ctx.fillStyle = '#1e1e24';
+    for (const [dx, dy] of [[-3, -12], [6, -9], [-9, -6]]) ctx.fillRect(x + dx, gy + dy, 3, 2);
+  } else if (spot === 2) {
+    shard(ctx, x - 6, gy - H - 2, 11, 3, '#3d7cff');
+    shard(ctx, x + 2, gy - H - 4, 15, 4, '#5a9aff');
+    shard(ctx, x + 9, gy - H, 8, 2, '#a66bff');
+    sparkle(ctx, x + 2, gy - H - 16, t, 1, '#ffffff');
+    sparkle(ctx, x - 8, gy - H - 10, t, 4, '#bfe0ff');
+  } else if (spot === 3) {
+    ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 4);
+    ctx.fillStyle = '#7fe3ff';
+    ctx.fillRect(x - 10, gy - 9, 6, 1); ctx.fillRect(x - 4, gy - 10, 1, 4); ctx.fillRect(x - 4, gy - 6, 8, 1);
+    ctx.fillRect(x + 4, gy - 14, 1, 8); ctx.fillRect(x + 4, gy - 14, 7, 1); ctx.fillRect(x - 2, gy - 15, 6, 1);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ff3b5c';
+    ctx.fillRect(x + 8, gy - 8, 2, 2); ctx.fillRect(x - 9, gy - 13, 2, 2);
+    sparkle(ctx, x + 9, gy - 10, t, 2, '#ffd0dc');
+    sparkle(ctx, x - 3, gy - 18, t, 5, '#7fe3ff');
+  } else {
+    const pulse = 0.6 + 0.4 * Math.sin(t * 5);
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#ff8a3d';
+    ctx.fillRect(x - 12, gy - 10, 8, 1); ctx.fillRect(x - 5, gy - 13, 1, 4); ctx.fillRect(x - 5, gy - 13, 9, 1);
+    ctx.fillRect(x + 4, gy - 13, 1, 7); ctx.fillRect(x + 4, gy - 7, 9, 1); ctx.fillRect(x - 8, gy - 5, 6, 1);
+    ctx.fillStyle = '#ffd34d';
+    ctx.fillRect(x - 5, gy - 13, 3, 1); ctx.fillRect(x + 4, gy - 9, 1, 2);
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 4; i++) {
+      const ey = gy - 14 - ((t * 14 + i * 9) % 26);
+      ctx.globalAlpha = 1 - ((t * 14 + i * 9) % 26) / 26;
+      ctx.fillStyle = i % 2 ? '#ffd34d' : '#ff8a3d';
+      ctx.fillRect(x - 6 + i * 4, Math.round(ey), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+    sparkle(ctx, x - 14, gy - 26, t, 3, '#fff6b0');
+    sparkle(ctx, x + 14, gy - 22, t, 6, '#ffffff');
   }
 }
-function water(ctx, x, gy, w, t) {
+function tree(ctx, x, gy, shake, spot, t) {
+  const T = TREES[spot];
+  const tw = T.tw, th = T.th, R = T.R, sx = Math.round(shake);
+  const cy = gy - th - Math.round(R * 0.6);
+  if (T.glow) glowBlob(ctx, x + sx, cy, R + 10, R + 6, T.glow, t, spot === 4 ? 0.22 : 0.16);
+  if (T.gold) {
+    ctx.globalAlpha = 0.12 + 0.06 * Math.sin(t * 1.5);
+    ctx.fillStyle = '#fff6b0';
+    for (let i = 0; i < 4; i++) ctx.fillRect(x - R + i * 12, cy - R - 20, 4, th + R + 24);
+    ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = OUTLINE;
+  ctx.fillRect(x - Math.ceil(tw / 2) - 1, gy - th, tw + 2, th);
+  ctx.fillStyle = T.trunk;
+  ctx.fillRect(x - Math.ceil(tw / 2), gy - th, tw, th);
+  ctx.fillStyle = shade(T.trunk, -0.3);
+  ctx.fillRect(x - 1, gy - th + 4, 1, th - 10);
+  if (T.birch) { ctx.fillStyle = '#2a2a30'; for (let y = gy - th + 4; y < gy - 2; y += 6) ctx.fillRect(x - 2 + ((y / 6) % 2), y, 3, 1); }
+  if (T.roots) {
+    ctx.fillStyle = OUTLINE; ctx.fillRect(x - tw, gy - 3, tw * 2, 3);
+    ctx.fillStyle = shade(T.trunk, -0.15); ctx.fillRect(x - tw + 1, gy - 2, tw * 2 - 2, 2);
+  }
+  if (T.gold) {
+    ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 2);
+    ctx.fillStyle = '#ffd34d';
+    ctx.fillRect(x - 2, gy - th + 8, 1, 6); ctx.fillRect(x + 2, gy - th + 18, 1, 6); ctx.fillRect(x - 3, gy - 14, 1, 5);
+    ctx.globalAlpha = 1;
+  }
+  const blobs = [[0, 0, R], [-Math.round(R * 0.65), Math.round(R * 0.55), Math.round(R * 0.68)], [Math.round(R * 0.65), Math.round(R * 0.55), Math.round(R * 0.68)]];
+  if (R >= 17) blobs.push([-Math.round(R * 0.4), -Math.round(R * 0.5), Math.round(R * 0.6)], [Math.round(R * 0.45), -Math.round(R * 0.45), Math.round(R * 0.6)]);
+  ctx.fillStyle = OUTLINE;
+  for (const [dx, dy, r] of blobs) circle(ctx, x + dx + sx, cy + dy, r + 1);
+  ctx.fillStyle = T.leaf;
+  for (const [dx, dy, r] of blobs) circle(ctx, x + dx + sx, cy + dy, r);
+  ctx.fillStyle = shade(T.leaf, 0.3);
+  circle(ctx, x - 4 + sx, cy - Math.round(R * 0.4), Math.max(3, Math.round(R * 0.35)));
+  ctx.fillStyle = shade(T.leaf, -0.25);
+  ctx.fillRect(x - R + 4 + sx, cy + Math.round(R * 0.7), R * 2 - 8, 2);
+  if (T.owl && Math.sin(t * 0.7) < 0.92) {
+    ctx.fillStyle = '#ffe066';
+    ctx.fillRect(x + 5 + sx, cy + 2, 2, 2); ctx.fillRect(x + 9 + sx, cy + 2, 2, 2);
+  }
+  if (spot === 3) for (let i = 0; i < 6; i++) sparkle(ctx, x - R + ((i * 37) % (R * 2)) + sx, cy - R + ((i * 23) % (R * 2)), t, i, i % 2 ? '#ffffff' : '#bff8ff');
+  if (T.gold) {
+    for (let i = 0; i < 5; i++) {
+      const fy = ((t * 9 + i * 11) % 46);
+      ctx.globalAlpha = 1 - fy / 46;
+      ctx.fillStyle = '#ffd34d';
+      ctx.fillRect(Math.round(x - R + i * 9 + Math.sin(t * 2 + i) * 3), Math.round(cy + R * 0.6 + fy), 2, 1);
+    }
+    ctx.globalAlpha = 1;
+    sparkle(ctx, x - 8 + sx, cy - 6, t, 2, '#ffffff');
+    sparkle(ctx, x + 10 + sx, cy + 4, t, 5, '#fff6b0');
+  }
+}
+function bush(ctx, x, gy, spot, hit, t, front) {
+  const leaf = front ? '#3f8a3f' : ['#4caf50', '#3f8a3f', '#5a7a3a', '#5a8a6a', '#4a7a7a'][spot];
+  if (!front && spot === 2) {
+    for (const [dx, h] of [[-12, 22], [-8, 26], [11, 20], [14, 24]]) {
+      ctx.fillStyle = '#6a8a3a'; ctx.fillRect(x + dx, gy - h, 1, h);
+      ctx.fillStyle = OUTLINE; ctx.fillRect(x + dx - 1, gy - h - 1, 3, 6);
+      ctx.fillStyle = '#7a4a2a'; ctx.fillRect(x + dx, gy - h, 1, 4);
+    }
+  }
+  if (!front && spot === 4) glowBlob(ctx, x, gy - 8, 22, 14, '#ff8ae8', t);
+  ctx.fillStyle = OUTLINE;
+  circle(ctx, x, gy - 6, 8); circle(ctx, x - 6, gy - 3, 6); circle(ctx, x + 6, gy - 3, 6);
+  ctx.fillStyle = hit && !front ? shade(leaf, 0.3) : leaf;
+  circle(ctx, x, gy - 6, 7); circle(ctx, x - 6, gy - 3, 5); circle(ctx, x + 6, gy - 3, 5);
+  if (front) return;
+  if (spot === 0) {
+    ctx.fillStyle = '#ffe14d';
+    for (const [dx, dy] of [[-4, -9], [3, -11], [6, -5], [-7, -4]]) ctx.fillRect(x + dx, gy + dy, 2, 2);
+  } else if (spot === 1) {
+    for (const [dx, dy] of [[-4, -9], [2, -11], [5, -5], [-7, -5], [0, -4]]) {
+      ctx.fillStyle = '#2a3ab8'; ctx.fillRect(x + dx, gy + dy, 2, 2);
+      ctx.fillStyle = '#8a9aff'; ctx.fillRect(x + dx, gy + dy, 1, 1);
+    }
+    ctx.fillStyle = OUTLINE; ctx.fillRect(x + 9, gy - 6, 6, 3); ctx.fillRect(x + 11, gy - 3, 2, 3);
+    ctx.fillStyle = '#c8553d'; ctx.fillRect(x + 10, gy - 5, 4, 2);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 11, gy - 5, 1, 1);
+  } else if (spot === 2) {
+    ctx.fillStyle = '#9a6bff';
+    for (const [dx, dy] of [[-3, -10], [4, -8], [-6, -5]]) ctx.fillRect(x + dx, gy + dy, 2, 3);
+    for (let i = 0; i < 5; i++) {
+      if (Math.sin(t * 2.5 + i * 1.9) < 0.2) continue;
+      ctx.fillStyle = '#d8ff5a';
+      ctx.fillRect(Math.round(x - 16 + i * 8 + Math.sin(t + i) * 3), Math.round(gy - 22 - (i % 3) * 6 + Math.cos(t * 1.3 + i) * 3), 1, 1);
+    }
+  } else if (spot === 3) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x - 6, gy - 13, 12, 2); ctx.fillRect(x - 11, gy - 8, 6, 1); ctx.fillRect(x + 5, gy - 8, 6, 1);
+    ctx.fillStyle = OUTLINE; ctx.fillRect(x - 2, gy - 19, 5, 5);
+    ctx.fillStyle = '#e8f6ff'; ctx.fillRect(x - 1, gy - 18, 3, 3);
+    ctx.fillStyle = '#ffe066'; ctx.fillRect(x, gy - 17, 1, 1);
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(Math.round(x - 18 + i * 7 + Math.sin(t + i) * 2), Math.round(gy - 30 + ((t * 10 + i * 9) % 28)), 1, 1);
+    }
+  } else {
+    for (const [dx, h, col] of [[-10, 6, '#ff8ae8'], [9, 8, '#ff6ad5'], [-2, 4, '#c8d0ff']]) {
+      ctx.fillStyle = '#f6e6cc'; ctx.fillRect(x + dx, gy - h, 1, h);
+      ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 3 + dx);
+      ctx.fillStyle = col; ctx.fillRect(x + dx - 2, gy - h - 2, 5, 2);
+      ctx.globalAlpha = 1;
+    }
+    const fxp = x + Math.cos(t * 2) * 14, fyp = gy - 22 + Math.sin(t * 3) * 4;
+    ctx.fillStyle = 'rgba(255,200,255,0.5)'; ctx.fillRect(Math.round(fxp - Math.cos(t * 2) * 3), Math.round(fyp), 1, 1);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(fxp), Math.round(fyp), 2, 2);
+    sparkle(ctx, x + 6, gy - 16, t, 3, '#ffe8ff');
+  }
+}
+function water(ctx, x, gy, w, t, spot = 0) {
+  const [deep, top] = [['#3a7ad8', '#5a9ae8'], ['#2a6ac0', '#4a8ad8'], ['#4a7a9a', '#6a9ab8'], ['#1a4aa8', '#3a6ac8'], ['#0a1a3a', '#1a2a5a']][spot];
   ctx.fillStyle = OUTLINE;
   ctx.fillRect(x, gy, w - x, 1);
-  ctx.fillStyle = '#3a7ad8';
+  ctx.fillStyle = deep;
   ctx.fillRect(x, gy + 1, w - x, H);
-  ctx.fillStyle = '#5a9ae8';
+  ctx.fillStyle = top;
   ctx.fillRect(x, gy + 1, w - x, 2);
-  ctx.fillStyle = '#bfe6ff';
+  const speed = [8, 4, 26, 14, 3][spot];
+  ctx.fillStyle = spot === 4 ? '#2a3a6a' : '#bfe6ff';
   for (let i = 0; i < 12; i++) {
-    const wx = x + ((i * 37 + t * 8) % Math.max(1, w - x));
-    ctx.fillRect(Math.round(wx), gy + 6 + (i % 4) * 5, 4, 1);
+    const wx = x + ((i * 37 + t * speed) % Math.max(1, w - x));
+    ctx.fillRect(Math.round(wx), gy + 6 + (i % 4) * 5, spot === 2 ? 7 : 4, 1);
+  }
+  if (spot === 1) {
+    for (const [dx, dy] of [[40, 6], [78, 12], [120, 5], [170, 10]]) {
+      if (x + dx > w - 8) continue;
+      ctx.fillStyle = OUTLINE; ellipse(ctx, x + dx, gy + dy, 6, 2);
+      ctx.fillStyle = '#3f9a4a'; ellipse(ctx, x + dx, gy + dy, 5, 1);
+      if (dx % 3 === 0) { ctx.fillStyle = '#ff9ad8'; ctx.fillRect(x + dx - 1, gy + dy - 2, 3, 2); }
+    }
+  } else if (spot === 2) {
+    for (const dx of [w - x - 24, w - x - 16, w - x - 9]) {
+      if (dx < 30) continue;
+      ctx.fillStyle = '#6a8a3a'; ctx.fillRect(x + dx, gy - 14, 1, 16);
+      ctx.fillStyle = '#7a4a2a'; ctx.fillRect(x + dx, gy - 14, 1, 4);
+    }
+  } else if (spot === 3) {
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 6; i++) {
+      const wx = x + ((i * 53 + t * 18) % Math.max(1, w - x));
+      ctx.fillRect(Math.round(wx), gy + 2 + (i % 2) * 8, 1, 1); ctx.fillRect(Math.round(wx) + 1, gy + 1 + (i % 2) * 8, 2, 1); ctx.fillRect(Math.round(wx) + 3, gy + 2 + (i % 2) * 8, 1, 1);
+    }
+    const gx = x + ((t * 20) % Math.max(1, w - x)), gyy = gy - 46 + Math.sin(t * 2) * 3;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(Math.round(gx), Math.round(gyy), 2, 1); ctx.fillRect(Math.round(gx) + 2, Math.round(gyy) + 1, 1, 1); ctx.fillRect(Math.round(gx) + 3, Math.round(gyy), 2, 1);
+  } else if (spot === 4) {
+    const sxp = x + ((t * 6) % Math.max(1, (w - x) + 80)) - 40;
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#000814';
+    ellipse(ctx, sxp, gy + 22, 34, 7);
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 14; i++) {
+      if (Math.sin(t * 2 + i * 2.3) < 0) continue;
+      ctx.fillStyle = i % 3 ? '#7affe8' : '#ff8ae8';
+      ctx.fillRect(Math.round(x + 10 + ((i * 41) % Math.max(1, w - x - 20))), Math.round(gy + 8 + ((i * 13) % 26) + Math.sin(t + i) * 2), 1, 1);
+    }
+    ctx.globalAlpha = 0.35 + 0.15 * Math.sin(t * 4);
+    ctx.fillStyle = '#ffd34d'; circle(ctx, x + 14, gy - 8, 5);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffd34d'; ctx.fillRect(x + 13, gy - 9, 3, 3);
   }
   ctx.fillStyle = '#8a5a2e';
   ctx.fillRect(x - 2, gy - 1, 18, 3);
@@ -3460,21 +3894,43 @@ function water(ctx, x, gy, w, t) {
   ctx.fillRect(x + 2, gy + 3, 2, 8);
   ctx.fillRect(x + 12, gy + 3, 2, 8);
 }
-function cauldron(ctx, x, gy, liquid, t, rainbow) {
+function huntGround(ctx, hx, gy, w, spot, t) {
+  if (spot === 3) {
+    ctx.fillStyle = '#f0f6ff'; ctx.fillRect(hx + 20, gy - 1, w - hx - 20, 4);
+    ctx.fillStyle = '#c8d8f0'; for (let x = hx + 22; x < w; x += 9) ctx.fillRect(x, gy + 2, 4, 1);
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 8; i++) ctx.fillRect(Math.round(hx + 30 + ((i * 29) % Math.max(1, w - hx - 30)) + Math.sin(t + i) * 2), Math.round(gy - 40 + ((t * 10 + i * 7) % 40)), 1, 1);
+  } else if (spot === 4) {
+    for (let i = 0; i < 10; i++) {
+      if (Math.sin(t * 2.2 + i * 1.3) < 0.1) continue;
+      ctx.fillStyle = i % 2 ? '#ffe8ff' : '#b8fff0';
+      ctx.fillRect(Math.round(hx + 30 + ((i * 31) % Math.max(1, w - hx - 30))), gy - 2 - (i % 3), 1, 2);
+    }
+  } else if (spot === 2) {
+    ctx.fillStyle = '#6a6a76';
+    for (const dx of [40, 96, 150]) if (hx + dx < w - 6) { ctx.fillRect(hx + dx, gy - 3, 6, 3); ctx.fillStyle = '#8a8a96'; ctx.fillRect(hx + dx + 1, gy - 3, 3, 1); ctx.fillStyle = '#6a6a76'; }
+  }
+}
+function cauldron(ctx, x, gy, liquid, t, rainbow, tier = 0) {
+  const rim = TOOL_TIERS[Math.min(10, tier)].color;
+  if (tier >= 5) glowBlob(ctx, x, gy - 12, 22, 16, rim, t);
   ctx.fillStyle = OUTLINE;
   ellipse(ctx, x, gy - 9, 13, 10);
-  ctx.fillStyle = '#3a3a48';
+  ctx.fillStyle = tier >= 3 ? '#4a4458' : '#3a3a48';
   ellipse(ctx, x, gy - 9, 12, 9);
   ctx.fillStyle = '#5a5a6a';
   ctx.fillRect(x - 9, gy - 12, 3, 6);
+  if (tier >= 3) { ctx.fillStyle = '#ff3b5c'; ctx.fillRect(x - 1, gy - 9, 2, 2); ctx.fillStyle = '#3d7cff'; ctx.fillRect(x + 5, gy - 8, 2, 2); ctx.fillStyle = '#6aff9e'; ctx.fillRect(x - 7, gy - 7, 2, 2); }
   ctx.fillStyle = OUTLINE;
   ctx.fillRect(x - 13, gy - 18, 27, 4);
+  ctx.fillStyle = rim;
+  ctx.fillRect(x - 13, gy - 18, 27, 1);
   ctx.fillStyle = rainbow ? `hsl(${(t * 300) % 360} 90% 60%)` : liquid;
   ctx.fillRect(x - 12, gy - 17, 25, 2);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 3 + Math.min(3, tier); i++) {
     const by = gy - 20 - ((t * 14 + i * 7) % 18);
     ctx.globalAlpha = 0.8;
-    ctx.fillRect(x - 6 + i * 6, Math.round(by), 2, 2);
+    ctx.fillRect(x - 8 + ((i * 6) % 18), Math.round(by), 2, 2);
     ctx.globalAlpha = 1;
   }
   ctx.fillStyle = '#ff8a2a';
@@ -3523,7 +3979,7 @@ return { W, Renderer, fmtShort };
 
 __m.ui = (() => {
 // DOM UI: bottom bar, Idleon-style panels, toasts and modals.
-const { TIERS, SKILLS, LIFE_SKILLS, ITEMS, SPOTS, SPOT_LV, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES, PERKS, PERK_TREES, MEMORIES, PRESETS, STAT_NAMES, TOOL_TIERS, MASTER_TITLE, GIMMICK_TEXT, LUCK_CAP } = __m.data;
+const { TIERS, SKILLS, LIFE_SKILLS, ITEMS, SPOTS, SPOT_LV, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES, PERKS, PERK_TREES, MEMORIES, PRESETS, STAT_NAMES, TOOL_TIERS, MASTER_TITLE, GIMMICK_TEXT, LUCK_CAP, UNLOCKS } = __m.data;
 const { xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, nextMilestones, perkCost, ashFor, gearName, gearValue, charmValue, enhanceCost, pity } = __m.engine;
 const { icon, sprite, HERO, HERO_PAL } = __m.sprites;
 const { fmtShort } = __m.render;
@@ -3552,6 +4008,21 @@ function itemIcon(id, size = 36) {
 const SKILL_ICON = { combat: ['sword', '#c8ccd8'], mining: ['pick', '#b8c4d0'], wood: ['axe', '#b8c4d0'], forage: ['leaf', '#6bbf5a'], fish: ['fish', '#5ab4ff'], hunt: ['bow', '#a8743a'], alchemy: ['potion', '#c27bff'] };
 const skillIcon = (k, size = 32) => iconCanvas(...SKILL_ICON[k], size);
 
+// Guided first session. A step with `until` waits for the player to do it; others show a Next button.
+const TUT = [
+  { text: () => '처음이신가요? 짧은 안내로 모닥불 연대기를 시작해 볼게요.', start: true },
+  { target: '#bar .bars', text: () => '모험가는 <b>혼자서 싸웁니다</b>. 빨간 바는 HP, 파란 바는 스태미나예요. 스태미나가 바닥나면 모닥불로 돌아가 쉬어요.' },
+  { target: '#hudTR', text: () => '오른쪽 위 <b>QUEST</b>에 지금의 목표가 나와요. <b>5층마다 정예 몬스터, 10층마다 보스</b>가 길을 막습니다.' },
+  { target: '#b-mode', text: () => '이 버튼을 누르면 전투를 멈추고 <b>야영지에서 생활 스킬만</b> 합니다. 눌러 보세요!', until: g => g.s.focus },
+  { target: '#stage', text: () => '모닥불 옆에서 <b>광질</b> 중이에요. 곡괭이질마다 광석이 나오고, 아주 드물게 엄청난 것이 나옵니다.' },
+  { target: '#b-life', text: () => '<b>「생활」</b>을 눌러 스킬 목록을 열어 보세요.', until: (g, ui) => ui.panel === 'life' },
+  { target: '.skill-grid', text: () => '자물쇠가 걸린 스킬은 <b>앞 스킬의 레벨</b>을 올리면 열려요. 광질 Lv 10 → 벌목 Lv 10 → 채집 Lv 15 → 낚시 Lv 15 → 사냥 Lv 20 → 연금술.' },
+  { text: g => `광질을 <b>Lv 10</b>까지 올려 보세요. 지금 <b>Lv ${g.s.skills.mining.lv}</b>, 장소가 오를수록 더 화려한 광맥이 나옵니다.`, until: g => g.s.skills.mining.lv >= 10 },
+  { target: '#b-life', text: () => '<b>벌목</b>이 열렸어요! 「생활」에서 벌목 카드를 고르고 <b>「야영에 배치」</b>를 누르세요.', until: g => g.s.slots[0].k === 'wood' },
+  { target: '#b-mode', text: () => '잘했어요! 버튼을 다시 눌러 <b>전투로 돌아가세요</b>. 생활 레벨은 윤회해도 남아서 전투력을 영원히 올려 줍니다.', until: g => !g.s.focus },
+  { target: '#b-rebirth', text: () => '<b>21층</b>에 도달하면 윤회가 열려요. 윤회해도 생활 레벨과 도감은 그대로입니다. 이제 마음껏 모험하세요!', last: true },
+];
+
 class UI {
   constructor(game, renderer, hooks) {
     this.g = game;
@@ -3566,6 +4037,99 @@ class UI {
     document.addEventListener('pointerup', () => { this.pointerDown = false; setTimeout(() => this.refreshPanel(), 50); });
     this.buildBar();
     this.buildPanel();
+    this.buildTutor();
+  }
+
+  // ---------- Tutorial & tips ----------
+  buildTutor() {
+    const box = document.createElement('div');
+    box.id = 'tutor';
+    box.hidden = true;
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-live', 'polite');
+    box.appendChild(iconCanvas('camp', '#ff8a3d', 44));
+    box.firstChild.classList.add('tt-icon');
+    box.insertAdjacentHTML('beforeend', '<div><div class="tt-step"></div><div class="tt-text"></div><div class="tt-btns"></div></div>');
+    document.body.appendChild(box);
+    this.tutBox = box;
+    this.tipQueue = [];
+    this.tip = null;
+    this.tutKey = '';
+  }
+  tutButton(label, fn, cls = 'pbtn') {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = cls;
+    b.textContent = label;
+    b.addEventListener('click', fn);
+    return b;
+  }
+  setHighlight(sel) {
+    if (this.hlSel === sel && (!sel || document.querySelector(sel)?.classList.contains('tut-hl'))) return;
+    document.querySelectorAll('.tut-hl').forEach(el => el.classList.remove('tut-hl'));
+    this.hlSel = sel;
+    if (sel) { const el = document.querySelector(sel); if (el) el.classList.add('tut-hl'); }
+  }
+  restartTutorial() {
+    this.g.s.tut = { step: 1, done: false, tips: this.g.s.tut.tips || {} };
+    this.tutKey = '';
+    this.close();
+  }
+  showTip(id, html, target) {
+    const tut = this.g.s.tut;
+    if (tut.tips[id] || this.tipQueue.some(t => t.id === id) || (this.tip && this.tip.id === id)) return;
+    this.tipQueue.push({ id, html, target });
+  }
+  tutTick() {
+    const g = this.g, tut = g.s.tut, box = this.tutBox;
+    const modalOpen = !document.getElementById('modal').hidden;
+    if (!tut.done) {
+      let step = TUT[tut.step];
+      while (step && step.until && step.until(g, this)) { tut.step++; step = TUT[tut.step]; }
+      if (!step) { tut.done = true; this.setHighlight(null); box.hidden = true; return; }
+      box.hidden = modalOpen;
+      if (modalOpen) { this.setHighlight(null); return; }
+      const html = step.text(g);
+      const key = tut.step + html;
+      this.setHighlight(step.target || null);
+      if (key === this.tutKey) return;
+      this.tutKey = key;
+      this.placeTutor(step.target);
+      box.querySelector('.tt-step').textContent = step.start ? 'GUIDE' : `GUIDE ${tut.step}/${TUT.length - 1}`;
+      box.querySelector('.tt-text').innerHTML = html;
+      const btns = box.querySelector('.tt-btns');
+      btns.innerHTML = '';
+      const finish = () => { tut.done = true; this.tutKey = ''; this.setHighlight(null); box.hidden = true; };
+      if (step.start) {
+        btns.appendChild(this.tutButton('건너뛰기', finish, 'tt-skip'));
+        btns.appendChild(this.tutButton('안내 시작', () => { tut.step++; this.tutTick(); }, 'pbtn big'));
+      } else {
+        btns.appendChild(this.tutButton('안내 끄기', finish, 'tt-skip'));
+        if (step.last) btns.appendChild(this.tutButton('모험 계속', finish, 'pbtn big'));
+        else if (!step.until) btns.appendChild(this.tutButton('다음', () => { tut.step++; this.tutTick(); }, 'pbtn big'));
+      }
+      return;
+    }
+    // One-time tips after the tutorial.
+    if (!this.tip && this.tipQueue.length && !modalOpen) {
+      this.tip = this.tipQueue.shift();
+      this.placeTutor(this.tip.target);
+      this.setHighlight(this.tip.target || null);
+      box.querySelector('.tt-step').textContent = 'TIP';
+      box.querySelector('.tt-text').innerHTML = this.tip.html;
+      const btns = box.querySelector('.tt-btns');
+      btns.innerHTML = '';
+      btns.appendChild(this.tutButton('확인', () => { tut.tips[this.tip.id] = 1; this.tip = null; this.setHighlight(null); box.hidden = true; this.tutTick(); }, 'pbtn big'));
+      box.hidden = false;
+    }
+    if (this.tip) box.hidden = modalOpen;
+    else if (box.hidden === false && !this.tip) box.hidden = true;
+  }
+  placeTutor(sel) {
+    const el = sel && document.querySelector(sel);
+    const low = el ? el.getBoundingClientRect().top > innerHeight * 0.55 : false;
+    this.tutBox.style.top = low ? '16px' : 'auto';
+    this.tutBox.style.bottom = low ? 'auto' : '16px';
   }
 
   // ---------- Bottom bar ----------
@@ -3641,6 +4205,7 @@ class UI {
     $('#b-life .dot').hidden = !s.slots.some(x => x.blocked);
     for (const id of ['char', 'life', 'bag', 'codex', 'rebirth', 'log', 'menu']) $('#b-' + id).classList.toggle('active', this.panel === id);
     this.updateHud();
+    this.tutTick();
   }
 
   updateHud() {
@@ -3702,7 +4267,14 @@ class UI {
       else if (e.t === 'codex') { const it = ITEMS[e.id]; this.toast(`도감 등록 · ${it.name}`, it.tier); }
       else if (e.t === 'gear' && e.equip && e.g.tier >= 1) this.toast(`장착 · [${TIERS[e.g.tier].name}] ${gearName(e.g)}`, e.g.tier);
       else if (e.t === 'floor' && e.floor % 10 === 1) this.toast(`${e.floor}층 · ${this.g.region(e.floor).name}`, 2);
+      else if (e.t === 'unlock') {
+        this.toast(`새 생활 스킬 해금 · ${SKILLS[e.k].name}`, 4);
+        if (e.k !== 'wood') this.showTip('unlock_' + e.k, `<b>${SKILLS[e.k].name}</b>이(가) 열렸어요! 「생활」에서 카드를 고르고 「야영에 배치」를 눌러 보세요.`, '#b-life');
+      } else if (e.t === 'spawn' && e.mon.boss) this.showTip('boss', '<b>보스</b>가 나타났어요! 보스는 <b>네 번째 공격마다 강타</b>를 날립니다. 쓰러지면 한 층 아래에서 힘을 길러 다시 도전해요.');
+      else if (e.t === 'spawn' && e.mon.elite) this.showTip('elite', '<b>정예 몬스터</b>는 5층마다 한 마리만 나와요. 쓰러뜨리면 다음 층으로, 처음 잡으면 장비 보상이 확정입니다.');
+      else if (e.t === 'death') this.showTip('death', '쓰러져도 잃는 건 없어요. <b>한 층 아래</b>에서 3분간 힘을 기른 뒤 다시 올라갑니다. 생활 스킬과 장비 강화로 더 강해지세요.');
     }
+    if (this.g.canRebirth() && this.g.s.rb.count === 0) this.showTip('rebirth', '<b>윤회</b>가 열렸어요! 레벨과 장비는 초기화되지만 <b>모닥불의 재</b>로 영구 특성을 얻고, 생활 레벨은 그대로 남아요.', '#b-rebirth');
   }
 
   // ---------- Panel ----------
@@ -3851,13 +4423,15 @@ class UI {
       const sk = s.skills[k];
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'skill-card' + (this.sel.skill === k ? ' sel' : '');
+      const open = g.unlocked(k), u = UNLOCKS[k];
+      card.className = 'skill-card' + (this.sel.skill === k ? ' sel' : '') + (open ? '' : ' locked');
       card.dataset.fid = 'sk' + k;
-      card.appendChild(skillIcon(k, 30));
+      card.appendChild(open ? skillIcon(k, 30) : iconCanvas(SKILL_ICON[k][0], '#3a3a48', 30));
       const need = xpNeed(sk.lv);
-      card.insertAdjacentHTML('beforeend', `<div class="sc-nm">${SKILLS[k].name}</div><div class="sc-lv">Lv.${sk.lv}</div>
+      card.insertAdjacentHTML('beforeend', open ? `<div class="sc-nm">${SKILLS[k].name}</div><div class="sc-lv">Lv.${sk.lv}</div>
         <div class="sc-bar"><i style="width:${(sk.xp / need) * 100}%"></i></div>
-        <div class="sc-tool">${k === 'combat' ? '처치로 성장' : TOOL_TIERS[toolTier(sk.lv)].name + ' 도구'}</div>`);
+        <div class="sc-tool">${k === 'combat' ? '처치로 성장' : TOOL_TIERS[toolTier(sk.lv)].name + ' 도구'}</div>` : `<div class="sc-nm">🔒 ${SKILLS[k].name}</div><div class="sc-lv">잠김</div>
+        <div class="sc-lock">${SKILLS[u.skill].name} Lv.${u.lv} 필요 (지금 ${s.skills[u.skill].lv})</div>`);
       card.addEventListener('click', () => { this.sel.skill = k; this.renderPanel(); });
       grid.appendChild(card);
     }
@@ -3879,7 +4453,10 @@ class UI {
       <div><span>희귀 이상 확률 배율</span><b>×${mult.toFixed(2)}</b></div>
       <div><span>누적 행동</span><b>${sk.n.toLocaleString()}회</b></div>
       <div><span>불운 게이지 (태초)</span><b>${((sk.dryP / eP) * 100).toFixed(1)}%${pity(sk.dryP / eP) > 1 ? ` · 확률 ×${pity(sk.dryP / eP).toFixed(2)}` : ''}</b></div>`, 'statlist');
-    if (k !== 'combat') {
+    if (k !== 'combat' && !g.unlocked(k)) {
+      const u = UNLOCKS[k];
+      this.html(det, `<p class="warn">🔒 ${SKILLS[u.skill].name}을(를) Lv.${u.lv}까지 올리면 열립니다 (지금 Lv.${s.skills[u.skill].lv}).</p>`);
+    } else if (k !== 'combat') {
       const row = this.html(det, '', 'chips');
       s.slots.forEach((x, i) => {
         row.appendChild(this.btn(x.k === k ? `${i === 0 ? '야영' : '분신 ' + i} 배치됨` : `${i === 0 ? '야영' : '분신 ' + i}에 배치`, () => g.setSlotSkill(i, k), { cls: x.k === k ? 'chip on' : 'chip', fid: 'as' + i }));
@@ -4108,6 +4685,8 @@ class UI {
       const ok = this.hooks.importSave($('#importBox').value.trim());
       this.toast(ok ? '불러왔습니다' : '문자열을 읽을 수 없습니다. 내보내기로 만든 문자열 전체를 붙여넣었는지 확인하세요', ok ? 2 : 5);
     }, { fid: 'load' }));
+    const tu = this.section(body, '안내');
+    tu.appendChild(this.btn('튜토리얼 다시 보기', () => this.restartTutorial(), { fid: 'tut' }));
     const rs = this.section(body, '처음부터');
     if (this.confirm === 'reset') {
       const row = this.html(rs, '<p class="warn">모든 진행이 사라집니다. 정말 초기화할까요?</p>', 'confirm');

@@ -1,7 +1,7 @@
 // DOM UI: bottom bar, Idleon-style panels, toasts and modals.
 import {
   TIERS, SKILLS, LIFE_SKILLS, ITEMS, SPOTS, SPOT_LV, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES,
-  PERKS, PERK_TREES, MEMORIES, PRESETS, STAT_NAMES, TOOL_TIERS, MASTER_TITLE, GIMMICK_TEXT, LUCK_CAP,
+  PERKS, PERK_TREES, MEMORIES, PRESETS, STAT_NAMES, TOOL_TIERS, MASTER_TITLE, GIMMICK_TEXT, LUCK_CAP, UNLOCKS,
 } from './data.js';
 import {
   xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, nextMilestones, perkCost, ashFor,
@@ -34,6 +34,21 @@ function itemIcon(id, size = 36) {
 const SKILL_ICON = { combat: ['sword', '#c8ccd8'], mining: ['pick', '#b8c4d0'], wood: ['axe', '#b8c4d0'], forage: ['leaf', '#6bbf5a'], fish: ['fish', '#5ab4ff'], hunt: ['bow', '#a8743a'], alchemy: ['potion', '#c27bff'] };
 const skillIcon = (k, size = 32) => iconCanvas(...SKILL_ICON[k], size);
 
+// Guided first session. A step with `until` waits for the player to do it; others show a Next button.
+const TUT = [
+  { text: () => '처음이신가요? 짧은 안내로 모닥불 연대기를 시작해 볼게요.', start: true },
+  { target: '#bar .bars', text: () => '모험가는 <b>혼자서 싸웁니다</b>. 빨간 바는 HP, 파란 바는 스태미나예요. 스태미나가 바닥나면 모닥불로 돌아가 쉬어요.' },
+  { target: '#hudTR', text: () => '오른쪽 위 <b>QUEST</b>에 지금의 목표가 나와요. <b>5층마다 정예 몬스터, 10층마다 보스</b>가 길을 막습니다.' },
+  { target: '#b-mode', text: () => '이 버튼을 누르면 전투를 멈추고 <b>야영지에서 생활 스킬만</b> 합니다. 눌러 보세요!', until: g => g.s.focus },
+  { target: '#stage', text: () => '모닥불 옆에서 <b>광질</b> 중이에요. 곡괭이질마다 광석이 나오고, 아주 드물게 엄청난 것이 나옵니다.' },
+  { target: '#b-life', text: () => '<b>「생활」</b>을 눌러 스킬 목록을 열어 보세요.', until: (g, ui) => ui.panel === 'life' },
+  { target: '.skill-grid', text: () => '자물쇠가 걸린 스킬은 <b>앞 스킬의 레벨</b>을 올리면 열려요. 광질 Lv 10 → 벌목 Lv 10 → 채집 Lv 15 → 낚시 Lv 15 → 사냥 Lv 20 → 연금술.' },
+  { text: g => `광질을 <b>Lv 10</b>까지 올려 보세요. 지금 <b>Lv ${g.s.skills.mining.lv}</b>, 장소가 오를수록 더 화려한 광맥이 나옵니다.`, until: g => g.s.skills.mining.lv >= 10 },
+  { target: '#b-life', text: () => '<b>벌목</b>이 열렸어요! 「생활」에서 벌목 카드를 고르고 <b>「야영에 배치」</b>를 누르세요.', until: g => g.s.slots[0].k === 'wood' },
+  { target: '#b-mode', text: () => '잘했어요! 버튼을 다시 눌러 <b>전투로 돌아가세요</b>. 생활 레벨은 윤회해도 남아서 전투력을 영원히 올려 줍니다.', until: g => !g.s.focus },
+  { target: '#b-rebirth', text: () => '<b>21층</b>에 도달하면 윤회가 열려요. 윤회해도 생활 레벨과 도감은 그대로입니다. 이제 마음껏 모험하세요!', last: true },
+];
+
 export class UI {
   constructor(game, renderer, hooks) {
     this.g = game;
@@ -48,6 +63,99 @@ export class UI {
     document.addEventListener('pointerup', () => { this.pointerDown = false; setTimeout(() => this.refreshPanel(), 50); });
     this.buildBar();
     this.buildPanel();
+    this.buildTutor();
+  }
+
+  // ---------- Tutorial & tips ----------
+  buildTutor() {
+    const box = document.createElement('div');
+    box.id = 'tutor';
+    box.hidden = true;
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-live', 'polite');
+    box.appendChild(iconCanvas('camp', '#ff8a3d', 44));
+    box.firstChild.classList.add('tt-icon');
+    box.insertAdjacentHTML('beforeend', '<div><div class="tt-step"></div><div class="tt-text"></div><div class="tt-btns"></div></div>');
+    document.body.appendChild(box);
+    this.tutBox = box;
+    this.tipQueue = [];
+    this.tip = null;
+    this.tutKey = '';
+  }
+  tutButton(label, fn, cls = 'pbtn') {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = cls;
+    b.textContent = label;
+    b.addEventListener('click', fn);
+    return b;
+  }
+  setHighlight(sel) {
+    if (this.hlSel === sel && (!sel || document.querySelector(sel)?.classList.contains('tut-hl'))) return;
+    document.querySelectorAll('.tut-hl').forEach(el => el.classList.remove('tut-hl'));
+    this.hlSel = sel;
+    if (sel) { const el = document.querySelector(sel); if (el) el.classList.add('tut-hl'); }
+  }
+  restartTutorial() {
+    this.g.s.tut = { step: 1, done: false, tips: this.g.s.tut.tips || {} };
+    this.tutKey = '';
+    this.close();
+  }
+  showTip(id, html, target) {
+    const tut = this.g.s.tut;
+    if (tut.tips[id] || this.tipQueue.some(t => t.id === id) || (this.tip && this.tip.id === id)) return;
+    this.tipQueue.push({ id, html, target });
+  }
+  tutTick() {
+    const g = this.g, tut = g.s.tut, box = this.tutBox;
+    const modalOpen = !document.getElementById('modal').hidden;
+    if (!tut.done) {
+      let step = TUT[tut.step];
+      while (step && step.until && step.until(g, this)) { tut.step++; step = TUT[tut.step]; }
+      if (!step) { tut.done = true; this.setHighlight(null); box.hidden = true; return; }
+      box.hidden = modalOpen;
+      if (modalOpen) { this.setHighlight(null); return; }
+      const html = step.text(g);
+      const key = tut.step + html;
+      this.setHighlight(step.target || null);
+      if (key === this.tutKey) return;
+      this.tutKey = key;
+      this.placeTutor(step.target);
+      box.querySelector('.tt-step').textContent = step.start ? 'GUIDE' : `GUIDE ${tut.step}/${TUT.length - 1}`;
+      box.querySelector('.tt-text').innerHTML = html;
+      const btns = box.querySelector('.tt-btns');
+      btns.innerHTML = '';
+      const finish = () => { tut.done = true; this.tutKey = ''; this.setHighlight(null); box.hidden = true; };
+      if (step.start) {
+        btns.appendChild(this.tutButton('건너뛰기', finish, 'tt-skip'));
+        btns.appendChild(this.tutButton('안내 시작', () => { tut.step++; this.tutTick(); }, 'pbtn big'));
+      } else {
+        btns.appendChild(this.tutButton('안내 끄기', finish, 'tt-skip'));
+        if (step.last) btns.appendChild(this.tutButton('모험 계속', finish, 'pbtn big'));
+        else if (!step.until) btns.appendChild(this.tutButton('다음', () => { tut.step++; this.tutTick(); }, 'pbtn big'));
+      }
+      return;
+    }
+    // One-time tips after the tutorial.
+    if (!this.tip && this.tipQueue.length && !modalOpen) {
+      this.tip = this.tipQueue.shift();
+      this.placeTutor(this.tip.target);
+      this.setHighlight(this.tip.target || null);
+      box.querySelector('.tt-step').textContent = 'TIP';
+      box.querySelector('.tt-text').innerHTML = this.tip.html;
+      const btns = box.querySelector('.tt-btns');
+      btns.innerHTML = '';
+      btns.appendChild(this.tutButton('확인', () => { tut.tips[this.tip.id] = 1; this.tip = null; this.setHighlight(null); box.hidden = true; this.tutTick(); }, 'pbtn big'));
+      box.hidden = false;
+    }
+    if (this.tip) box.hidden = modalOpen;
+    else if (box.hidden === false && !this.tip) box.hidden = true;
+  }
+  placeTutor(sel) {
+    const el = sel && document.querySelector(sel);
+    const low = el ? el.getBoundingClientRect().top > innerHeight * 0.55 : false;
+    this.tutBox.style.top = low ? '16px' : 'auto';
+    this.tutBox.style.bottom = low ? 'auto' : '16px';
   }
 
   // ---------- Bottom bar ----------
@@ -123,6 +231,7 @@ export class UI {
     $('#b-life .dot').hidden = !s.slots.some(x => x.blocked);
     for (const id of ['char', 'life', 'bag', 'codex', 'rebirth', 'log', 'menu']) $('#b-' + id).classList.toggle('active', this.panel === id);
     this.updateHud();
+    this.tutTick();
   }
 
   updateHud() {
@@ -184,7 +293,14 @@ export class UI {
       else if (e.t === 'codex') { const it = ITEMS[e.id]; this.toast(`도감 등록 · ${it.name}`, it.tier); }
       else if (e.t === 'gear' && e.equip && e.g.tier >= 1) this.toast(`장착 · [${TIERS[e.g.tier].name}] ${gearName(e.g)}`, e.g.tier);
       else if (e.t === 'floor' && e.floor % 10 === 1) this.toast(`${e.floor}층 · ${this.g.region(e.floor).name}`, 2);
+      else if (e.t === 'unlock') {
+        this.toast(`새 생활 스킬 해금 · ${SKILLS[e.k].name}`, 4);
+        if (e.k !== 'wood') this.showTip('unlock_' + e.k, `<b>${SKILLS[e.k].name}</b>이(가) 열렸어요! 「생활」에서 카드를 고르고 「야영에 배치」를 눌러 보세요.`, '#b-life');
+      } else if (e.t === 'spawn' && e.mon.boss) this.showTip('boss', '<b>보스</b>가 나타났어요! 보스는 <b>네 번째 공격마다 강타</b>를 날립니다. 쓰러지면 한 층 아래에서 힘을 길러 다시 도전해요.');
+      else if (e.t === 'spawn' && e.mon.elite) this.showTip('elite', '<b>정예 몬스터</b>는 5층마다 한 마리만 나와요. 쓰러뜨리면 다음 층으로, 처음 잡으면 장비 보상이 확정입니다.');
+      else if (e.t === 'death') this.showTip('death', '쓰러져도 잃는 건 없어요. <b>한 층 아래</b>에서 3분간 힘을 기른 뒤 다시 올라갑니다. 생활 스킬과 장비 강화로 더 강해지세요.');
     }
+    if (this.g.canRebirth() && this.g.s.rb.count === 0) this.showTip('rebirth', '<b>윤회</b>가 열렸어요! 레벨과 장비는 초기화되지만 <b>모닥불의 재</b>로 영구 특성을 얻고, 생활 레벨은 그대로 남아요.', '#b-rebirth');
   }
 
   // ---------- Panel ----------
@@ -333,13 +449,15 @@ export class UI {
       const sk = s.skills[k];
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'skill-card' + (this.sel.skill === k ? ' sel' : '');
+      const open = g.unlocked(k), u = UNLOCKS[k];
+      card.className = 'skill-card' + (this.sel.skill === k ? ' sel' : '') + (open ? '' : ' locked');
       card.dataset.fid = 'sk' + k;
-      card.appendChild(skillIcon(k, 30));
+      card.appendChild(open ? skillIcon(k, 30) : iconCanvas(SKILL_ICON[k][0], '#3a3a48', 30));
       const need = xpNeed(sk.lv);
-      card.insertAdjacentHTML('beforeend', `<div class="sc-nm">${SKILLS[k].name}</div><div class="sc-lv">Lv.${sk.lv}</div>
+      card.insertAdjacentHTML('beforeend', open ? `<div class="sc-nm">${SKILLS[k].name}</div><div class="sc-lv">Lv.${sk.lv}</div>
         <div class="sc-bar"><i style="width:${(sk.xp / need) * 100}%"></i></div>
-        <div class="sc-tool">${k === 'combat' ? '처치로 성장' : TOOL_TIERS[toolTier(sk.lv)].name + ' 도구'}</div>`);
+        <div class="sc-tool">${k === 'combat' ? '처치로 성장' : TOOL_TIERS[toolTier(sk.lv)].name + ' 도구'}</div>` : `<div class="sc-nm">🔒 ${SKILLS[k].name}</div><div class="sc-lv">잠김</div>
+        <div class="sc-lock">${SKILLS[u.skill].name} Lv.${u.lv} 필요 (지금 ${s.skills[u.skill].lv})</div>`);
       card.addEventListener('click', () => { this.sel.skill = k; this.renderPanel(); });
       grid.appendChild(card);
     }
@@ -361,7 +479,10 @@ export class UI {
       <div><span>희귀 이상 확률 배율</span><b>×${mult.toFixed(2)}</b></div>
       <div><span>누적 행동</span><b>${sk.n.toLocaleString()}회</b></div>
       <div><span>불운 게이지 (태초)</span><b>${((sk.dryP / eP) * 100).toFixed(1)}%${pity(sk.dryP / eP) > 1 ? ` · 확률 ×${pity(sk.dryP / eP).toFixed(2)}` : ''}</b></div>`, 'statlist');
-    if (k !== 'combat') {
+    if (k !== 'combat' && !g.unlocked(k)) {
+      const u = UNLOCKS[k];
+      this.html(det, `<p class="warn">🔒 ${SKILLS[u.skill].name}을(를) Lv.${u.lv}까지 올리면 열립니다 (지금 Lv.${s.skills[u.skill].lv}).</p>`);
+    } else if (k !== 'combat') {
       const row = this.html(det, '', 'chips');
       s.slots.forEach((x, i) => {
         row.appendChild(this.btn(x.k === k ? `${i === 0 ? '야영' : '분신 ' + i} 배치됨` : `${i === 0 ? '야영' : '분신 ' + i}에 배치`, () => g.setSlotSkill(i, k), { cls: x.k === k ? 'chip on' : 'chip', fid: 'as' + i }));
@@ -590,6 +711,8 @@ export class UI {
       const ok = this.hooks.importSave($('#importBox').value.trim());
       this.toast(ok ? '불러왔습니다' : '문자열을 읽을 수 없습니다. 내보내기로 만든 문자열 전체를 붙여넣었는지 확인하세요', ok ? 2 : 5);
     }, { fid: 'load' }));
+    const tu = this.section(body, '안내');
+    tu.appendChild(this.btn('튜토리얼 다시 보기', () => this.restartTutorial(), { fid: 'tut' }));
     const rs = this.section(body, '처음부터');
     if (this.confirm === 'reset') {
       const row = this.html(rs, '<p class="warn">모든 진행이 사라집니다. 정말 초기화할까요?</p>', 'confirm');

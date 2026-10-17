@@ -89,10 +89,10 @@ function policy() {
   const craftable = RECIPES.filter(r => g.canCraft(r)).sort((a, b) => b.lv - a.lv);
   if (craftable.length) s.recipe = craftable[0].id;
   // Slots: lowest gather skills; alchemy takes a slot when it has materials.
-  const order = [...GATHER].sort((a, b) => sk[a].lv - sk[b].lv);
-  const wantAlch = craftable.length > 0 && sk.alchemy.lv < Math.max(...GATHER.map(k => sk[k].lv)) * 0.8;
+  const order = GATHER.filter(k => g.unlocked(k)).sort((a, b) => sk[a].lv - sk[b].lv);
+  const wantAlch = g.unlocked('alchemy') && craftable.length > 0 && sk.alchemy.lv < Math.max(...GATHER.map(k => sk[k].lv)) * 0.8;
   const pickList = wantAlch ? ['alchemy', ...order] : order;
-  s.slots.forEach((slot, i) => { if (slot.k !== pickList[i]) g.setSlotSkill(i, pickList[i]); });
+  s.slots.forEach((slot, i) => { if (pickList[i] && slot.k !== pickList[i]) g.setSlotSkill(i, pickList[i]); });
   // Rebirth when progress stalls for an hour.
   const c = s.char;
   if (c.maxFloor > lastBest) { lastBest = c.maxFloor; lastBestAt = s.time; }

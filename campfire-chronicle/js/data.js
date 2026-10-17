@@ -77,7 +77,7 @@ it('m_stardia', '별빛 다이아', 2, 'gem', '#ffffff', 'mining');
 it('m_fossil', '고대 화석', 3, 'shell', '#d8c39a', 'mining');
 it('m_dragonstone', '용의 비늘석', 4, 'scale', '#ff6a3d', 'mining');
 it('m_timecrystal', '시간의 결정', 5, 'orb', '#9effe0', 'mining');
-it('m_prim', '별의 심장석', 6, 'star', '#fff3a0', 'mining', { effect: '공격력 ×1.5 (중복 획득마다 +0.1)' });
+it('m_prim', '별의 심장석', 6, 'star', '#fff3a0', 'mining', { effect: '공격력 ×1.5 (중복 획득마다 +0.1, 최대 10회)' });
 
 // ---- Woodcutting
 it('w_oak', '참나무 원목', 0, 'log', '#c08a4a', 'wood');
@@ -98,7 +98,7 @@ it('w_glowleaf', '빛나는 잎', 2, 'leaf', '#c8ff6a', 'wood');
 it('w_ring', '천년 나이테', 3, 'log', '#ffcf87', 'wood');
 it('w_entheart', '엔트의 심장', 4, 'orb', '#6bbf3a', 'wood');
 it('w_rainbow', '무지개 송진', 5, 'drop', '#ff7ae0', 'wood');
-it('w_prim', '세계수의 묘목', 6, 'sprout', '#7dff7a', 'wood', { effect: '모든 생활 속도 ×1.25 (중복마다 +0.05)' });
+it('w_prim', '세계수의 묘목', 6, 'sprout', '#7dff7a', 'wood', { effect: '모든 생활 속도 ×1.25 (중복마다 +0.05, 최대 10회)' });
 
 // ---- Foraging
 it('f_mugwort', '쑥', 0, 'leaf', '#6bbf5a', 'forage');
@@ -119,7 +119,7 @@ it('f_fairyshroom', '요정 버섯', 2, 'mushroom', '#ff8ae8', 'forage');
 it('f_goldacorn', '황금 도토리', 3, 'seed', '#ffcf3a', 'forage');
 it('f_phoenix', '불사조 깃털', 4, 'feather', '#ff5a2a', 'forage');
 it('f_oldginseng', '천년 산삼', 5, 'root', '#ffe9b0', 'forage');
-it('f_prim', '일곱 빛 네잎클로버', 6, 'clover', '#7dff9a', 'forage', { effect: '행운 상한 +0.5 (중복마다 +0.1)' });
+it('f_prim', '일곱 빛 네잎클로버', 6, 'clover', '#7dff9a', 'forage', { effect: '행운 상한 +0.5 (중복마다 +0.1, 최대 10회)' });
 
 // ---- Fishing (w = base weight in kg for size records)
 it('s_minnow', '피라미', 0, 'fish', '#b8c8d8', 'fish', { w: 0.05 });
@@ -144,7 +144,7 @@ it('s_winter', '얼음 빙어', 2, 'fish', '#bff2ff', 'fish', { w: 0.1, season: 
 it('s_chest', '물에 젖은 보물상자', 3, 'chest', '#c8913a', 'fish');
 it('s_mermaid', '인어의 비늘', 4, 'scale', '#6affe8', 'fish');
 it('s_kraken', '크라켄의 촉수', 5, 'tentacle', '#c83aff', 'fish');
-it('s_prim', '달을 삼킨 고래', 6, 'whale', '#6a7aff', 'fish', { effect: '밤 동안 모든 경험치 ×1.3 (중복마다 +0.05)' });
+it('s_prim', '달을 삼킨 고래', 6, 'whale', '#6a7aff', 'fish', { effect: '밤 동안 모든 경험치 ×1.3 (중복마다 +0.05, 최대 10회)' });
 
 // ---- Hunting
 it('h_rabbitmeat', '토끼 고기', 0, 'meat', '#e88a7a', 'hunt');
@@ -165,7 +165,7 @@ it('h_kirin', '기린 비늘', 2, 'scale', '#7affb8', 'hunt');
 it('h_white', '백색 변이 가죽', 3, 'hide', '#ffffff', 'hunt');
 it('h_goldantler', '황금 사슴뿔', 4, 'horn', '#ffd34d', 'hunt');
 it('h_gumiho', '구미호 꼬리', 5, 'feather', '#ff9a3a', 'hunt');
-it('h_prim', '하얀 사슴 왕', 6, 'deer', '#f0ffff', 'hunt', { effect: '치명타 피해 +100% (중복마다 +20%)' });
+it('h_prim', '하얀 사슴 왕', 6, 'deer', '#f0ffff', 'hunt', { effect: '치명타 피해 +100% (중복마다 +20%, 최대 10회)' });
 
 // ---- Combat (region materials + skill-wide rares)
 it('c_jelly', '슬라임 젤리', 0, 'jelly', '#7ae05a', 'combat');
@@ -183,7 +183,7 @@ it('c_voideye', '공허의 눈', 2, 'orb', '#ff3aff', 'combat');
 it('c_core', '몬스터 핵', 3, 'orb', '#ff4a4a', 'combat');
 it('c_seal', '마왕의 인장', 4, 'charm', '#ffcf3a', 'combat');
 it('c_tear', '고대 신의 눈물', 5, 'drop', '#aaffff', 'combat');
-it('c_prim', '잊혀진 신의 파편', 6, 'star', '#ffffff', 'combat', { effect: '모든 스탯 +5% (중복마다 +2%)' });
+it('c_prim', '잊혀진 신의 파편', 6, 'star', '#ffffff', 'combat', { effect: '모든 스탯 +5% (중복마다 +2%, 최대 10회)' });
 
 // ---- Alchemy (products + skill-wide rares)
 it('p_str', '힘의 물약', 0, 'potion', '#ff4a4a', 'alchemy', { potion: 'str', desc: '이번 전투 동안 공격력 +25%' });
@@ -199,7 +199,7 @@ it('x_secret', '???의 영약', 4, 'elixir', '#ffffff', 'alchemy', { elixir: 'al
 it('a_salt', '현자의 소금', 3, 'gem', '#f0f0f0', 'alchemy');
 it('a_essence', '엘릭서 원액', 4, 'potion', '#ff9aff', 'alchemy');
 it('a_homunculus', '호문쿨루스 플라스크', 5, 'potion', '#9aff9a', 'alchemy');
-it('a_prim', '현자의 돌', 6, 'stone', '#ff2a3a', 'alchemy', { effect: '물약 효과 ×2 (중복마다 +0.1), 연금 실패 없음' });
+it('a_prim', '현자의 돌', 6, 'stone', '#ff2a3a', 'alchemy', { effect: '물약 효과 ×2 (중복마다 +0.1, 최대 10회), 연금 실패 없음' });
 
 export const ITEMS = I;
 
@@ -272,20 +272,22 @@ export const RECIPES = [
 export const MONSTERS = {
   slime: { name: '슬라임', sprite: 'slime', pal: { a: '#7ae05a' }, hp: 1, atk: 1 },
   shroom: { name: '버섯돌이', sprite: 'shroom', pal: { r: '#e8553d' }, hp: 1.2, atk: 0.9 },
-  kingslime: { name: '왕 슬라임', sprite: 'slime', pal: { a: '#5ad0e0' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  kingslime: { name: '숲의 수호자 트렌트', sprite: 'treant', pal: {}, hp: 1, atk: 1, unique: true },
   frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#9a5ad8' }, hp: 1, atk: 1.1 },
   pshroom: { name: '독버섯', sprite: 'shroom', pal: { r: '#a83ad8' }, hp: 1.3, atk: 0.9 },
-  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#6a3ab8' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#6a3ab8' }, hp: 1, atk: 1, crown: true, scale: 3 },
   bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#6a8ab8' }, hp: 0.8, atk: 1.2, fly: true },
   yeti: { name: '설인', sprite: 'yeti', pal: { a: '#e8f0ff' }, hp: 1.4, atk: 1 },
-  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#bfe0ff' }, hp: 1, atk: 1, crown: true, scale: 1.6 },
+  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#bfe0ff' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  knight: { name: '그림자 기사', sprite: 'knight', pal: {}, hp: 1, atk: 1, unique: true },
+  eye: { name: '심연의 눈', sprite: 'eye', pal: {}, hp: 1, atk: 1, unique: true, fly: true },
 };
 
 export const REGIONS = [
   { name: '햇살 초원', from: 1, mobs: ['slime', 'shroom'], boss: 'kingslime', mats: ['c_jelly', 'c_spore', 'c_crown'], gimmick: null, theme: 'meadow' },
   { name: '독안개 숲', from: 11, mobs: ['frog', 'pshroom'], boss: 'frogking', mats: ['c_slime', 'c_poisonspore', 'c_venom'], gimmick: 'poison', theme: 'swamp' },
   { name: '얼음 동굴', from: 21, mobs: ['bat', 'yeti'], boss: 'yetiking', mats: ['c_batwing', 'c_yetifur', 'c_icecore'], gimmick: 'ice', theme: 'ice' },
-  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'yetiking', mats: ['c_shadow', 'c_abyss', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
+  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'knight', bosses: ['knight', 'eye', 'frogking', 'yetiking', 'kingslime'], mats: ['c_shadow', 'c_abyss', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
 ];
 export const GIMMICK_TEXT = {
   poison: '독안개: 스태미나 소모 ×2.5 (채집 Lv 60 또는 해독 물약으로 무효)',
@@ -327,6 +329,18 @@ export const MEMORIES = {
   sleepy: { name: '전생에 잠꾸러기였다', desc: '야영 시간 +50% (생활 시간 증가)' },
   warrior: { name: '전생에 검투사였다', desc: '전투 숙련 경험치 ×2, 공격력 +15%' },
 };
+
+// Life skills open one after another: each needs the previous one at a level.
+export const UNLOCKS = {
+  mining: null,
+  wood: { skill: 'mining', lv: 10 },
+  forage: { skill: 'wood', lv: 10 },
+  fish: { skill: 'forage', lv: 15 },
+  hunt: { skill: 'fish', lv: 15 },
+  alchemy: { skill: 'hunt', lv: 20 },
+};
+export const BOSS_EVERY = 10;
+export const ELITE_EVERY = 5;
 
 export const STAT_NAMES = { str: '힘', agi: '민첩', vit: '체력', luk: '행운' };
 export const PRESETS = {

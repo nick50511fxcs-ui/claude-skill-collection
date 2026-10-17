@@ -3,7 +3,7 @@
 import {
   TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH,
   RECIPES, MONSTERS, REGIONS, GEAR_NAMES, GEAR_TIER_MULT, PERKS, MEMORIES, PRESETS, AWAKENINGS,
-  TOOL_TIERS, MASTER_BONUS,
+  TOOL_TIERS, MASTER_BONUS, UNLOCKS, BOSS_EVERY, ELITE_EVERY,
 } from './data.js';
 import { makeRng, hash32 } from './rng.js';
 
@@ -91,8 +91,16 @@ export function newState(seed = (Math.random() * 4294967296) >>> 0) {
     pot: {}, catUntil: 0, elixirs: { atk: 0, hp: 0, all: 0 },
     rb: { count: 0, ash: 0, totalAsh: 0, perks: {}, memory: null, choices: null, bestFloor: 1 },
     stats: { kills: 0, deaths: 0, bosses: 0, actions: 0, gold: 0 },
-    hall: [], log: [],
+    hall: [], log: [], firstKills: {},
+    tut: { step: 0, done: false, tips: {} },
   };
+}
+
+// A life skill is open once the skill before it reached its level (or it was already played).
+export function isUnlocked(s, k) {
+  const u = UNLOCKS[k];
+  if (!u) return true;
+  return s.skills[u.skill].lv >= u.lv || s.skills[k].lv > 1;
 }
 
 // Fill in fields added in later versions so old saves keep loading.
@@ -105,6 +113,7 @@ export function migrate(raw) {
   s.stats = { ...base.stats, ...(raw.stats || {}) };
   s.potAuto = { ...base.potAuto, ...(raw.potAuto || {}) };
   s.elixirs = { ...base.elixirs, ...(raw.elixirs || {}) };
+  s.tut = { ...base.tut, ...(raw.tut || {}), tips: { ...((raw.tut && raw.tut.tips) || {}) } };
   s.v = VERSION;
   return s;
 }
@@ -150,7 +159,8 @@ export class Game {
   }
   has(id) { return !!this.s.codex[id]; }
   // Primordial items stack: every duplicate adds a little more to its effect.
-  prim(id, base, per) { const n = this.s.items[id] || 0; return n ? base + per * (n - 1) : 0; }
+  // Capped at 10 duplicates so faster gathering cannot feed itself without limit.
+  prim(id, base, per) { const n = Math.min(11, this.s.items[id] || 0); return n ? base + per * (n - 1) : 0; }
   P(id) { return this.s.rb.perks[id] || 0; }
   serialize() {
     this.s.rng = this.rng.getState();
@@ -485,6 +495,13 @@ export class Game {
       this.dirty = true;
       const m = milestoneAt(k, sk.lv);
       this.emit({ t: 'slv', k, lv: sk.lv, m });
+      for (const k2 in UNLOCKS) {
+        const u = UNLOCKS[k2];
+        if (u && u.skill === k && u.lv === sk.lv && this.s.skills[k2].lv === 1) {
+          this.log(`새 생활 스킬 해금: ${SKILLS[k2].name}`, 4);
+          this.emit({ t: 'unlock', k: k2 });
+        }
+      }
       if (m && (sk.lv % 10 !== 0 || sk.lv % 50 === 0)) this.log(`${SKILLS[k].name} Lv.${sk.lv} · ${m}`, sk.lv % 100 === 0 ? 3 : 2);
     }
   }
@@ -509,27 +526,31 @@ export class Game {
   }
 
   spawn() {
-    const c = this.s.char, f = c.floor, reg = this.region(f), boss = f % 10 === 0;
-    const key = boss ? reg.boss : reg.mobs[Math.floor(this.rng() * reg.mobs.length)];
+    const c = this.s.char, f = c.floor, reg = this.region(f), boss = f % BOSS_EVERY === 0;
+    const elite = !boss && f % ELITE_EVERY === 0;
+    // Tower bosses rotate starting at its first boss floor (40 = the first entry).
+    const key = boss ? (reg.bosses ? reg.bosses.at((Math.floor(f / BOSS_EVERY) - Math.ceil(reg.from / BOSS_EVERY)) % reg.bosses.length) : reg.boss)
+      : reg.mobs[Math.floor(this.rng() * reg.mobs.length)];
     const M = MONSTERS[key];
     let variant = null;
-    if (!boss) {
+    if (!boss && !elite) {
       const vr = this.rng() / this.d.luck;
       if (vr < 0.00001) variant = 'ancient';
       else if (vr < 0.001) variant = 'giant';
       else if (vr < 0.01) variant = 'golden';
     }
     const vm = VARIANTS[variant] || NO_VARIANT;
-    const hp = monHp(f) * M.hp * (boss ? 10 : 1) * vm.hp;
+    const hp = monHp(f) * M.hp * (boss ? 10 : elite ? 4 : 1) * vm.hp;
     this.mon = {
-      key, boss, variant, f, hp, maxHp: hp,
-      name: vm.name + (reg.theme === 'tower' ? '심연의 ' : '') + M.name,
-      atk: monAtk(f) * M.atk * (boss ? 2.2 : 1) * vm.atk,
+      key, boss, elite, variant, f, hp, maxHp: hp, hits: 0,
+      name: (elite ? '정예 ' : '') + vm.name + (reg.theme === 'tower' && !M.unique ? '심연의 ' : '') + M.name,
+      atk: monAtk(f) * M.atk * (boss ? 2.2 : elite ? 1.5 : 1) * vm.atk,
       approach: 0.8,
     };
     this.heroTimer = 0.15;
     this.monTimer = 0.9;
     if (variant === 'ancient') this.log(`고대 개체 출현! ${this.mon.name}`, 5);
+    if (boss) this.log(`${f}층 보스 등장: ${this.mon.name}`, 3);
     this.emit({ t: 'spawn', mon: this.mon });
   }
 
@@ -566,16 +587,19 @@ export class Game {
   monHit() {
     const c = this.s.char, m = this.mon;
     if (this.rng() < this.d.dodge) { this.emit({ t: 'miss' }); return; }
-    const dmg = m.atk * (0.9 + 0.2 * this.rng());
+    m.hits++;
+    // Bosses telegraph nothing but hit hard every fourth swing.
+    const slam = m.boss && m.hits % 4 === 0;
+    const dmg = m.atk * (0.9 + 0.2 * this.rng()) * (slam ? 2.2 : 1);
     c.hp -= dmg;
-    this.emit({ t: 'hit', who: 'hero', dmg });
+    this.emit({ t: 'hit', who: 'hero', dmg, slam });
     if (c.hp <= 0) this.die();
   }
 
   kill() {
     const s = this.s, c = s.char, d = this.d, m = this.mon;
     const vm = VARIANTS[m.variant] || NO_VARIANT;
-    const bossMul = m.boss ? 10 : 1;
+    const bossMul = m.boss ? 10 : m.elite ? 4 : 1;
     s.stats.kills++;
     this.mon = null;
     this.charXp(4 * Math.pow(1.14, m.f - 1) * bossMul * vm.xp * d.charXp);
@@ -589,7 +613,13 @@ export class Game {
       const t = this.rollTier('combat', d.luck * (m.variant ? 2 : 1));
       this.gain(t >= 3 ? SKILL_RARES.combat[t - 3] : reg.mats[t], 1, 'combat');
     }
-    const sure = m.boss || m.variant === 'giant' || m.variant === 'ancient';
+    const sure = m.boss || m.elite || m.variant === 'giant' || m.variant === 'ancient';
+    const first = (m.boss || m.elite) && !s.firstKills[m.f];
+    if (first) {
+      s.firstKills[m.f] = 1;
+      this.dropGear(m, m.boss ? 3 : 2);
+      this.log(`${m.f}층 ${m.boss ? '보스' : '정예'} 첫 처치 보상!`, m.boss ? 4 : 3);
+    }
     if (sure || this.rng() < 0.03) this.dropGear(m);
     this.emit({ t: 'kill', mon: m, gold });
     if (m.boss) {
@@ -597,7 +627,7 @@ export class Game {
       this.log(`${m.f}층 보스 ${m.name} 처치!`, 3);
     }
     c.kills++;
-    if (m.boss || c.kills >= KILLS_PER_FLOOR) {
+    if (m.boss || m.elite || c.kills >= KILLS_PER_FLOOR) {
       c.kills = 0;
       if (s.time >= c.farmUntil) {
         c.floor++;
@@ -632,10 +662,10 @@ export class Game {
     return Math.max(min, r < TIER_P[1] ? 1 : 0);
   }
 
-  dropGear(m) {
+  dropGear(m, minTier = 0) {
     const s = this.s, c = s.char;
     const slot = ['weapon', 'armor', 'charm'][Math.floor(this.rng() * 3)];
-    const tier = this.rollGearTier(this.d.luck, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0);
+    const tier = this.rollGearTier(this.d.luck, Math.max(minTier, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0));
     const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0 };
     const cur = c.gear[slot];
     if (gearScore(g) > gearScore(cur)) {
@@ -708,7 +738,9 @@ export class Game {
   }
 
   // ---------- Slots & settings ----------
+  unlocked(k) { return isUnlocked(this.s, k); }
   setSlotSkill(i, k) {
+    if (!this.unlocked(k)) return false;
     const sl = this.s.slots;
     const other = sl.findIndex((x, j) => j !== i && x.k === k);
     if (other >= 0) sl[other].k = sl[i].k; // swap so one skill never runs twice
@@ -718,7 +750,7 @@ export class Game {
   }
   freeSkill() {
     const used = new Set(this.s.slots.map(x => x.k));
-    return ['fish', 'wood', 'forage', 'hunt', 'mining', 'alchemy'].find(k => !used.has(k));
+    return ['fish', 'wood', 'forage', 'hunt', 'mining', 'alchemy'].find(k => !used.has(k) && this.unlocked(k)) || 'mining';
   }
 
   // ---------- Rebirth ----------
@@ -779,8 +811,10 @@ export class Game {
     if (s.rb.choices) out.push('전생의 기억을 골라주세요 (윤회 탭)');
     if (c.pts > 0 && !c.auto) out.push(`스탯 포인트 ${c.pts}개를 분배하세요`);
     if (this.canRebirth() && s.rb.count === 0) out.push('윤회 가능! 윤회 탭을 열어보세요');
-    const nextBoss = Math.ceil((c.floor + (c.floor % 10 === 0 ? 0 : 0)) / 10) * 10 || 10;
-    out.push(`${nextBoss}층 보스 처치`);
+    const nextG = Math.ceil(c.floor / ELITE_EVERY) * ELITE_EVERY;
+    out.push(`${nextG}층 ${nextG % BOSS_EVERY === 0 ? '보스' : '정예 몬스터'} 처치`);
+    const locked = Object.keys(UNLOCKS).find(k => !this.unlocked(k));
+    if (locked) { const u = UNLOCKS[locked]; out.push(`${SKILLS[u.skill].name} Lv.${u.lv} → ${SKILLS[locked].name} 해금`); }
     if (c.maxFloor <= 20 && s.rb.count === 0) out.push('21층 도달 시 윤회 해금');
     const k = s.slots[0].k, nm = nextMilestones(k, s.skills[k].lv, 1)[0];
     if (nm) out.push(`${SKILLS[k].name} Lv.${nm.lv} · ${nm.text}`);

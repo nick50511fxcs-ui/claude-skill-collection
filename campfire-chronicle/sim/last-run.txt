@@ -19,19 +19,19 @@ Lv	보너스 없음	경험치 +50%
 
 # 3. 1년 동안 태초급을 한 번도 못 얻을 확률
 시간 비중 100%	천장 없음 0.0%	천장 있음 0.0%
-시간 비중 50%	천장 없음 0.5%	천장 있음 0.0%
-시간 비중 20%	천장 없음 12.0%	천장 있음 8.7%
+시간 비중 50%	천장 없음 0.6%	천장 있음 0.0%
+시간 비중 20%	천장 없음 12.7%	천장 있음 8.8%
 
-# 4. 엔진 전체 시뮬레이션 (365일, 82초 소요)
-21층 첫 도달: 1.8시간 · 첫 윤회: 3.2시간
-첫 전설급 획득: 1.2시간
-첫 신화급 획득: 4.6일
-첫 태초급 획득: 10.6일
+# 4. 엔진 전체 시뮬레이션 (365일, 68초 소요)
+21층 첫 도달: 1.8시간 · 첫 윤회: 4.3시간
+첫 전설급 획득: 5.2시간
+첫 신화급 획득: 41.3시간
+첫 태초급 획득: 5.5일
 일	최고층	윤회	총Lv	도감	전설	신화	태초	스킬
-0.04	20	0	72	26	0	0	0	combat:12 mining:9 wood:11 forage:11 fish:11 hunt:11 alchemy:7
-1	31	5	238	40	7	0	0	combat:54 mining:32 wood:32 forage:31 fish:31 hunt:31 alchemy:27
-7	46	54	743	65	78	2	0	combat:133 mining:107 wood:107 forage:107 fish:107 hunt:107 alchemy:75
-30	86	178	1912	89	748	57	2	combat:277 mining:300 wood:300 forage:299 fish:300 hunt:299 alchemy:137
-90	168	393	4334	124	3645	259	14	combat:512 mining:716 wood:716 forage:715 fish:715 hunt:715 alchemy:245
-180	224	695	7401	126	17024	975	51	combat:757 mining:1252 wood:1252 forage:1252 fish:1251 hunt:1251 alchemy:386
-365	308	1266	12718	128	80499	4025	216	combat:1200 mining:2173 wood:2173 forage:2173 fish:2172 hunt:2172 alchemy:655
+0.04	20	0	59	18	0	0	0	combat:12 mining:14 wood:15 forage:15 fish:1 hunt:1 alchemy:1
+1	30	7	248	39	5	0	0	combat:53 mining:34 wood:34 forage:33 fish:33 hunt:33 alchemy:28
+7	50	56	818	70	75	9	1	combat:134 mining:121 wood:120 forage:120 fish:120 hunt:119 alchemy:84
+30	132	175	2513	103	1286	93	2	combat:297 mining:411 wood:410 forage:410 fish:410 hunt:410 alchemy:165
+90	202	400	5785	126	8735	542	26	combat:563 mining:981 wood:981 forage:981 fish:975 hunt:980 alchemy:324
+180	254	704	9349	127	36630	2007	101	combat:832 mining:1606 wood:1593 forage:1606 fish:1605 hunt:1605 alchemy:502
+365	292	1271	13301	128	113956	5605	287	combat:1164 mining:2321 wood:2175 forage:2321 fish:2321 hunt:2320 alchemy:679

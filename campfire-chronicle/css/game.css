@@ -138,6 +138,40 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
 @keyframes heartbeat { 0%, 100% { background: #000; } 30% { background: #2a0010; } 45% { background: #000; } 60% { background: #1a0010; } }
 @keyframes reveal { from { opacity: 1; } to { opacity: 0; } }
 
+/* Boss bar and warning */
+.bossbar { left: 50% !important; top: 4% !important; transform: translateX(-50%) !important; width: min(46%, 420px); display: flex; flex-direction: column; gap: 3px; align-items: stretch; }
+.bb-name { text-align: center; font-size: clamp(11px, 1.4vw, 16px); color: #fff; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bb-track { height: clamp(8px, 1.2vw, 14px); background: #1a0a12; border: 2px solid #000; box-shadow: 0 0 0 1px #ff8aa8; border-radius: 3px; overflow: hidden; }
+.bb-track i { display: block; height: 100%; background: linear-gradient(#ff8a9a, #e8244a 60%, #8a1028); transition: width 0.15s linear; }
+.bossbar.elite .bb-track { box-shadow: 0 0 0 1px #ffd27a; }
+.bossbar.elite .bb-track i { background: linear-gradient(#ffe0a0, #ffb84a 60%, #b8701a); }
+.bosswarn { left: 50% !important; top: 42% !important; transform: translate(-50%, -50%) !important; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 28px; background: rgba(40, 0, 12, 0.82); border-top: 3px solid #ff2a4a; border-bottom: 3px solid #ff2a4a; width: 100%; animation: warn 0.6s ease; }
+.bosswarn b { font-family: var(--pixel); letter-spacing: 0.2em; color: #ff5a7a; font-size: clamp(16px, 3vw, 34px); font-weight: 400; animation: blink 0.5s steps(2) 4; }
+.bosswarn span { color: #fff; font-size: clamp(13px, 1.8vw, 20px); }
+.bosswarn.elite { background: rgba(40, 24, 0, 0.75); border-color: #ffb84a; }
+.bosswarn.elite b { color: #ffd27a; font-family: var(--font); letter-spacing: 0.05em; }
+@keyframes warn { from { opacity: 0; transform: translate(-50%, -50%) scaleY(0.2) !important; } to { opacity: 1; } }
+@keyframes blink { 50% { opacity: 0.25; } }
+
+/* Tutorial */
+.tut-hl { position: relative; z-index: 30 !important; outline: 3px solid #ffd27a !important; outline-offset: 3px; border-radius: 6px; animation: tutpulse 1.2s ease-in-out infinite; }
+@keyframes tutpulse { 50% { outline-color: rgba(255, 210, 122, 0.25); } }
+#tutor {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40;
+  width: min(560px, calc(100% - 32px)); box-sizing: border-box;
+  display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start;
+  background: #16204a; border: 2px solid #ffd27a; box-shadow: 0 0 0 2px #0a0e22, 0 12px 30px rgba(0, 0, 0, 0.6); border-radius: 6px; padding: 12px 14px;
+}
+#tutor .tt-icon { width: 44px; height: 44px; }
+#tutor .tt-step { font-family: var(--pixel); font-size: 10px; color: var(--ember); letter-spacing: 0.1em; }
+#tutor .tt-text { font-size: 15px; line-height: 1.5; margin: 2px 0 8px; }
+#tutor .tt-text b { color: #ffe0a0; font-weight: 400; }
+#tutor .tt-btns { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+#tutor .tt-skip { background: none; border: none; color: var(--ink-dim); font-size: 13px; text-decoration: underline; }
+.skill-card.locked { background: #2e2e3a; border-color: #22222c; }
+.skill-card.locked .sc-nm, .skill-card.locked .sc-lv { color: #8a8aa0; }
+.skill-card .sc-lock { grid-column: span 2; font-size: 11px; color: #ffb0b0; }
+
 /* ---------- Command bar ---------- */
 #bar {
   display: grid; grid-template-columns: auto minmax(180px, 1fr) auto; gap: 14px; align-items: center;
