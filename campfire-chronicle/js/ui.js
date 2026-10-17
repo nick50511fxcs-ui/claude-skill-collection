@@ -5,7 +5,7 @@ import {
 } from './data.js';
 import {
   xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, nextMilestones, perkCost, ashFor,
-  gearName, gearValue, charmValue, enhanceCost, pity,
+  gearName, gearValue, charmValue, enhanceCost, pity, gearScore, sellPrice, BAG_MAX,
 } from './engine.js';
 import { icon, sprite, HERO, HERO_PAL } from './sprites.js';
 import { fmtShort } from './render.js';
@@ -182,6 +182,7 @@ export class UI {
       ['codex', 'book', '#4a6ab8', '도감'],
       ['rebirth', 'cycle', '#ffb84a', '윤회'],
       ['log', 'scroll', '#e8dcc8', '일지'],
+      ['save', 'chest', '#6aa8ff', '저장'],
       ['menu', 'gear', '#8a8a96', '설정'],
     ];
     const nav = $('#btns');
@@ -199,9 +200,14 @@ export class UI {
       dot.className = 'dot';
       dot.hidden = true;
       b.appendChild(dot);
-      b.addEventListener('click', () => (id === 'mode' ? this.toggleFocus() : this.toggle(id)));
+      b.addEventListener('click', () => (id === 'mode' ? this.toggleFocus() : id === 'save' ? this.manualSave() : this.toggle(id)));
       nav.appendChild(b);
     }
+  }
+
+  manualSave() {
+    this.hooks.save(true);
+    this.toast(`저장했습니다 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`, 2);
   }
 
   toggleFocus() {
@@ -226,7 +232,9 @@ export class UI {
     const mb = $('#b-mode .lbl');
     mb.textContent = s.focus ? '생활집중' : '순환';
     $('#b-mode').classList.toggle('on', s.focus);
-    $('#b-char .dot').hidden = !(c.pts > 0 && !c.auto);
+    $('#b-char .dot').hidden = !((c.pts > 0 && !c.auto) || g.upgrades() > 0);
+    const ls = this.hooks.lastSave();
+    $('#b-save').title = ls ? `마지막 저장 ${new Date(ls).toLocaleTimeString('ko-KR')}` : '아직 저장 안 됨';
     $('#b-rebirth .dot').hidden = !(s.rb.choices || (g.canRebirth() && s.rb.count === 0));
     $('#b-life .dot').hidden = !s.slots.some(x => x.blocked);
     for (const id of ['char', 'life', 'bag', 'codex', 'rebirth', 'log', 'menu']) $('#b-' + id).classList.toggle('active', this.panel === id);
@@ -242,7 +250,7 @@ export class UI {
     const timeIcon = env.night ? '🌙' : '☀️';
     const w = env.weather === 'rain' ? ' · 🌧 비 (채집 +20%)' : env.weather === 'snow' ? ' · ❄ 눈' : '';
     $('#hudTL').innerHTML = `
-      <div class="reg">${esc(s.mode === 'camp' ? '모닥불 야영지' : reg.name)}</div>
+      <div class="reg">${esc(s.mode === 'camp' ? this.campPlace() : reg.name)}</div>
       <div class="fl">${s.mode === 'camp' ? `${esc(SKILLS[s.slots[0].k].name)} 중${s.focus ? ' · 생활 집중' : ''}` : `${c.floor}층 ${boss ? '· 보스' : `· ${c.kills}/10`}`}</div>
       <div class="env">${timeIcon} ${SEASON_NAME[env.season]}${w}${env.night ? ' · 밤낚시 희귀 ×1.3' : ''}</div>
       ${gm ? `<div class="gm ${s.pot[gm === 'poison' ? 'antidote' : 'warm'] || g.d.res[gm] >= 1 ? 'ok' : ''}">${esc(GIMMICK_TEXT[gm])}</div>` : ''}
@@ -277,6 +285,12 @@ export class UI {
     });
   }
 
+  campPlace() {
+    const s = this.g.s, k = s.slots[0].k;
+    if (!SPOTS[k]) return '연금술 공방';
+    return SPOTS[k][Math.min(s.spots[k] || 0, spotsUnlocked(s.skills[k].lv) - 1)].name;
+  }
+
   toast(text, tier = 0) {
     const t = document.createElement('div');
     t.className = 'toast';
@@ -293,6 +307,10 @@ export class UI {
       if (e.t === 'slv' && (e.lv % 10 === 0 || e.lv < 10)) this.toast(`${SKILLS[e.k].name} Lv.${e.lv}${e.m ? ' · ' + e.m : ''}`, e.lv % 100 === 0 ? 4 : 1);
       else if (e.t === 'codex') { const it = ITEMS[e.id]; this.toast(`도감 등록 · ${it.name}`, it.tier); }
       else if (e.t === 'gear' && e.equip && e.g.tier >= 1) this.toast(`장착 · [${TIERS[e.g.tier].name}] ${gearName(e.g)}`, e.g.tier);
+      else if (e.t === 'gear' && !e.equip) {
+        if (e.better || e.g.tier >= 2) this.toast(`장비 획득 · [${TIERS[e.g.tier].name}] ${gearName(e.g)}${e.better ? ' ▲' : ''} (가방)`, e.g.tier);
+        this.showTip('gear', '장비를 얻었어요! <b>「캐릭터」</b>에서 <b>착용</b>을 눌러 입으세요. 더 좋은 장비가 가방에 있으면 버튼에 빨간 점이 뜹니다. 자동 착용은 같은 곳에서 켤 수 있어요.', '#b-char');
+      }
       else if (e.t === 'floor' && e.floor % 10 === 1) this.toast(`${e.floor}층 · ${this.g.region(e.floor).name}`, 2);
       else if (e.t === 'unlock') {
         this.toast(`새 생활 스킬 해금 · ${SKILLS[e.k].name}`, 4);
@@ -429,8 +447,33 @@ export class UI {
         const val = slot === 'charm' ? `행운 +${charmValue(gg).luck.toFixed(3)} · 치명 +${pct(charmValue(gg).crit)}` : `${slot === 'weapon' ? '공격력' : 'HP'} +${fmt(gearValue(gg))}`;
         this.html(row, `<b style="color:${TIERS[gg.tier].color}">[${TIERS[gg.tier].name}] ${esc(gearName(gg))}</b><small>${gg.f}층 · ${val}</small>`, 'gear-txt');
         const cost = enhanceCost(gg);
-        row.appendChild(this.btn(`강화 ${fmt(cost)}g`, () => g.enhance(slot), { disabled: c.gold < cost, fid: 'en' + slot }));
-      } else this.html(row, '<b>비어 있음</b><small>몬스터를 쓰러뜨리면 3% 확률로 떨어집니다</small>', 'gear-txt');
+        const btns = this.html(row, '', 'gear-btns');
+        btns.appendChild(this.btn(`강화 ${fmt(cost)}g`, () => g.enhance(slot), { disabled: c.gold < cost, fid: 'en' + slot }));
+        btns.appendChild(this.btn('해제', () => g.unequip(slot), { cls: 'chip', fid: 'uq' + slot }));
+      } else this.html(row, '<b>비어 있음</b><small>가방에서 장비를 골라 착용하세요</small>', 'gear-txt');
+    }
+    const bag = this.section(body, `가방의 장비 ${c.bag.length}/${BAG_MAX}`);
+    const ctl = this.html(bag, '', 'chips');
+    ctl.appendChild(this.btn(s.settings.autoEquip ? '자동 착용 켜짐' : '자동 착용 꺼짐', () => { s.settings.autoEquip = !s.settings.autoEquip; }, { cls: 'chip' + (s.settings.autoEquip ? ' on' : ''), fid: 'autoeq' }));
+    if (c.bag.length) {
+      if (this.confirm === 'sellall') {
+        ctl.appendChild(this.btn(`정말 ${c.bag.length}개 판매`, () => { g.sellAll(); this.confirm = null; }, { cls: 'danger', fid: 'sa2' }));
+        ctl.appendChild(this.btn('취소', () => { this.confirm = null; }, { cls: 'chip', fid: 'sa3' }));
+      } else ctl.appendChild(this.btn('전부 판매', () => { this.confirm = 'sellall'; }, { cls: 'chip', fid: 'sa' }));
+    }
+    if (!c.bag.length) this.html(bag, '<p class="hint">몬스터가 떨어뜨린 장비가 여기에 모입니다. 가방이 가득 차면 가장 약한 장비부터 자동으로 팔려요.</p>');
+    const order = c.bag.map((x, i) => ({ x, i })).sort((a, b) => (a.x.slot > b.x.slot ? 1 : a.x.slot < b.x.slot ? -1 : gearScore(b.x) - gearScore(a.x)));
+    for (const { x, i } of order) {
+      const cur = c.gear[x.slot];
+      const diff = cur ? gearScore(x) / gearScore(cur) - 1 : 1;
+      const row = this.html(bag, '', 'gear-row');
+      row.appendChild(iconCanvas(x.slot === 'weapon' ? 'sword' : x.slot === 'armor' ? 'armor' : 'charm', TIERS[x.tier].color, 28));
+      const val = x.slot === 'charm' ? `행운 +${charmValue(x).luck.toFixed(3)} · 치명 +${pct(charmValue(x).crit)}` : `${x.slot === 'weapon' ? '공격력' : 'HP'} +${fmt(gearValue(x))}`;
+      const cmp = !cur ? '<em class="up">새 부위</em>' : diff > 0.001 ? `<em class="up">▲ ${pct(diff, 0)}</em>` : diff < -0.001 ? `<em class="down">▼ ${pct(-diff, 0)}</em>` : '<em>같음</em>';
+      this.html(row, `<b style="color:${TIERS[x.tier].color}">[${TIERS[x.tier].name}] ${esc(gearName(x))} ${cmp}</b><small>${x.f}층 · ${val}</small>`, 'gear-txt');
+      const btns = this.html(row, '', 'gear-btns');
+      btns.appendChild(this.btn('착용', () => g.equip(i), { cls: diff > 0 ? 'big' : '', fid: 'eq' + i }));
+      btns.appendChild(this.btn(`판매 ${fmt(sellPrice(x))}g`, () => g.sell(i), { cls: 'chip', fid: 'sl' + i }));
     }
   }
 
@@ -687,10 +730,12 @@ export class UI {
     const g = this.g, s = g.s;
     const sv = this.section(body, '저장');
     const cl = this.hooks.cloudStatus();
-    this.html(sv, `<div class="statlist"><div><span>브라우저 저장</span><b>10초마다</b></div>
-      <div><span>클라우드 저장</span><b>${esc(cl.ok ? '1분마다 · ' + (cl.lastAt ? new Date(cl.lastAt).toLocaleTimeString('ko-KR') + ' 저장' : '연결됨') : cl.status)}</b></div></div>
-      <p class="hint">클라우드 저장은 로그인한 사람마다 따로 보관되어 다른 기기에서도 이어집니다. 그래도 오래 플레이한다면 내보내기 문자열을 따로 보관해 두세요. 창을 닫아 둔 시간은 제한 없이 모두 진행됩니다.</p>`);
-    sv.appendChild(this.btn('지금 저장', () => { this.hooks.save(); this.toast('저장했습니다'); }, { fid: 'save' }));
+    const ls = this.hooks.lastSave();
+    this.html(sv, `<div class="statlist"><div><span>자동 저장</span><b>10분마다 · 창을 닫거나 다른 탭으로 갈 때</b></div>
+      <div><span>마지막 저장</span><b>${ls ? new Date(ls).toLocaleString('ko-KR') : '아직 없음'}</b></div>
+      <div><span>클라우드 저장</span><b>${esc(cl.ok ? '연결됨' + (cl.lastAt ? ' · ' + new Date(cl.lastAt).toLocaleTimeString('ko-KR') : '') : cl.status)}</b></div></div>
+      <p class="hint">저장은 이 브라우저와, 로그인한 claude.ai 계정의 클라우드에 함께 됩니다. 다른 기기에서 같은 계정으로 열면 이어집니다. 갑자기 꺼져도 마지막 저장 이후 시간은 오프라인 진행으로 계산됩니다.</p>`);
+    sv.appendChild(this.btn('지금 저장', () => this.manualSave(), { cls: 'big', fid: 'save' }));
     const ex = this.section(body, '내보내기');
     const ta = document.createElement('textarea');
     ta.id = 'exportBox';
@@ -716,12 +761,12 @@ export class UI {
     }, { fid: 'load' }));
     const tu = this.section(body, '안내');
     tu.appendChild(this.btn('튜토리얼 다시 보기', () => this.restartTutorial(), { fid: 'tut' }));
-    const rs = this.section(body, '처음부터');
+    const rs = this.section(body, '새로 하기');
     if (this.confirm === 'reset') {
-      const row = this.html(rs, '<p class="warn">모든 진행이 사라집니다. 정말 초기화할까요?</p>', 'confirm');
-      row.appendChild(this.btn('초기화', () => this.hooks.reset(), { cls: 'danger', fid: 'rsyes' }));
+      const row = this.html(rs, '<p class="warn">모든 진행이 사라지고 튜토리얼부터 다시 시작합니다. 정말 새로 할까요?</p>', 'confirm');
+      row.appendChild(this.btn('새로 하기', () => this.hooks.reset(), { cls: 'danger', fid: 'rsyes' }));
       row.appendChild(this.btn('취소', () => { this.confirm = null; }, { fid: 'rsno' }));
-    } else rs.appendChild(this.btn('데이터 초기화', () => { this.confirm = 'reset'; }, { cls: 'danger', fid: 'rs' }));
+    } else rs.appendChild(this.btn('새로 하기', () => { this.confirm = 'reset'; }, { cls: 'danger', fid: 'rs' }));
   }
 
   // ---------- Modals ----------

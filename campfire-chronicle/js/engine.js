@@ -76,9 +76,11 @@ function freshChar(floor) {
   return {
     lv: 1, xp: 0, pts: 0, st: { str: 5, agi: 5, vit: 5, luk: 5 }, preset: 'balanced', auto: true,
     hp: 1e12, sta: 1e12, gold: 0, floor, kills: 0, maxFloor: floor, farmUntil: 0,
-    gear: { weapon: null, armor: null, charm: null },
+    gear: { weapon: null, armor: null, charm: null }, bag: [],
   };
 }
+export const BAG_MAX = 40;
+export const sellPrice = g => Math.ceil(Math.pow(1.13, g.f - 1) * 5 * (g.tier + 1) * (1 + 0.5 * g.enh));
 
 export function newState(seed = (Math.random() * 4294967296) >>> 0) {
   const skills = {};
@@ -97,6 +99,7 @@ export function newState(seed = (Math.random() * 4294967296) >>> 0) {
     stats: { kills: 0, deaths: 0, bosses: 0, actions: 0, gold: 0 },
     hall: [], log: [], firstKills: {},
     tut: { step: 0, done: false, tips: {} },
+    settings: { autoEquip: false },
   };
 }
 
@@ -111,6 +114,7 @@ export function isUnlocked(s, k) {
 export function migrate(raw) {
   const base = newState(raw.seed);
   const s = { ...base, ...raw };
+  s.settings = { ...base.settings, ...(raw.settings || {}) };
   s.char = { ...freshChar(1), ...raw.char, st: { ...base.char.st, ...(raw.char?.st || {}) }, gear: { ...base.char.gear, ...(raw.char?.gear || {}) } };
   for (const k of Object.keys(base.skills)) s.skills[k] = { ...base.skills[k], ...(raw.skills?.[k] || {}) };
   s.rb = { ...base.rb, ...(raw.rb || {}) };
@@ -675,16 +679,63 @@ export class Game {
     const tier = this.rollGearTier(this.d.luck, Math.max(minTier, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0));
     const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0 };
     const cur = c.gear[slot];
-    if (gearScore(g) > gearScore(cur)) {
+    if (tier >= 2) this.log(`장비 획득: [${TIERS[tier].name}] ${gearName(g)} (${m.f}층)`, tier);
+    // Auto-equip is opt-in; by default every drop goes to the bag for the player to equip.
+    if (s.settings.autoEquip && gearScore(g) > gearScore(cur)) {
+      if (cur) this.toBag(cur);
       c.gear[slot] = g;
       this.dirty = true;
       this.emit({ t: 'gear', g, equip: true });
-      if (tier >= 2) this.log(`장비 획득: [${TIERS[tier].name}] ${gearName(g)} (${m.f}층)`, tier);
     } else {
-      const sell = Math.pow(1.13, m.f - 1) * 5 * (tier + 1);
-      c.gold += sell;
-      this.emit({ t: 'gear', g, equip: false, sell });
+      this.toBag(g);
+      this.emit({ t: 'gear', g, equip: false, better: gearScore(g) > gearScore(cur) });
     }
+  }
+
+  toBag(g) {
+    const c = this.s.char;
+    c.bag.push(g);
+    if (c.bag.length > BAG_MAX) {
+      // Full bag: sell the weakest piece.
+      let worst = 0;
+      for (let i = 1; i < c.bag.length; i++) if (gearScore(c.bag.at(i)) < gearScore(c.bag.at(worst))) worst = i;
+      c.gold += sellPrice(c.bag.splice(worst, 1)[0]);
+    }
+  }
+  equip(i) {
+    const c = this.s.char, g = c.bag[i];
+    if (!g) return false;
+    c.bag.splice(i, 1);
+    const cur = c.gear[g.slot];
+    if (cur) c.bag.push(cur);
+    c.gear[g.slot] = g;
+    this.dirty = true;
+    return true;
+  }
+  unequip(slot) {
+    const c = this.s.char, g = c.gear[slot];
+    if (!g) return false;
+    c.gear[slot] = null;
+    c.bag.push(g);
+    this.dirty = true;
+    return true;
+  }
+  sell(i) {
+    const c = this.s.char, g = c.bag[i];
+    if (!g) return false;
+    c.bag.splice(i, 1);
+    c.gold += sellPrice(g);
+    return true;
+  }
+  sellAll() {
+    const c = this.s.char;
+    for (const g of c.bag) c.gold += sellPrice(g);
+    c.bag = [];
+  }
+  // Best piece in the bag that beats what is worn, per slot (for the "upgrade available" dot).
+  upgrades() {
+    const c = this.s.char;
+    return c.bag.filter(g => gearScore(g) > gearScore(c.gear[g.slot])).length;
   }
 
   enhance(slot) {

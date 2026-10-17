@@ -247,6 +247,10 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
 .alloc-row { display: grid; grid-template-columns: 40px 1fr auto auto; gap: 6px; align-items: center; }
 .alloc-row b { font-weight: 400; font-variant-numeric: tabular-nums; }
 .gear-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; }
+.gear-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.gear-txt em { font-style: normal; font-size: 12px; margin-left: 4px; color: var(--ink-dim); }
+.gear-txt em.up { color: var(--good); }
+.gear-txt em.down { color: var(--bad); }
 .gear-txt { display: flex; flex-direction: column; min-width: 0; }
 .gear-txt b { font-weight: 400; }
 .gear-txt small, .spot-txt small, .recipe-txt small, .rare-row small, .ii-txt small, .perk small, .hall-row small { color: var(--ink-dim); font-size: 12px; }
@@ -338,7 +342,7 @@ textarea { width: 100%; box-sizing: border-box; background: #0c0e22; color: #dfe
 @media (max-width: 760px) {
   #app { padding-block: 8px 12px; gap: 8px; }
   #bar { grid-template-columns: auto 1fr; }
-  .btns { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); }
+  .btns { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(5, 1fr); }
   .btn { width: auto; height: 54px; }
   #hudTR { display: none; }
   #hudTL { max-width: 70%; }

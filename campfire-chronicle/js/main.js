@@ -22,13 +22,16 @@ function start(hotData = {}) {
   let raw = null;
   try { raw = hotData.save ? JSON.parse(hotData.save) : readSave(); } catch { raw = null; }
   const state = raw ? migrate(raw) : newState();
+  if (!raw) state.tut.step = 1;
   const fresh = !raw;
   let game = new Game(state);
   const canvas = document.getElementById('scene');
   const renderer = new Renderer(canvas, document.getElementById('overlay'), game);
 
-  const save = () => {
-    try { localStorage.setItem(KEY, game.serialize()); } catch { /* storage blocked: keep playing */ }
+  let lastSaveAt = 0;
+  const save = (withCloud = false) => {
+    try { localStorage.setItem(KEY, game.serialize()); lastSaveAt = Date.now(); } catch { /* storage blocked: keep playing */ }
+    if (withCloud) cloudSave();
   };
   // Cloud save: one private document per signed-in viewer (data/users/<id>/save).
   // Browser storage stays the fast local copy; the cloud copy follows the player across devices.
@@ -65,8 +68,11 @@ function start(hotData = {}) {
       }
     },
     cloudStatus: () => cloud,
+    lastSave: () => lastSaveAt,
     reset: () => {
-      swap(new Game(newState()));
+      const st = newState();
+      st.tut.step = 1; // a new game starts straight in the tutorial
+      swap(new Game(st));
       save();
       cloudSave();
       ui.close();
@@ -182,9 +188,9 @@ function start(hotData = {}) {
   };
   requestAnimationFrame(frame);
 
-  setInterval(save, 10000);
-  setInterval(cloudSave, 60000);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); cloudSave(); } });
+  // Autosave every 10 minutes, plus whenever the tab is hidden or closed.
+  setInterval(() => save(true), 600000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(true); });
   (async () => {
     try {
       if (!window.claude?.use) { cloud.status = '이 환경에서는 브라우저에만 저장됩니다'; return; }

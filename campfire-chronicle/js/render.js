@@ -1,13 +1,15 @@
 // Canvas renderer: parallax backgrounds, the battle scene, the campfire scene with
 // animated life-skill stations, clone insets, floaters and rare-drop effects.
 import {
-  sprite, drawRotated, drawText, icon, shade, OUTLINE, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL,
+  sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL,
   MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW,
 } from './sprites.js';
 import { ITEMS, TIERS, MONSTERS, TOOL_TIERS, REGIONS, SPOTS } from './data.js';
 import { toolTier, spotsUnlocked } from './engine.js';
 
 export const W = 384, H = 216, GROUND = 178;
+// Duel positions: hero and monster face each other close up.
+const HX = 162, MX = 224;
 const GEAR_COLORS = ['#c8ccd8', '#9ae0a0', '#8ac8ff', '#d8a8ff', '#ffd27a', '#ff8aa8', '#bffcff'];
 
 // Deterministic noise for terrain.
@@ -69,8 +71,8 @@ export class Renderer {
     this.timeScale = 1;
     this.fxQueue = [];
     this.fx = null;
-    this.heroAnim = { swing: 0, hurt: 0, levelUp: 0 };
-    this.monAnim = { hurt: 0, dying: 0, last: null };
+    this.heroAnim = { swing: 0, hurt: 0, levelUp: 0, dodge: 0 };
+    this.monAnim = { hurt: 0, dying: 0, last: null, atk: 0 };
     this.slotVis = [];
     this.layers = new Map();
     this.clones = [];
@@ -122,31 +124,32 @@ export class Renderer {
           if (e.who === 'mon') {
             this.heroAnim.swing = 0.22;
             this.monAnim.hurt = 0.15;
-            this.floater(fmtShort(e.dmg) + (e.crit ? '!' : ''), 236 + rnd(-8, 8), 140 + rnd(-6, 4), e.crit ? '#ff6ad5' : '#fff2a8', e.crit ? 2 : 1);
+            this.floater(fmtShort(e.dmg) + (e.crit ? '!' : ''), MX + rnd(-8, 8), 136 + rnd(-6, 4), e.crit ? '#ff6ad5' : '#fff2a8', e.crit ? 2 : 1);
             if (e.crit && !this.reduced) this.shake = Math.max(this.shake, 0.12);
           } else {
             this.heroAnim.hurt = 0.2;
-            this.floater('-' + fmtShort(e.dmg) + (e.slam ? '!' : ''), 150 + rnd(-4, 4), 140, '#ff5a5a', e.slam ? 2 : 1);
+            this.floater('-' + fmtShort(e.dmg) + (e.slam ? '!' : ''), HX + rnd(-4, 4), 132, '#ff5a5a', e.slam ? 2 : 1);
+            this.monAnim.atk = 0.28;
             if (e.slam && !this.reduced) { this.shake = Math.max(this.shake, 0.35); this.flash = 0.12; this.flashColor = '#ff3a3a'; }
           }
           break;
-        case 'miss': this.floater('MISS', 150, 136, '#a8d8ff', 1); break;
+        case 'miss': this.floater('MISS', HX, 130, '#a8d8ff', 1); this.monAnim.atk = 0.28; this.heroAnim.dodge = 0.3; break;
         case 'spawn':
           if (e.mon.boss || e.mon.elite) this.bossIntro(e.mon);
           break;
         case 'kill':
           this.monAnim.dying = 0.35;
           this.monAnim.last = e.mon;
-          this.burst(236, 160, MON_BASE_PAL[MONSTERS[e.mon.key].sprite]?.a || '#fff', 10);
-          this.floater('+' + fmtShort(e.gold) + 'g', 236, 128, '#ffd34d', 1);
+          this.burst(MX, 160, MON_BASE_PAL[MONSTERS[e.mon.key].sprite]?.a || '#fff', 10);
+          this.floater('+' + fmtShort(e.gold) + 'g', MX, 124, '#ffd34d', 1);
           break;
         case 'lv':
           this.heroAnim.levelUp = 1.2;
-          this.floater('LV UP', 157, 118, '#ffe066', 2);
-          this.ring(157, 168, '#ffe066');
+          this.floater('LV UP', this.g.s.mode === 'camp' ? 157 : HX, 114, '#ffe066', 2);
+          this.ring(this.g.s.mode === 'camp' ? 157 : HX, 168, '#ffe066');
           break;
         case 'drop':
-          if (e.src === 'combat') this.pop(e.id, 236, 160);
+          if (e.src === 'combat') this.pop(e.id, MX, 160);
           this.rareFx(e.id);
           break;
         case 'gear':
@@ -211,7 +214,7 @@ export class Renderer {
   pop(id, x, y, n = 1) {
     const it = ITEMS[id];
     if (!it) return;
-    this.pops.push({ id, x, y, tx: 157, t: 0, n });
+    this.pops.push({ id, x, y, tx: this.g.s.mode === 'camp' ? 157 : HX, t: 0, n });
     if (this.pops.length > 12) this.pops.shift();
   }
 
@@ -405,6 +408,21 @@ export class Renderer {
     }
   }
 
+  location(k, spot, hour) {
+    const indoor = isIndoor(k, spot);
+    const key = `loc:${k}:${spot}:${indoor ? 0 : skyBucket(hour)}`;
+    if (this.layers.has(key)) return this.layers.get(key);
+    const c = mk(W, H);
+    const x = c.getContext('2d');
+    LOCS[k](x, spot, hour);
+    this.layers.set(key, c);
+    return c;
+  }
+  campSpot(k) {
+    const s = this.g.s;
+    return SPOTS[k] ? Math.min(s.spots[k] || 0, spotsUnlocked(s.skills[k].lv) - 1) : 0;
+  }
+
   drawBackground(ctx, theme, hour, scroll) {
     const L = this.layer(theme, hour);
     ctx.drawImage(L.sky, 0, 0);
@@ -420,7 +438,7 @@ export class Renderer {
   }
 
   weather(ctx, env, theme, w = W, h = H) {
-    if (this.reduced) return;
+    if (this.reduced || theme === 'indoor') return;
     const t = this.t;
     if (theme === 'swamp') {
       ctx.fillStyle = 'rgba(190,170,230,0.10)';
@@ -468,11 +486,8 @@ export class Renderer {
       ctx.drawImage(sprite('heros', HERO_STEP, pal), x - 7, top + 14);
     } else ctx.drawImage(body, x - 7, top);
     if (flash > 0) {
-      ctx.globalAlpha = 0.6;
-      ctx.globalCompositeOperation = 'source-atop';
-      ctx.fillStyle = '#ff3a3a';
-      ctx.fillRect(x - 7, top, 14, 18);
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.65;
+      ctx.drawImage(silhouette(body, '#ff4a4a'), x - 7, top);
       ctx.globalAlpha = 1;
     }
     if (opts.soot) {
@@ -524,11 +539,10 @@ export class Renderer {
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fillRect(x - w / 2 + 2, y - 1, w - 4, 2);
     ctx.drawImage(img, Math.round(x - w / 2), Math.round(top), w, Math.round(hh));
-    if (this.monAnim.hurt > 0) {
-      ctx.globalCompositeOperation = 'source-atop';
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fillRect(Math.round(x - w / 2), Math.round(top), w, Math.round(hh));
-      ctx.globalCompositeOperation = 'source-over';
+    if (this.monAnim.hurt > 0 && alpha > 0) {
+      ctx.globalAlpha = 0.7 * alpha;
+      ctx.drawImage(silhouette(img, '#ffffff'), Math.round(x - w / 2), Math.round(top), w, Math.round(hh));
+      ctx.globalAlpha = alpha;
     }
     if ((M.crown && mon.boss) || mon.elite) {
       const cr = sprite('crown', CROWN, { y: mon.elite ? '#c8ccd8' : '#ffd34d', r: '#ff3a5a' });
@@ -654,14 +668,16 @@ export class Renderer {
     const env = g.env;
     const region = g.region(c.floor);
     const camp = s.mode === 'camp';
-    const theme = camp ? 'camp' : region.theme;
+    const campK = s.slots[0].k, campSp = this.campSpot(campK);
+    const theme = camp ? (isIndoor(campK, campSp) ? 'indoor' : 'camp') : region.theme;
     const mon = g.mon;
     const walking = !camp && (!mon || mon.approach > 0);
     if (walking && !this.reduced) this.scroll += dt * 40;
 
     ctx.save();
     if (this.shake > 0) ctx.translate(Math.round(rnd(-2, 2)), Math.round(rnd(-2, 2)));
-    this.drawBackground(ctx, theme, env.hour, this.scroll);
+    if (camp) ctx.drawImage(this.location(campK, campSp, env.hour), 0, 0);
+    else this.drawBackground(ctx, theme, env.hour, this.scroll);
 
     if (camp) this.drawCamp(ctx, env);
     else this.drawFight(ctx, mon, walking);
@@ -670,7 +686,7 @@ export class Renderer {
     this.drawParts(ctx, dt);
     this.drawFloaters(ctx, dt);
     this.weather(ctx, env, theme);
-    if (env.night && theme !== 'ice' && theme !== 'tower') {
+    if (env.night && theme !== 'ice' && theme !== 'tower' && theme !== 'indoor') {
       ctx.fillStyle = 'rgba(20,24,70,0.28)';
       ctx.fillRect(0, 0, W, H);
       if (camp) { // fire light
@@ -703,11 +719,13 @@ export class Renderer {
     for (const k in this.heroAnim) this.heroAnim[k] = Math.max(0, this.heroAnim[k] - dt);
     this.monAnim.hurt = Math.max(0, this.monAnim.hurt - dt);
     this.monAnim.dying = Math.max(0, this.monAnim.dying - dt);
+    this.monAnim.atk = Math.max(0, this.monAnim.atk - dt);
     this.updateFx(dtReal);
 
     // overlay positions
-    this.place(this.el.name, 157, GROUND + 3);
-    this.place(this.el.bubble, 157, 112);
+    const hx = s.mode === 'camp' ? 157 : HX;
+    this.place(this.el.name, hx, GROUND + 3);
+    this.place(this.el.bubble, hx, 112);
     this.renderClones(dt);
   }
 
@@ -744,22 +762,43 @@ export class Renderer {
   }
 
   drawFight(ctx, mon, walking) {
-    const g = this.g, c = g.s.char;
-    this.drawAmbient(ctx, g.region(c.floor));
-    const hurt = this.heroAnim.hurt;
-    const hand = this.drawHero(ctx, 157, GROUND, { walk: walking, hurt });
+    const g = this.g, c = g.s.char, d = g.d;
+    // Hero: lunges forward on each swing, sways back when dodging, is knocked back when hit.
     const sw = this.heroAnim.swing;
+    const lunge = sw > 0 ? Math.sin((1 - sw / 0.22) * Math.PI) * 11 : 0;
+    const dodge = this.heroAnim.dodge > 0 ? -Math.sin((1 - this.heroAnim.dodge / 0.3) * Math.PI) * 6 : 0;
+    const knock = this.heroAnim.hurt > 0 ? -2 : 0;
+    const hx = Math.round(HX + lunge + dodge + knock);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ellipse(ctx, HX + 1, GROUND + 1, 10, 2);
+    const hand = this.drawHero(ctx, hx, GROUND, { walk: walking, hurt: this.heroAnim.hurt, shadow: false });
     const ang = sw > 0 ? lerp(1.9, -0.9, sw / 0.22) : 0.5 + Math.sin(this.t * 3) * 0.05;
     const wt = c.gear.weapon ? c.gear.weapon.tier : 0;
     this.drawTool(ctx, 'sword', hand, ang, GEAR_COLORS[wt]);
-    if (sw > 0.12 && !this.reduced) {
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      for (let i = 0; i < 5; i++) ctx.fillRect(hand.hx + 6 + i * 2, hand.hy - 14 + i * 3, 2, 2);
+    if (sw > 0.1 && !this.reduced) {
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      for (let i = 0; i < 6; i++) ctx.fillRect(hand.hx + 6 + i * 2, hand.hy - 15 + i * 3, 2, 2);
     }
+    // Hero HP bar over the head
+    const hb = 22, hf = Math.max(0, Math.min(1, c.hp / d.hp));
+    ctx.fillStyle = OUTLINE;
+    ctx.fillRect(HX - hb / 2 - 1, GROUND - 27, hb + 2, 4);
+    ctx.fillStyle = '#1a3a1a';
+    ctx.fillRect(HX - hb / 2, GROUND - 26, hb, 2);
+    ctx.fillStyle = hf > 0.3 ? '#5ae05a' : '#ff5a5a';
+    ctx.fillRect(HX - hb / 2, GROUND - 26, Math.round(hb * hf), 2);
+
     const nameEl = this.el.mon;
     if (mon) {
-      const x = 236 + (mon.approach > 0 ? (mon.approach / 0.8) * 150 : 0) + (this.monAnim.hurt > 0 ? 3 : 0);
-      const { top } = this.drawMonster(ctx, mon, x, GROUND);
+      // A new opponent drops in from above while the hero walks up.
+      const drop = mon.approach > 0 ? Math.min(1, mon.approach / 0.5) : 0;
+      const atk = this.monAnim.atk;
+      const mlunge = atk > 0 ? -Math.sin((1 - atk / 0.28) * Math.PI) * 13 : 0;
+      const x = Math.round(MX + mlunge + (this.monAnim.hurt > 0 ? 3 : 0));
+      const yOff = -Math.round(drop * drop * 90);
+      if (mon.approach <= 0.5) { ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipse(ctx, MX, GROUND + 1, 12 * (1 - drop * 0.6), 2); }
+      const { top } = this.drawMonster(ctx, mon, x, GROUND + yOff, mon.approach > 0.5 ? 0 : 1);
+      if (mon.approach > 0 && mon.approach < 0.06 && !this.reduced) this.burst(MX, GROUND - 2, '#c8b89a', 8);
       const bw = 26, frac = Math.max(0, mon.hp / mon.maxHp);
       const by = Math.round(top - (mon.boss ? 12 : 6));
       ctx.fillStyle = OUTLINE;
@@ -768,7 +807,7 @@ export class Renderer {
       ctx.fillRect(Math.round(x - bw / 2), by, bw, 2);
       ctx.fillStyle = mon.boss ? '#ff5a8a' : '#ff5a5a';
       ctx.fillRect(Math.round(x - bw / 2), by, Math.round(bw * frac), 2);
-      nameEl.hidden = false;
+      nameEl.hidden = mon.approach > 0.5;
       nameEl.textContent = (mon.boss ? '👑 ' : '') + mon.name;
       nameEl.className = 'monname' + (mon.variant ? ' v-' + mon.variant : '') + (mon.boss ? ' boss' : '');
       this.place(nameEl, x, by - 2);
@@ -781,14 +820,21 @@ export class Renderer {
       }
     } else { nameEl.hidden = true; this.el.bossBar.hidden = true; }
     if (this.monAnim.dying > 0 && this.monAnim.last) {
-      this.drawMonster(ctx, this.monAnim.last, 236, GROUND + (0.35 - this.monAnim.dying) * 20, this.monAnim.dying / 0.35);
+      this.drawMonster(ctx, this.monAnim.last, MX + (0.35 - this.monAnim.dying) * 30, GROUND - (0.35 - this.monAnim.dying) * 30, this.monAnim.dying / 0.35);
     }
+    // Spotlight on the duel
+    const v = ctx.createRadialGradient((HX + MX) / 2, GROUND - 22, 50, (HX + MX) / 2, GROUND - 22, 230);
+    v.addColorStop(0, 'rgba(0,0,0,0)');
+    v.addColorStop(1, 'rgba(8,4,16,0.45)');
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, W, H);
   }
 
   drawCamp(ctx, env) {
     this.el.mon.hidden = true;
     this.el.bossBar.hidden = true;
-    tent(ctx, 26, GROUND);
+    const k0 = this.g.s.slots[0].k;
+    if (isIndoor(k0, this.campSpot(k0))) { this.drawStation(ctx, k0, 157, GROUND, 0, { w: W }); return; }
     campfire(ctx, 54, GROUND, this.t);
     if (!this.reduced && Math.random() < 0.25) this.parts.push({ x: 54 + rnd(-2, 2), y: GROUND - 10, vx: rnd(-4, 4), vy: -18, g: 0, life: 1.2, t: 0, color: Math.random() < 0.5 ? '#ffb84a' : '#ff6a3a', size: 1 });
     const k = this.g.s.slots[0].k;
@@ -854,20 +900,8 @@ export class Renderer {
       ctx.imageSmoothingEnabled = false;
       const w = cv.width, h = cv.height, gy = h - 14;
       const k = s.slots[slot].k;
-      const [top, bot] = skyColors(this.g.env.hour, 'camp');
-      const grd = ctx.createLinearGradient(0, 0, 0, gy);
-      grd.addColorStop(0, top);
-      grd.addColorStop(1, bot);
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#4a8a5a';
-      for (let x = 0; x < w; x++) ctx.fillRect(x, gy - 10 - Math.floor(smooth(x / 18, 7 + slot) * 14), 1, 30);
-      ctx.fillStyle = '#9a6a3a';
-      ctx.fillRect(0, gy, w, h - gy);
-      ctx.fillStyle = '#5ac04a';
-      ctx.fillRect(0, gy, w, 3);
-      ctx.fillStyle = OUTLINE;
-      ctx.fillRect(0, gy, w, 1);
+      // The clone works at its own place: crop that location around the station.
+      ctx.drawImage(this.location(k, this.campSpot(k), this.g.env.hour), 157 - 40, GROUND - gy, w, h, 0, 0, w, h);
       this.drawStation(ctx, k, 40, gy, slot, { pal: CLONE_PAL, w, mini: true });
       const v = this.vis(slot);
       if (v.pop) {
@@ -883,6 +917,196 @@ export class Renderer {
   }
 }
 
+
+
+// ---------- Life-skill locations: each skill (and each of its spots) has its own place ----------
+const skyBucket = hour => (hour >= 20 || hour < 5 ? 1 : hour < 7 ? 2 : hour < 17 ? 3 : 4);
+export const isIndoor = (k, spot) => k === 'alchemy' || (k === 'mining' && spot < 4);
+function skyFill(x, hour, top2, bot2, mix = 0) {
+  let [t, b] = skyColors(hour, 'camp');
+  if (top2) { t = mixHex(t.startsWith('#') ? t : '#000000', top2, mix); b = mixHex(b.startsWith('#') ? b : '#000000', bot2, mix); }
+  const g = x.createLinearGradient(0, 0, 0, GROUND);
+  g.addColorStop(0, t); g.addColorStop(1, b);
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  if (skyBucket(hour) === 1) for (let i = 0; i < 60; i++) { x.fillStyle = noise(i, 41) > 0.8 ? '#ffffff' : '#a8b8ff'; x.fillRect(Math.floor(noise(i, 42) * W), Math.floor(noise(i, 43) * 110), 1, 1); }
+}
+function ridge(x, col, base, amp, seed, freq) {
+  x.fillStyle = col;
+  for (let i = 0; i < W; i++) { const h = Math.round(base + smooth(i / freq, seed) * amp); x.fillRect(i, GROUND - h, 1, h); }
+}
+function groundStrip(x, top, dirt, seed = 1) {
+  x.fillStyle = dirt; x.fillRect(0, GROUND, W, H - GROUND);
+  for (let i = 0; i < 160; i++) { x.fillStyle = noise(i, seed + 50) > 0.5 ? shade(dirt, -0.25) : shade(dirt, 0.15); x.fillRect(Math.floor(noise(i, seed + 51) * W), GROUND + 6 + Math.floor(noise(i, seed + 52) * (H - GROUND - 6)), 2, 1); }
+  x.fillStyle = top; x.fillRect(0, GROUND, W, 4);
+  x.fillStyle = shade(top, -0.25); for (let i = 0; i < W; i += 3) x.fillRect(i, GROUND + 4, 2, 1 + (noise(i, seed) > 0.5));
+  x.fillStyle = OUTLINE; x.fillRect(0, GROUND, W, 1);
+}
+function bgTree(x, cx, gy, h, trunk, leaf, r) {
+  x.fillStyle = trunk; x.fillRect(cx - 2, gy - h, 4, h);
+  x.fillStyle = leaf; circle(x, cx, gy - h, r); circle(x, cx - r * 0.6, gy - h + r * 0.5, r * 0.7); circle(x, cx + r * 0.6, gy - h + r * 0.5, r * 0.7);
+}
+function pine(x, cx, gy, h, col, snow) {
+  for (let i = 0; i < h; i++) { const w = Math.round((i / h) * h * 0.38); x.fillStyle = snow && i % 7 < 2 ? '#f0f6ff' : col; x.fillRect(cx - w, gy - h + i, w * 2 + 1, 1); }
+  x.fillStyle = '#4a3020'; x.fillRect(cx - 1, gy, 3, 4);
+}
+function lantern(x, cx, cy) {
+  x.globalAlpha = 0.18; x.fillStyle = '#ffb84a'; circle(x, cx, cy, 16); x.globalAlpha = 0.3; circle(x, cx, cy, 8); x.globalAlpha = 1;
+  x.fillStyle = OUTLINE; x.fillRect(cx, cy - 12, 1, 8); x.fillRect(cx - 3, cy - 4, 7, 8);
+  x.fillStyle = '#ffd34d'; x.fillRect(cx - 2, cy - 3, 5, 6);
+}
+const LOCS = {
+  mining(x, spot, hour) {
+    if (spot === 4) {
+      skyFill(x, 22, '#1a0a2a', '#4a1a2a', 0.6);
+      for (let i = 0; i < 80; i++) { x.fillStyle = '#ffffff'; x.fillRect(Math.floor(noise(i, 61) * W), Math.floor(noise(i, 62) * 120), 1, 1); }
+      x.fillStyle = '#fff6b0'; for (let i = 0; i < 14; i++) x.fillRect(300 - i * 3, 24 + i, 3, 1);
+      ridge(x, '#3a1a1a', 30, 40, 7, 40); ridge(x, '#5a2418', 14, 22, 8, 26);
+      x.globalAlpha = 0.35; x.fillStyle = '#ff6a3a'; ellipse(x, 200, GROUND, 160, 26); x.globalAlpha = 1;
+      groundStrip(x, '#7a3a24', '#4a2a20', 9);
+      x.fillStyle = '#ff8a3d'; for (let i = 0; i < 9; i++) x.fillRect(Math.floor(noise(i, 63) * W), GROUND + 8 + (i % 4) * 6, 5 + (i % 3) * 3, 1);
+      return;
+    }
+    const wall = ['#3a3038', '#4a3a34', '#262848', '#1e1830'][spot];
+    x.fillStyle = wall; x.fillRect(0, 0, W, H);
+    for (let i = 0; i < 220; i++) { x.fillStyle = noise(i, 71) > 0.5 ? shade(wall, -0.25) : shade(wall, 0.12); x.fillRect(Math.floor(noise(i, 72) * W), Math.floor(noise(i, 73) * GROUND), 3 + Math.floor(noise(i, 74) * 6), 2); }
+    x.fillStyle = shade(wall, -0.45);
+    for (let i = 0; i < W; i++) { const h = 14 + Math.floor(smooth(i / 10, 3) * 14) + (noise(i, 75) > 0.88 ? 12 : 0); x.fillRect(i, 0, 1, h); }
+    if (spot === 2) {
+      for (let i = 0; i < 9; i++) { const cx = 20 + i * 42 + Math.floor(noise(i, 76) * 20), cy = 60 + Math.floor(noise(i, 77) * 70), col = i % 3 ? '#5a9aff' : '#a66bff';
+        x.globalAlpha = 0.25; x.fillStyle = col; circle(x, cx, cy, 12); x.globalAlpha = 1;
+        for (let j = 0; j < 3; j++) { x.fillStyle = col; const hh = 8 + j * 3; for (let k = 0; k < hh; k++) { const ww = Math.max(0, Math.round(2 * (1 - k / hh))); x.fillRect(cx - 5 + j * 5 - ww, cy - k, ww * 2 + 1, 1); } } }
+    }
+    if (spot === 3) {
+      x.fillStyle = '#7fe3ff';
+      for (let i = 0; i < 7; i++) { let px = Math.floor(noise(i, 78) * W), py = 40 + Math.floor(noise(i, 79) * 100); for (let k = 0; k < 30; k++) { x.globalAlpha = 0.7; x.fillRect(px, py, 1, 1); px += noise(i * 31 + k, 80) > 0.5 ? 1 : 0; py += noise(i * 17 + k, 81) > 0.4 ? 1 : -1; } }
+      x.globalAlpha = 1;
+    }
+    if (spot < 2) {
+      for (const bx of [92, 246, 344]) {
+        x.fillStyle = '#6a4424'; x.fillRect(bx, 52, 6, GROUND - 52); x.fillStyle = '#4a2e18'; x.fillRect(bx + 4, 52, 2, GROUND - 52);
+        x.fillStyle = '#6a4424'; x.fillRect(bx - 30, 48, 66, 6); x.fillStyle = OUTLINE; x.fillRect(bx - 30, 54, 66, 1);
+        lantern(x, bx + 18, 66);
+      }
+    } else lantern(x, 120, 60);
+    groundStrip(x, spot >= 2 ? '#4a4a6a' : '#6a6470', spot >= 2 ? '#2e2e44' : '#4a4450', 11);
+    x.fillStyle = '#8a8a96'; x.fillRect(0, GROUND + 7, W, 1); x.fillRect(0, GROUND + 12, W, 1);
+    x.fillStyle = '#5a3a22'; for (let i = 0; i < W; i += 9) x.fillRect(i, GROUND + 6, 3, 8);
+    x.fillStyle = '#8a8a96'; x.fillRect(0, GROUND + 7, W, 1); x.fillRect(0, GROUND + 12, W, 1);
+  },
+  wood(x, spot, hour) {
+    const P = [
+      { tint: null, trunk: '#5a3a22', leaf: '#2f7a3a', far: '#3f6a4a' },
+      { tint: ['#ffe8a0', '#ffd8a0'], trunk: '#e8e0d0', leaf: '#d8b83a', far: '#b8a060' },
+      { tint: ['#3a4a3a', '#5a6a4a'], trunk: '#3a2414', leaf: '#1e4a2a', far: '#2a3a2a' },
+      { tint: ['#2a2a6a', '#5a4aa8'], trunk: '#3a3a7a', leaf: '#4ab8e8', far: '#3a3a8a' },
+      { tint: ['#ffe8a0', '#fff6d0'], trunk: '#8a6a3a', leaf: '#7ad06a', far: '#a8c87a' },
+    ][spot];
+    skyFill(x, hour, P.tint && P.tint[0], P.tint && P.tint[1], P.tint ? 0.45 : 0);
+    ridge(x, P.far, 40, 30, 21, 30);
+    for (let i = 0; i < 12; i++) bgTree(x, 10 + i * 34 + Math.floor(noise(i, 22) * 12), GROUND - 4, 40 + Math.floor(noise(i, 23) * 30), shade(P.trunk, -0.2), shade(P.leaf, -0.25), 12 + Math.floor(noise(i, 24) * 6));
+    if (spot === 4) { x.globalAlpha = 0.16; x.fillStyle = '#fff6b0'; for (let i = 0; i < 6; i++) x.fillRect(30 + i * 60, 0, 14, GROUND); x.globalAlpha = 1;
+      x.fillStyle = '#6a5030'; x.fillRect(300, GROUND - 60, 16, 60); x.fillRect(250, GROUND - 26, 70, 10); x.fillRect(330, GROUND - 40, 40, 8); }
+    for (let i = 0; i < 7; i++) bgTree(x, 24 + i * 58 + Math.floor(noise(i, 25) * 16), GROUND, 30 + Math.floor(noise(i, 26) * 16), P.trunk, P.leaf, 14 + Math.floor(noise(i, 27) * 5));
+    x.fillStyle = shade(P.leaf, -0.4); for (let i = 0; i < W; i++) { const h = 10 + Math.floor(smooth(i / 8, 28) * 12); x.fillRect(i, 0, 1, h); }
+    if (spot === 3) for (let i = 0; i < 30; i++) { x.fillStyle = i % 2 ? '#bff8ff' : '#ffffff'; x.fillRect(Math.floor(noise(i, 29) * W), 20 + Math.floor(noise(i, 30) * 140), 1, 1); }
+    groundStrip(x, spot === 1 ? '#c8a84a' : spot === 3 ? '#4a5aa8' : '#3f8a3a', '#5a3e24', 21);
+    x.fillStyle = '#7a5432'; x.fillRect(300, GROUND - 6, 22, 6); x.fillRect(306, GROUND - 11, 22, 5); x.fillStyle = '#e8c88a'; x.fillRect(300, GROUND - 6, 3, 6); x.fillRect(325, GROUND - 11, 3, 5);
+  },
+  forage(x, spot, hour) {
+    if (spot === 2) {
+      skyFill(x, hour, '#4a5a4a', '#8a9a7a', 0.6); ridge(x, '#3a4a3a', 30, 24, 31, 30);
+      for (let i = 0; i < 8; i++) { const cx = 20 + i * 50; x.fillStyle = '#2a3020'; x.fillRect(cx, GROUND - 50, 3, 50); x.fillRect(cx - 8, GROUND - 40, 9, 2); x.fillRect(cx + 2, GROUND - 32, 10, 2); }
+      x.globalAlpha = 0.2; x.fillStyle = '#d8e8d0'; for (let i = 0; i < 4; i++) x.fillRect(0, 120 + i * 14, W, 7); x.globalAlpha = 1;
+      groundStrip(x, '#5a7a3a', '#3a3424', 31);
+      x.fillStyle = '#3a5a5a'; for (const [cx, w] of [[60, 30], [250, 44], [340, 26]]) ellipse(x, cx, GROUND + 8, w, 3);
+      return;
+    }
+    if (spot === 3) {
+      skyFill(x, hour, '#bfe0ff', '#e8f6ff', 0.4);
+      x.fillStyle = '#8aa0c8'; for (let i = 0; i < W; i++) { const h = Math.round(70 + smooth(i / 34, 33) * 60); x.fillRect(i, GROUND - h, 1, h); }
+      x.fillStyle = '#ffffff'; for (let i = 0; i < W; i++) { const h = Math.round(70 + smooth(i / 34, 33) * 60); x.fillRect(i, GROUND - h, 1, Math.max(0, Math.round((h - 70) * 0.4))); }
+      ridge(x, '#c8d8f0', 16, 18, 34, 22);
+      groundStrip(x, '#f0f6ff', '#8a9ab8', 33);
+      return;
+    }
+    if (spot === 4) {
+      skyFill(x, 23, '#2a1a4a', '#6a3a8a', 0.6);
+      for (let i = 0; i < 7; i++) { const cx = 20 + i * 58, hh = 30 + Math.floor(noise(i, 35) * 40), col = i % 2 ? '#ff8ae8' : '#8ad8ff';
+        x.globalAlpha = 0.25; x.fillStyle = col; circle(x, cx, GROUND - hh, 20); x.globalAlpha = 1;
+        x.fillStyle = '#e8d8f0'; x.fillRect(cx - 2, GROUND - hh, 5, hh); x.fillStyle = col; ellipse(x, cx, GROUND - hh, 16, 7); }
+      groundStrip(x, '#4a8a7a', '#3a2a4a', 35);
+      for (let i = 0; i < 30; i++) { x.fillStyle = i % 2 ? '#ffe8ff' : '#b8fff0'; x.fillRect(Math.floor(noise(i, 36) * W), GROUND + 2 + (i % 3), 1, 1); }
+      return;
+    }
+    skyFill(x, hour);
+    ridge(x, '#6aa8d8', 50, 30, 37, 40); ridge(x, spot === 1 ? '#3f7a4a' : '#6ac05a', 22, 22, 38, 26);
+    if (spot === 1) for (let i = 0; i < 9; i++) bgTree(x, 12 + i * 46, GROUND - 6, 34 + Math.floor(noise(i, 39) * 18), '#4a3020', '#2f6a3a', 13);
+    for (let i = 0; i < 70; i++) { x.fillStyle = ['#ffe14d', '#ff8aa8', '#ffffff', '#c27bff'][i % 4]; x.fillRect(Math.floor(noise(i, 40) * W), GROUND - 2 - Math.floor(noise(i, 44) * 18), 2, 2); }
+    groundStrip(x, '#6ad04a', '#9a6a3a', 37);
+    if (spot === 1) { x.fillStyle = '#c8a87a'; x.fillRect(0, GROUND + 4, W, 5); x.fillStyle = '#a8885a'; for (let i = 0; i < W; i += 7) x.fillRect(i, GROUND + 6, 3, 1); }
+  },
+  fish(x, spot, hour) {
+    const P = [
+      { sea: '#5aa0e0', land: '#5ab45a' }, { sea: '#3a7ac8', land: '#3f8a4a' }, { sea: '#5a8aa8', land: '#6a8a4a' },
+      { sea: '#2a6ad8', land: '#c8b87a' }, { sea: '#0e1e48', land: '#3a3a5a' },
+    ][spot];
+    skyFill(x, spot === 4 ? 22 : hour);
+    if (spot === 4) { x.fillStyle = '#f0f0d8'; circle(x, 300, 40, 12); x.fillStyle = '#0e1430'; circle(x, 306, 37, 10); }
+    if (spot === 3) { x.globalAlpha = 0.5; x.fillStyle = '#fff6b0'; circle(x, 320, 70, 16); x.globalAlpha = 1; }
+    const hz = spot >= 3 ? 118 : 128;
+    if (spot === 1) ridge(x, '#5a7aa8', 60, 40, 51, 40);
+    if (spot < 3) { x.fillStyle = shade(P.land, -0.2); for (let i = 0; i < W; i++) { const h = Math.round(8 + smooth(i / 20, 52) * 10); x.fillRect(i, hz - h, 1, h); } }
+    x.fillStyle = P.sea; x.fillRect(0, hz, W, GROUND - hz);
+    x.fillStyle = shade(P.sea, 0.25); for (let i = 0; i < 40; i++) x.fillRect(Math.floor(noise(i, 53) * W), hz + 3 + Math.floor(noise(i, 54) * (GROUND - hz - 4)), 6, 1);
+    if (spot === 2) { x.fillStyle = '#6a5a4a'; x.fillRect(200, hz - 14, 140, 4); for (let i = 0; i < 6; i++) x.fillRect(206 + i * 26, hz - 10, 3, 12); }
+    if (spot === 0 || spot === 1) for (let i = 0; i < 6; i++) bgTree(x, 10 + i * 64, hz - 4, 22 + (i % 3) * 6, '#4a3020', shade(P.land, -0.15), 10);
+    groundStrip(x, P.land, spot === 3 ? '#a8946a' : '#7a5a3a', 51);
+  },
+  hunt(x, spot, hour) {
+    if (spot === 3) {
+      skyFill(x, hour, '#c8d8f0', '#e8f0ff', 0.45);
+      ridge(x, '#a8b8d8', 50, 50, 61, 50);
+      for (let i = 0; i < 10; i++) pine(x, 12 + i * 40 + Math.floor(noise(i, 62) * 14), GROUND - 2, 26 + Math.floor(noise(i, 63) * 18), '#2a5a4a', true);
+      groundStrip(x, '#f0f6ff', '#9aaac8', 61);
+      return;
+    }
+    if (spot === 4) {
+      skyFill(x, hour, '#ffd8f0', '#d8fff0', 0.5);
+      for (let i = 0; i < 8; i++) bgTree(x, 14 + i * 52, GROUND - 2, 40 + Math.floor(noise(i, 64) * 20), '#e8e0f0', i % 2 ? '#ffb8e8' : '#b8ffe8', 14);
+      for (let i = 0; i < 40; i++) { x.fillStyle = '#ffffff'; x.fillRect(Math.floor(noise(i, 65) * W), Math.floor(noise(i, 66) * 160), 1, 1); }
+      groundStrip(x, '#8ae0a8', '#6a8a6a', 63);
+      return;
+    }
+    skyFill(x, hour);
+    if (spot === 2) { x.fillStyle = '#7a7a8a'; for (let i = 0; i < W; i++) { const h = Math.round(60 + smooth(i / 26, 67) * 70); x.fillRect(i, GROUND - h, 1, h); } ridge(x, '#5a5a6a', 20, 30, 68, 24); }
+    else ridge(x, '#5aa0d0', 40, 26, 69, 40);
+    if (spot === 1) for (let i = 0; i < 11; i++) bgTree(x, 8 + i * 38, GROUND - 4, 36 + Math.floor(noise(i, 70) * 20), '#4a3020', '#3a7a3a', 13);
+    ridge(x, spot === 2 ? '#6a7a4a' : '#5aa04a', 12, 10, 71, 14);
+    x.fillStyle = spot === 2 ? '#8a9a5a' : '#7ac05a'; for (let i = 0; i < W; i += 2) x.fillRect(i, GROUND - 4 - Math.floor(noise(i, 72) * 8), 1, 8);
+    groundStrip(x, spot === 2 ? '#7a8a4a' : '#5ab44a', '#8a6a3a', 71);
+  },
+  alchemy(x) {
+    x.fillStyle = '#5a3a2a'; x.fillRect(0, 0, W, H);
+    for (let i = 0; i < W; i += 16) { x.fillStyle = shade('#5a3a2a', -0.25); x.fillRect(i, 0, 1, GROUND); x.fillStyle = shade('#5a3a2a', 0.08); x.fillRect(i + 1, 0, 2, GROUND); }
+    x.fillStyle = '#3a2418'; x.fillRect(0, 0, W, 12); x.fillRect(0, 40, W, 3);
+    x.fillStyle = OUTLINE; x.fillRect(46, 56, 52, 46); x.fillStyle = '#7ab8e8'; x.fillRect(48, 58, 48, 42);
+    x.fillStyle = '#a8d8ff'; x.fillRect(48, 58, 48, 10); x.fillStyle = '#5a3a2a'; x.fillRect(71, 58, 3, 42); x.fillRect(48, 77, 48, 3);
+    for (const sy of [70, 108]) {
+      x.fillStyle = '#7a5232'; x.fillRect(236, sy, 128, 5); x.fillStyle = OUTLINE; x.fillRect(236, sy + 5, 128, 1);
+      for (let i = 0; i < 10; i++) { const col = ['#ff4a4a', '#4aff7a', '#4a9aff', '#ffd34d', '#c27bff', '#ff8a2a'][(i + sy) % 6], bh = 8 + (i % 3) * 3;
+        x.fillStyle = OUTLINE; x.fillRect(240 + i * 12, sy - bh - 1, 7, bh + 1); x.fillStyle = col; x.fillRect(241 + i * 12, sy - bh + 3, 5, bh - 3); x.fillStyle = '#e8e0d0'; x.fillRect(242 + i * 12, sy - bh, 3, 3); }
+    }
+    for (let i = 0; i < 6; i++) { x.fillStyle = '#4a7a3a'; x.fillRect(120 + i * 18, 14, 2, 10 + (i % 3) * 4); x.fillStyle = '#6aa04a'; x.fillRect(118 + i * 18, 22 + (i % 3) * 4, 6, 4); }
+    x.globalAlpha = 0.18; x.fillStyle = '#ffb84a'; circle(x, 30, 120, 26); x.globalAlpha = 1;
+    x.fillStyle = '#e8e0d0'; x.fillRect(28, 116, 4, 10); x.fillStyle = '#ffd34d'; x.fillRect(29, 112, 2, 3);
+    x.fillStyle = '#7a5232'; x.fillRect(16, 126, 30, 4);
+    x.fillStyle = '#7a5232'; x.fillRect(0, GROUND, W, H - GROUND);
+    for (let i = 0; i < W; i += 24) { x.fillStyle = shade('#7a5232', -0.25); x.fillRect(i, GROUND, 1, H - GROUND); }
+    x.fillStyle = shade('#7a5232', -0.3); x.fillRect(0, GROUND + 12, W, 1);
+    x.fillStyle = OUTLINE; x.fillRect(0, GROUND, W, 1);
+    x.fillStyle = '#8a2a3a'; x.fillRect(120, GROUND + 4, 120, 8); x.fillStyle = '#c8a84a'; x.fillRect(120, GROUND + 4, 120, 1); x.fillRect(120, GROUND + 11, 120, 1);
+  },
+};
 
 // ---------- Primitive pixel shapes ----------
 function rnd(a, b) { return a + Math.random() * (b - a); }

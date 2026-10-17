@@ -14,14 +14,18 @@ slot grids, bottom command bar); all art here is original and drawn in code.
 - Open `dist/play.html` in a browser (no server needed), or
 - serve the folder (`python3 -m http.server`) and open `index.html` (dev build that loads the ES modules directly).
 
-Progress is saved to `localStorage` every 10 seconds. Use **설정 → 내보내기** to keep a backup string;
-browsers may clear site data.
+Progress autosaves every 10 minutes and whenever the tab is hidden or closed (browser storage, plus the
+viewer's claude.ai cloud save when published as an artifact). The **저장** button saves at once.
+Use **설정 → 내보내기** to keep a backup string; browsers may clear site data.
 
 ## What is in the MVP
 
 | System | Status |
 |---|---|
 | Campfire cycle (fight → tired → camp + life skill → fight), "life focus" toggle | done |
+| 1-on-1 duel combat: opponent drops in, both sides lunge, knockback, hit flash on the sprite, hero HP bar, spotlight | done |
+| Each life skill has its own place per spot (mine shafts, crystal cave, meteor crater, forests, swamp, alpine, fairy garden, stream to deep sea, hunting grounds, alchemy workshop); clones show their own place | done |
+| Gear goes to a bag (40 slots); equip / unequip / sell by hand, opt-in auto-equip, upgrade dot on the character button | done |
 | Combat: 3 regions × 10 floors + endless tower (31+), unique bosses every 10 floors (warning banner, boss HP bar, slam every 4th hit), elites every 5 floors, first-kill gear reward, golden / giant / ancient variants | done |
 | Guided tutorial (10 steps, replayable from settings) and one-time tips; life skills unlock in a chain | done |
 | Region walls that slow instead of stop: poison fog (stamina ×2.5), ice (attack speed −40%), countered by life skills or potions | done |

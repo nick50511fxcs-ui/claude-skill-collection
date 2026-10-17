@@ -65,6 +65,7 @@ const pityTable = [1, 0.5, 0.2].map(share => ({
 const START = Date.UTC(2026, 0, 1);
 const s = newState(SEED);
 const g = new Game(s, { clock: () => START + s.time * 1000, quiet: true, simStep: 1 });
+s.settings.autoEquip = true; // the simulated player always wears its best gear
 
 const GATHER = ['mining', 'wood', 'forage', 'fish', 'hunt'];
 let lastBest = 0, lastBestAt = 0, lifeStart = 0, firstRebirthAt = null, firstFloor20 = null;

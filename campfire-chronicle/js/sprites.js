@@ -49,6 +49,22 @@ export function sprite(name, rows, pal = {}) {
   return cv;
 }
 
+// Solid-colour copy of a sprite's own pixels (hit flashes), cached per sprite and colour.
+const silCache = new WeakMap();
+export function silhouette(img, color) {
+  let m = silCache.get(img);
+  if (!m) { m = new Map(); silCache.set(img, m); }
+  if (m.has(color)) return m.get(color);
+  const c = makeCanvas(img.width, img.height);
+  const x = c.getContext('2d');
+  x.drawImage(img, 0, 0);
+  x.globalCompositeOperation = 'source-in';
+  x.fillStyle = color;
+  x.fillRect(0, 0, img.width, img.height);
+  m.set(color, c);
+  return c;
+}
+
 // Draw a sprite rotated around a pivot with nearest-neighbour sampling, so it stays crisp.
 const rotCache = new Map();
 export function drawRotated(ctx, img, x, y, px, py, angle, flip = false) {
