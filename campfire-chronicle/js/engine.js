@@ -13,6 +13,10 @@ export const ALCH_TIME = 4;
 export const CLONE_SPEED = 0.6;
 export const KILLS_PER_FLOOR = 10;
 export const MON_INTERVAL = 1.8;
+export const REBIRTH_XP = 0.05;
+export const RECALL_MULT = 5;
+export const RECALL_UNTIL = 0.95;
+export const RECALL_FLOOR = 0.2;
 
 // ---------- Curves ----------
 export const xpNeed = lv => Math.floor(20 + 1.8 * Math.pow(lv, 1.9));
@@ -89,7 +93,7 @@ export function newState(seed = (Math.random() * 4294967296) >>> 0) {
     skills, items: {}, codex: {}, records: {},
     potAuto: { str: true, hp: true, sta: true, antidote: true, warm: true, luck: true },
     pot: {}, catUntil: 0, elixirs: { atk: 0, hp: 0, all: 0 },
-    rb: { count: 0, ash: 0, totalAsh: 0, perks: {}, memory: null, choices: null, bestFloor: 1 },
+    rb: { count: 0, ash: 0, totalAsh: 0, perks: {}, memory: null, choices: null, bestFloor: 1, bestLv: 1 },
     stats: { kills: 0, deaths: 0, bosses: 0, actions: 0, gold: 0 },
     hall: [], log: [], firstKills: {},
     tut: { step: 0, done: false, tips: {} },
@@ -227,7 +231,7 @@ export class Game {
       res: { poison: Math.min(1, sk.forage.lv / 60), ice: Math.min(1, sk.wood.lv / 80) },
       lifeSpeed: (1 + 0.03 * this.P('a_speed')) * (this.prim('w_prim', 1.25, 0.05) || 1) * (master('wood') ? 1.15 : 1),
       lifeXp: (1 + 0.05 * this.P('a_xp')) * nightXp,
-      charXp: (1 + 0.15 * this.P('w_xp')) * nightXp,
+      charXp: (1 + 0.15 * this.P('w_xp')) * this.rebirthXp() * nightXp,
       gold: (1 + 0.2 * this.P('r_gold')) * (mem === 'rich' ? 3 : 1),
       campDur: 60 * (mem === 'sleepy' ? 1.5 : 1),
     };
@@ -602,7 +606,10 @@ export class Game {
     const bossMul = m.boss ? 10 : m.elite ? 4 : 1;
     s.stats.kills++;
     this.mon = null;
-    this.charXp(4 * Math.pow(1.14, m.f - 1) * bossMul * vm.xp * d.charXp);
+    const xp = 4 * Math.pow(1.14, m.f - 1) * bossMul * vm.xp * d.charXp;
+    // During recall every kill is worth at least 10% of the current level, so a new life
+    // climbs back to its previous best level in a few hundred kills.
+    this.charXp(this.recall() > 1 ? Math.max(xp * RECALL_MULT, charXpNeed(c.lv) * RECALL_FLOOR) : xp);
     const gold = Math.pow(1.13, m.f - 1) * bossMul * vm.gold * d.gold;
     c.gold += gold;
     s.stats.gold += gold;
@@ -699,6 +706,7 @@ export class Game {
       c.xp -= charXpNeed(c.lv);
       c.lv++;
       c.pts += 3;
+      if (c.lv > this.s.rb.bestLv) this.s.rb.bestLv = c.lv;
       up = true;
     }
     if (up) {
@@ -754,6 +762,10 @@ export class Game {
   }
 
   // ---------- Rebirth ----------
+  // Permanent: every rebirth adds +5% character XP, forever.
+  rebirthXp() { return 1 + REBIRTH_XP * this.s.rb.count; }
+  // Past-life recall: until the character is back near its best level, XP is multiplied.
+  recall() { return this.s.char.lv < this.s.rb.bestLv * RECALL_UNTIL ? RECALL_MULT : 1; }
   canRebirth() { return this.s.char.maxFloor > 20; }
   rebirth() {
     if (!this.canRebirth()) return false;

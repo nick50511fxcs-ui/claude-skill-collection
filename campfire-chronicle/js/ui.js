@@ -246,7 +246,8 @@ export class UI {
       <div class="fl">${s.mode === 'camp' ? `${esc(SKILLS[s.slots[0].k].name)} 중${s.focus ? ' · 생활 집중' : ''}` : `${c.floor}층 ${boss ? '· 보스' : `· ${c.kills}/10`}`}</div>
       <div class="env">${timeIcon} ${SEASON_NAME[env.season]}${w}${env.night ? ' · 밤낚시 희귀 ×1.3' : ''}</div>
       ${gm ? `<div class="gm ${s.pot[gm === 'poison' ? 'antidote' : 'warm'] || g.d.res[gm] >= 1 ? 'ok' : ''}">${esc(GIMMICK_TEXT[gm])}</div>` : ''}
-      ${s.catUntil > s.time ? `<div class="env">✨ 행운의 촉매 ${Math.ceil((s.catUntil - s.time) / 60)}분</div>` : ''}`;
+      ${s.catUntil > s.time ? `<div class="env">✨ 행운의 촉매 ${Math.ceil((s.catUntil - s.time) / 60)}분</div>` : ''}
+      ${g.recall() > 1 ? `<div class="env recall">⚡ 전생 기억 회복 중 · 경험치 ×${g.recall()} (Lv ${Math.ceil(s.rb.bestLv * 0.95)}까지)</div>` : ''}`;
     $('#goals').innerHTML = g.goals().map(t => `<li>${esc(t)}</li>`).join('');
     // Clone insets
     const holder = $('#clones');
@@ -636,7 +637,9 @@ export class UI {
     const top = this.section(body, '모닥불의 재');
     this.html(top, `<div class="ash"><b>${fmt(rb.ash)}</b><small>보유 · 누적 ${fmt(rb.totalAsh)}</small></div>
       <div class="statlist"><div><span>이번 회차 최고층</span><b>${c.maxFloor}층</b></div>
-      <div><span>지금 윤회하면</span><b>재 +${gain}</b></div></div>
+      <div><span>지금 윤회하면</span><b>재 +${gain}</b></div>
+      <div><span>영구 경험치 보너스</span><b>+${Math.round((g.rebirthXp() - 1) * 100)}% (윤회 1회마다 +5%)</b></div>
+      <div><span>전생 기억 회복</span><b>최고 Lv ${s.rb.bestLv}의 95%까지 경험치 ×5, 처치마다 최소 레벨업의 20%</b></div></div>
       <p class="hint">유지: 생활·전투 숙련 레벨, 도감, 재료, 영약, 기록 · 초기화: 캐릭터 레벨, 스탯, 장비, 골드, 층</p>`);
     if (!g.canRebirth()) this.html(top, '<p class="hint">21층에 도달하면 윤회할 수 있습니다. 재는 (최고층 ÷ 5)^1.5 만큼 얻습니다.</p>');
     else if (this.confirm === 'rebirth') {

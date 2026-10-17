@@ -94,6 +94,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
 #hudTL .reg { font-size: clamp(14px, 1.9vw, 22px); color: #fff; }
 #hudTL .fl { color: var(--ember); }
 #hudTL .env { color: #dfe6ff; }
+#hudTL .recall { color: #ffe066; }
 #hudTL .gm { color: #ffb0c8; background: rgba(40, 10, 30, 0.6); padding: 1px 6px; border-radius: 3px; white-space: normal; }
 #hudTL .gm.ok { color: #b8ffb8; background: rgba(10, 40, 20, 0.6); text-decoration: line-through; }
 

@@ -29,7 +29,7 @@ browsers may clear site data.
 | 5 spots per gathering skill, each drawn differently (crystal cave, meteor crater, world tree, deep sea, unicorn ...), seasonal fish, fish weight records | done |
 | Alchemy: 10 recipes, potions auto-used per fight, permanent elixirs, great success / miracle / failure, secret recipe | done |
 | Rarity: common → primordial (0.0001%), luck stat with cap, sqrt luck on myth/primordial, soft pity, stacking primordials | done |
-| Rebirth (ash, 3 perk trees, clone slots), memory cards (1 of 3 per life) | done |
+| Rebirth (ash, 3 perk trees, clone slots, all permanent), memory cards (1 of 3 per life), permanent +5% character XP per rebirth, past-life recall (x5 XP and at least 20% of a level per kill until 95% of the best level; back in ~25 min) | done |
 | Offline progress with no cap (long absences compute in one-day chunks behind a progress note), "return journal" report, replay of big drops | done |
 | Codex with permanent bonuses, hall of fame, log, export / import, seeded RNG stored in the save | done |
 | Second and third prestige layers, crafting gear from materials, cooking, cloud save, sound | not yet |
