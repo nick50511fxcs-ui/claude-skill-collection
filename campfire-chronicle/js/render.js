@@ -1,8 +1,8 @@
 // Canvas renderer: parallax backgrounds, the battle scene, the campfire scene with
 // animated life-skill stations, clone insets, floaters and rare-drop effects.
 import {
-  sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO_LEG, HERO_CROUCH_AT, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL,
-  MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW,
+  sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO, HERO_STEP, HERO_CROUCH, HERO_HAND, HERO_PAL, CLONE_PAL,
+  MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW, WISP, WISP_PAL,
 } from './sprites.js';
 import { ITEMS, TIERS, MONSTERS, TOOL_TIERS, REGIONS, SPOTS } from './data.js';
 import { toolTier, spotsUnlocked } from './engine.js';
@@ -482,32 +482,28 @@ export class Renderer {
   // ---------- Actors ----------
   drawHero(ctx, x, y, opts = {}) {
     const pal = opts.pal || HERO_PAL;
-    const body = sprite('hero', HERO, pal);
-    const w = body.width, x0 = x - 8;
+    const step = opts.walk && Math.sin(this.t * 10) > 0;
+    const body = opts.crouch ? sprite('heroc', HERO_CROUCH, pal) : step ? sprite('heros', HERO_STEP, pal) : sprite('hero', HERO, pal);
+    const x0 = x - 11;
     const bob = opts.walk ? Math.round(Math.abs(Math.sin(this.t * 10))) : Math.round(Math.sin(this.t * 2.5) * 0.5 + 0.5);
-    const crouch = opts.crouch ? body.height - (HERO_CROUCH_AT + HERO_CROUCH.length) : 0;
-    const top = y - body.height - bob + crouch;
+    const top = y - body.height - bob;
     if (opts.shadow !== false) {
       ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.fillRect(x - 7, y - 1, 15, 2);
+      ctx.fillRect(x - 8, y - 1, 17, 2);
     }
-    if (opts.crouch) {
-      ctx.drawImage(body, 0, 0, w, HERO_CROUCH_AT, x0, top, w, HERO_CROUCH_AT);
-      ctx.drawImage(sprite('heroc', HERO_CROUCH, pal), x0, top + HERO_CROUCH_AT);
-    } else if (opts.walk && Math.sin(this.t * 10) > 0) {
-      ctx.drawImage(body, 0, 0, w, HERO_LEG, x0, top, w, HERO_LEG);
-      ctx.drawImage(sprite('heros', HERO_STEP, pal), x0, top + HERO_LEG);
-    } else ctx.drawImage(body, x0, top);
+    ctx.drawImage(body, x0, top);
     if (opts.hurt > 0) {
       ctx.globalAlpha = 0.65;
       ctx.drawImage(silhouette(body, '#ff4a4a'), x0, top);
       ctx.globalAlpha = 1;
     }
     if (opts.soot) {
-      ctx.fillStyle = 'rgba(40,30,30,0.75)';
-      ctx.fillRect(x, top + 5, 6, 4);
+      ctx.fillStyle = 'rgba(40,30,30,0.7)';
+      ctx.fillRect(x0 + 12, top + 11, 5, 2);
+      ctx.fillRect(x0 + 7, top + 14, 3, 2);
+      ctx.fillRect(x0 + 15, top + 15, 2, 1);
     }
-    return { hx: x + 5, hy: top + 13 };
+    return { hx: x0 + HERO_HAND[0], hy: top + HERO_HAND[1] };
   }
 
   drawTool(ctx, kind, hand, angle, color, flip = false) {
@@ -531,8 +527,8 @@ export class Renderer {
     const region = this.g.region(mon.f);
     if (region.theme === 'tower' && !mon.variant) { pal.a = shade(pal.a || '#888', -0.45); if (pal.r) pal.r = shade(pal.r, -0.45); }
     const img = sprite('mon:' + key, MON[key], pal);
-    // Monsters stand eye to eye with the 24px hero; bosses and giants tower over him.
-    const scale = mon.boss ? M.scale || 2 : mon.variant === 'giant' || mon.variant === 'ancient' ? 3 : 2;
+    // Drawn at native size so every sprite shares one pixel grid; bosses have their own big sprites.
+    const scale = mon.variant === 'giant' || mon.variant === 'ancient' ? 2 : 1;
     const w = img.width * scale, h = img.height * scale;
     const fly = M.fly ? 26 + Math.sin(this.t * 3) * 4 : 0;
     const squash = key === 'slime' ? Math.sin(this.t * 6) * 0.08 : 0;
@@ -560,8 +556,7 @@ export class Renderer {
     }
     if ((M.crown && mon.boss) || mon.elite) {
       const cr = sprite('crown', CROWN, { y: mon.elite ? '#c8ccd8' : '#ffd34d', r: '#ff3a5a' });
-      const cs = mon.elite ? 1 : 2;
-      ctx.drawImage(cr, Math.round(x - (cr.width * cs) / 2), Math.round(top - 4 * cs), cr.width * cs, cr.height * cs);
+      ctx.drawImage(cr, Math.round(x - cr.width / 2), Math.round(top - cr.height + 3));
     }
     ctx.globalAlpha = 1;
     return { top, w };
@@ -639,19 +634,20 @@ export class Renderer {
           ctx.drawImage(animal, -Math.round(animal.width / 2), gy - animal.height);
           ctx.restore();
         } else if (since < 0.05 && fx) this.burst(hx + 72, gy - 6, ANIMAL_PAL[kind].a, 6 + spot * 2);
-        this.drawHero(ctx, hx, gy, { pal, crouch: true });
+        const hand = this.drawHero(ctx, hx, gy, { pal, crouch: true });
         const draw = p > 0.6 ? Math.min(1, (p - 0.6) / 0.35) : 0;
         const bow = sprite('bow', BOW, { a: tc });
-        ctx.drawImage(bow, hx + 5, gy - 18);
+        const bx = hand.hx - 2, by = hand.hy - 12, ay = by + 6;
+        ctx.drawImage(bow, bx, by);
         ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.fillRect(hx + 6 - Math.round(draw * 3), gy - 17, 1, 8);
-        if (draw > 0 && !hit) { ctx.fillStyle = '#c8a86a'; ctx.fillRect(hx + 3 - Math.round(draw * 3), gy - 13, 10, 1); }
+        ctx.fillRect(bx + 1 - Math.round(draw * 3), by + 1, 1, 11);
+        if (draw > 0 && !hit) { ctx.fillStyle = '#c8a86a'; ctx.fillRect(bx - 2 - Math.round(draw * 3), ay, 10, 1); }
         if (since < 0.3) {
-          const ax2 = lerp(hx + 12, hx + 72, Math.min(1, since / 0.18));
+          const ax2 = lerp(bx + 7, hx + 72, Math.min(1, since / 0.18));
           ctx.fillStyle = '#c8a86a';
-          ctx.fillRect(ax2, gy - 13, 8, 1);
+          ctx.fillRect(ax2, ay, 8, 1);
           ctx.fillStyle = '#fff';
-          ctx.fillRect(ax2 + 7, gy - 14, 2, 3);
+          ctx.fillRect(ax2 + 7, ay - 1, 2, 3);
         }
         bush(ctx, hx + 10, gy, 0, false, t, true);
         break;
@@ -727,8 +723,8 @@ export class Renderer {
         click(x, y) { const p = spots.find(q => !q.hit && Math.hypot(x - q.x, y - q.y) < 11); if (!p) return false; p.hit = true; g.lifeBurst('forage', 2, 2); self.burst(p.x, p.y, '#d8ff8a', 8); this.found++; if (this.found === 3) self.miniDone('약초를 모두 찾았다! 채집물 ×6', true); return true; } };
     } else if (k === 'hunt') {
       m = { life: 3.2, hint: '달리는 사냥감을 클릭!', hx: 200, hy: 120, x: 400,
-        draw(ctx, t) { this.x = 400 - t * 95; const img = sprite('an:deer', ANIMALS.deer, { a: '#ffd34d', y: '#fff6b0', r: '#ff9aa8' }); ctx.globalAlpha = 0.3; ctx.fillStyle = '#ffe066'; circle(ctx, this.x, GROUND - 7, 10); ctx.globalAlpha = 1; ctx.drawImage(img, Math.round(this.x - 7), GROUND - 13 + Math.round(Math.abs(Math.sin(t * 14)) * -2)); },
-        click(x, y) { if (Math.abs(x - this.x) < 13 && y > GROUND - 26) { ok(5, 3, '명중! 사냥감 ×5, 희귀 확률 ×3'); return true; } return false; } };
+        draw(ctx, t) { this.x = 400 - t * 95; const img = sprite('an:deer', ANIMALS.deer, { a: '#ffd34d', y: '#fff6b0', r: '#ff9aa8' }); ctx.globalAlpha = 0.3; ctx.fillStyle = '#ffe066'; circle(ctx, this.x, GROUND - img.height / 2, img.width * 0.6); ctx.globalAlpha = 1; ctx.save(); ctx.translate(Math.round(this.x), 0); ctx.scale(-1, 1); ctx.drawImage(img, -Math.round(img.width / 2), GROUND - img.height + Math.round(Math.abs(Math.sin(t * 14)) * -2)); ctx.restore(); },
+        click(x, y) { if (Math.abs(x - this.x) < 16 && y > GROUND - 34) { ok(5, 3, '명중! 사냥감 ×5, 희귀 확률 ×3'); return true; } return false; } };
     } else if (k === 'alchemy') {
       m = { life: 5, hint: '거품이 가장 높을 때 클릭!', hx: 183, hy: GROUND - 44, v: 0,
         draw(ctx, t) { this.v = (Math.sin(t * 2.4 - Math.PI / 2) + 1) / 2; ctx.fillStyle = OUTLINE; ctx.fillRect(205, GROUND - 46, 6, 40); ctx.fillStyle = '#2a2a3a'; ctx.fillRect(206, GROUND - 45, 4, 38); ctx.fillStyle = this.v > 0.85 ? '#ffe066' : '#7affe8'; const h = Math.round(38 * this.v); ctx.fillRect(206, GROUND - 7 - h, 4, h); ctx.fillStyle = '#ffe066'; ctx.fillRect(204, GROUND - 40, 8, 1); },
@@ -759,9 +755,9 @@ export class Renderer {
       w.x = -10 + w.t * 32;
       w.y = 70 + Math.sin(w.t * 1.7) * 24;
       ctx.globalAlpha = 0.3; ctx.fillStyle = '#fff6b0'; circle(ctx, w.x, w.y, 9); ctx.globalAlpha = 1;
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(w.x) - 1, Math.round(w.y) - 1, 3, 3);
-      const flap = Math.sin(this.t * 25) > 0 ? 2 : 1;
-      ctx.fillStyle = '#bff8ff'; ctx.fillRect(Math.round(w.x) - 4, Math.round(w.y) - flap - 1, 3, flap); ctx.fillRect(Math.round(w.x) + 2, Math.round(w.y) - flap - 1, 3, flap);
+      const fr = Math.sin(this.t * 25) > 0 ? 1 : 0;
+      const img = sprite('wisp' + fr, WISP[fr], WISP_PAL);
+      ctx.drawImage(img, Math.round(w.x - img.width / 2), Math.round(w.y - img.height / 2));
       if (!this.reduced && Math.random() < 0.5) this.parts.push({ x: w.x, y: w.y, vx: -6, vy: 4, g: 0, life: 0.8, t: 0, color: '#fff6b0', size: 1 });
       if (w.x > W + 12) this.wisp = null;
     }
@@ -899,11 +895,11 @@ export class Renderer {
     // Hero HP bar over the head
     const hb = 22, hf = Math.max(0, Math.min(1, c.hp / d.hp));
     ctx.fillStyle = OUTLINE;
-    ctx.fillRect(HX - hb / 2 - 1, GROUND - 33, hb + 2, 4);
+    ctx.fillRect(HX - hb / 2 - 1, GROUND - 39, hb + 2, 4);
     ctx.fillStyle = '#1a3a1a';
-    ctx.fillRect(HX - hb / 2, GROUND - 32, hb, 2);
+    ctx.fillRect(HX - hb / 2, GROUND - 38, hb, 2);
     ctx.fillStyle = hf > 0.3 ? '#6ac05a' : '#d84a4a';
-    ctx.fillRect(HX - hb / 2, GROUND - 32, Math.round(hb * hf), 2);
+    ctx.fillRect(HX - hb / 2, GROUND - 38, Math.round(hb * hf), 2);
 
     const nameEl = this.el.mon;
     if (mon) {

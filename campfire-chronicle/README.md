@@ -8,6 +8,9 @@ down to 0.0001% primordial drops. Player-facing text is Korean.
 
 Visual direction follows Legends of Idleon (side-view pixel scenes, navy panels,
 slot grids, bottom command bar); all art here is original and drawn in code.
+Characters use a chibi anime style (big head and eyes, 1px black outline added by `ol()` in
+`js/sprites.js`) with every sprite drawn at native size on one pixel grid; bosses have their own
+large sprites. Style references (not copied) are in `art-refs/`.
 
 ## Play
 

@@ -216,7 +216,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 .who { display: flex; align-items: center; gap: 10px; }
-#portrait { width: 36px; height: 54px; background: #2a2f48; border: 2px solid #5a6494; border-radius: 4px; padding: 3px; box-sizing: content-box; }
+#portrait { width: 40px; height: 54px; background: #2a2f48; border: 2px solid #5a6494; border-radius: 4px; padding: 3px; box-sizing: content-box; }
 .who-nm { font-size: 17px; }
 .who-sub { color: var(--ink-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
 .bars { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -273,7 +273,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
 .chip.on { background: linear-gradient(#ff9a3a, #c8601a); border-color: #ffd8a0; color: #fff; }
 
 .char-top { display: flex; gap: 14px; align-items: center; }
-.char-pic { width: 48px; height: 72px; background: #3a4278; border: 2px solid #9aa8e0; border-radius: 4px; padding: 6px; box-sizing: content-box; }
+.char-pic { width: 66px; height: 90px; background: #3a4278; border: 2px solid #9aa8e0; border-radius: 4px; padding: 6px; box-sizing: content-box; }
 .char-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .char-nm { font-size: 20px; }
 .char-nm .lv { color: var(--ember); font-size: 15px; }
@@ -844,15 +844,15 @@ const RECIPES = [
 ];
 
 const MONSTERS = {
-  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#5a8a3a' }, hp: 1, atk: 1 },
-  shroom: { name: '포자 괴물', sprite: 'shroom', pal: { r: '#8a3a2a' }, hp: 1.2, atk: 0.9 },
+  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#6ac04a' }, hp: 1, atk: 1 },
+  shroom: { name: '포자 괴물', sprite: 'shroom', pal: { a: '#d8443a' }, hp: 1.2, atk: 0.9 },
   kingslime: { name: '숲의 수호자 트렌트', sprite: 'treant', pal: {}, hp: 1, atk: 1, unique: true },
-  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#5a4a7a', c: '#7a6a9a' }, hp: 1, atk: 1.1 },
-  pshroom: { name: '독버섯 괴물', sprite: 'shroom', pal: { r: '#5a2a6a' }, hp: 1.3, atk: 0.9 },
-  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#4a2a6a', c: '#6a4a8a' }, hp: 1, atk: 1, crown: true, scale: 3 },
-  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#3a4a6a' }, hp: 0.8, atk: 1.2, fly: true },
-  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#b8c4d0' }, hp: 1.4, atk: 1 },
-  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#9aaabb' }, hp: 1, atk: 1, crown: true, scale: 3 },
+  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#7a5ab0' }, hp: 1, atk: 1.1 },
+  pshroom: { name: '독버섯 괴물', sprite: 'shroom', pal: { a: '#9a4ad0', w: '#d8ff8a' }, hp: 1.3, atk: 0.9 },
+  frogking: { name: '독두꺼비 대왕', sprite: 'frogking', pal: {}, hp: 1, atk: 1, crown: true },
+  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#5a78b8' }, hp: 0.8, atk: 1.2, fly: true },
+  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#dfe8f2' }, hp: 1.4, atk: 1 },
+  yetiking: { name: '설인 왕', sprite: 'yetiking', pal: {}, hp: 1, atk: 1, crown: true },
   knight: { name: '그림자 기사', sprite: 'knight', pal: {}, hp: 1, atk: 1, unique: true },
   eye: { name: '심연의 눈', sprite: 'eye', pal: {}, hp: 1, atk: 1, unique: true, fly: true },
 };
@@ -2043,391 +2043,628 @@ function drawRotated(ctx, img, x, y, px, py, angle, flip = false) {
 }
 
 // ---------------- Characters ----------------
-// Hooded adventurer, 16x24 (head about a third of the height).
-const HERO = [
-  '......oooo......',
-  '.....ohhhho.....',
-  '....ohhhhhho....',
-  '...ohhhhhhhho...',
-  '...ohhHHosssso..',
-  '..ohhHosssesso..',
-  '..ohhHosssSsso..',
-  '..ohhhoSssssso..',
-  '..ohhhhorrrrro..',
-  '.ohcchhoaaaaao..',
-  '.ohcchoaaAaaaao.',
-  '.ohcchoaaAaaaao.',
-  '.ohcchobbkbbbbo.',
-  '.ohchhoaaAaaao..',
-  '.ohchhoaaaAaao..',
-  '..ohhhopppppo...',
-  '..ohhoppppppo...',
-  '...oopppoppo....',
-  '....oppo.oppo...',
-  '....oppo.oppo...',
-  '....oppo.oppo...',
-  '...offfo.offfo..',
-  '...offfo.offfo..',
-  '...ooooo.ooooo..',
+// Grids are drawn as fills only; ol() pads them by a pixel and adds the 1px outline around the
+// silhouette, so every character gets the same clean black edge. 'o' inside a grid is a drawn line.
+function ol(rows) {
+  const w = Math.max(...rows.map(r => r.length)) + 2, h = rows.length + 2;
+  const g = Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => {
+    const ch = (rows[y - 1] || '')[x - 1];
+    return ch && ch !== ' ' ? ch : '.';
+  }));
+  const filled = (x, y) => y >= 0 && y < h && x >= 0 && x < w && g[y][x] !== '.' && g[y][x] !== '_';
+  return g.map((row, y) => row.map((ch, x) => (ch === '.' && (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) ? 'o' : ch === '_' ? '.' : ch)).join(''));
+}
+
+// The adventurer: chibi, big head, auburn hair, blue jacket, red scarf. Faces right.
+const HERO_HEAD = [
+  '..........hh........',
+  '.......hhhh.........',
+  '.....hhhhhhhhhh.....',
+  '....hhhhhcchhhhhh...',
+  '...hhhhhcchhhhhhhh..',
+  '..Hhhhhhchhhhhhhhhh.',
+  '.HHhhhhhhhhhhhhhhhhh',
+  '.HHhhhhHhhhhHhhhhHhh',
+  '.HHhhhHshhhHsshhhHsh',
+  '.HhhhHssshHsssshHssh',
+  '.HhhHsssssssssssssHh',
+  '.HhhheeesssssseeesHh',
+  '.HhHhwiisssssswiishh',
+  '.HhHhiIIsssssiIIsHhh',
+  '.HhHhrrssssmsssrrsh.',
+  '..HHhhSssssssssSHh..',
 ];
-const HERO_LEG = 17;
-const HERO_STEP = [
-  '...oopppoppo....',
-  '...oppo...oppo..',
-  '..oppo.....oppo.',
-  '..oppo.....oppo.',
-  '.offfo....offfo.',
-  '.offfo....offfo.',
-  '.ooooo....ooooo.',
+const HERO_BODY = [
+  '...HhkkkkkkkkkkK....',
+  '....kKkkkkkkkkKk....',
+  '....aakkatttaajaa...',
+  '...aaAkKatttaaajaa..',
+  '...aaAKaatttaaaajss.',
+  '...ssAaabbybbaa.ss..',
 ];
-const HERO_CROUCH_AT = 15;
-const HERO_CROUCH = [
-  '..ohhhopppppo...',
-  '.oppppppoppppo..',
-  '.offfo...offfo..',
-  '.ooooo...ooooo..',
+const HERO_HIP = [
+  '....aaaaatttaaa.....',
+  '....aAaaaaaaaAa.....',
 ];
+const HERO = ol([
+  ...HERO_HEAD, ...HERO_BODY, ...HERO_HIP,
+  '.....ppppPpppp......',
+  '.....pppP.Pppp......',
+  '.....ffF..fffF......',
+  '....fffF..ffffF.....',
+]);
+const HERO_STEP = ol([
+  ...HERO_HEAD, ...HERO_BODY, ...HERO_HIP,
+  '.....ppppPppppp.....',
+  '....pppP...Pppp.....',
+  '...ffF......ffF.....',
+  '..fffF......fffF....',
+]);
+const HERO_CROUCH = ol([
+  ...HERO_HEAD, ...HERO_BODY,
+  '....aaaaatttaaaa....',
+  '...pppppPPpppppp....',
+  '.ffppP.....Pppp.....',
+  'fffF.......fffF.....',
+]);
+// Front hand (tool grip) in sprite pixels, per pose.
+const HERO_HAND = [18, 21];
 const HERO_PAL = {
-  o: '#16121c', h: '#3a4a5a', H: '#2a3644', c: '#4e6274', s: '#d8a888', S: '#b08068', e: '#16121c',
-  r: '#7a2a2a', a: '#7a5236', A: '#5a3a24', b: '#3a2618', k: '#c8a050', p: '#3a3440', f: '#2a1e18',
+  h: '#c0623a', H: '#8a3a2a', c: '#f0a070',
+  s: '#ffe4cc', S: '#f2b896', r: '#ffa8a8', e: '#2a1838', i: '#3a6ad8', I: '#7ac8ff', w: '#ffffff', m: '#a83a3a',
+  k: '#e8484a', K: '#a8283a', a: '#3c64b4', A: '#2a4482', j: '#5a8ae0', t: '#f6f2ea',
+  b: '#6a4424', y: '#ffd34d', p: '#3a3450', P: '#2a2438', f: '#7a4a2a', F: '#4e2e1a',
 };
+// Clones: the same figure as a pale blue spirit.
 const CLONE_PAL = {
-  o: '#1a2440', h: '#4a6aa8', H: '#3a5a90', c: '#6a8ac8', s: '#bcd4f0', S: '#94b0d8', e: '#1a2440',
-  r: '#3a5aa8', a: '#5a7ab8', A: '#4a6aa8', b: '#2a3a68', k: '#a8c8ff', p: '#3a4a80', f: '#2a3460',
+  o: '#1a2440', h: '#6a8ad8', H: '#4a62a8', c: '#a8c8ff',
+  s: '#dceaff', S: '#b0c8f0', r: '#9ab8f0', e: '#1a2440', i: '#3a5ac8', I: '#a8d8ff', w: '#ffffff', m: '#4a62a8',
+  k: '#7aa0f0', K: '#4a6ac0', a: '#5a7ab8', A: '#3a5490', j: '#7a9ad8', t: '#e8f0ff',
+  b: '#3a4a80', y: '#c8e0ff', p: '#3a4a80', P: '#2a3668', f: '#2a3460', F: '#1e2850',
 };
 
+// Monsters face the hero (left). 'a' is the body colour (b/c shades are derived), so variants recolour cleanly.
 const MON = {
-  slime: [
-    '......oooo......',
-    '....ooaaaaoo....',
-    '...oacaaaaaaao..',
-    '..oacaaaaaaaaao.',
-    '.oaaayyaaaayyaao',
-    '.oaaaeyaaaaeyaao',
-    '.oaaaaaaaaaaaaao',
-    '.oaawmwmwmwmaaao',
-    '.oaaaaaaaaaaaabo',
-    'oaabaaaaaaaabbbo',
-    'obbbbbbbbbbbbbbo',
-    '.oooooooooooooo.',
-  ],
-  shroom: [
-    '.....oooooo.....',
-    '...oorrrrrroo...',
-    '..orrrrrrrrrro..',
-    '.orrwwrrrrrwwrro',
-    'orrrrrrrwwrrrrro',
-    'oooooooooooooooo',
-    '...ossssssso....',
-    '...oyesssyeo....',
-    '...ossmmmsso....',
-    '...owmwmwmwo....',
-    '...ossssssso....',
-    '..oSSooooSSo....',
-    '..oooo...oooo...',
-  ],
-  frog: [
-    '...oo......oo...',
-    '..oyeo....oyeo..',
-    '..oaaoooooooaao.',
-    '.oaaaaaaaaaaaaao',
-    'oaacaaaacaaaacao',
-    'oammmmmmmmmmmaao',
-    'oallllllllllaaao',
-    'oalllllllllaaaco',
-    '.oallllllllaaao.',
-    'oaao.oaaao.oaaao',
-    'oooo.ooooo.oooo.',
-  ],
-  bat: [
-    'oo............oo',
-    'oaoo........ooao',
-    'oaaaoo.oo.ooaaao',
-    '.oaaaaoaaoaaaao.',
-    '..oaaaaaaaaaao..',
-    '...oaaraaraao...',
-    '....oaawwaao....',
-    '.....oaaaao.....',
-    '......oooo......',
-  ],
-  bat2: [
-    '................',
-    '................',
-    '.......oo.......',
-    '......oaao......',
-    '..oooaaaaaaooo..',
-    '.oaaaaraaraaaao.',
-    'oaaaoaawwaaoaaao',
-    'oaao.oaaaao.oaao',
-    'ooo...oooo...ooo',
-  ],
-  yeti: [
-    '.....oooooo.....',
-    '...ooaaaaaaoo...',
-    '..oaaaaaaaaaao..',
-    '.oaaaaaaaaaaaao.',
-    '.oaaffffffffaao.',
-    '.oaffefffeffao..',
-    '.oaffffffffffao.',
-    '.oaafwmwmwwfaao.',
-    '..oaaffffffaao..',
-    '.ooaaaaaaaaaaoo.',
-    'oaaoaaaaaaaaoaao',
-    'oaaoaaccccaaoaao',
-    'oaaoaccccccaoaao',
-    'oaaoaccccccaoaao',
-    '.oo.oaaaaaao.oo.',
-    '....oaaooaao....',
-    '...oaaao.oaaao..',
-    '...ooooo.ooooo..',
-  ],
-  treant: [
-    '......GGGGGGGG........',
-    '....GGgggggggGGG......',
-    '...GgggGgggggggGG.....',
-    '..GgggggggGgggggGG....',
-    '..GggGgggggggggggG....',
-    '.GgggggggggGggggggG...',
-    '.GgggGggggggggGgggG...',
-    '..GGgggggggggggggG....',
-    '...oGGGGGGGGGGGGo.....',
-    '....oaaaaaaaaaao......',
-    '...oaabaaaaaabaao.....',
-    '...oaayyaaaayyaao.....',
-    '...oaayyaaaayyaao.....',
-    '...oaaaaaaaaaaaao.....',
-    '..oaaaammmmmmaaaao....',
-    '..oaaaamwmmwmaaaao....',
-    '.oaoaaaaaaaaaaaoao....',
-    'oaaooaaaabaaaaooaao...',
-    'oao.oaaaaaaaaao.oao...',
-    '.o..oaabaaaaaao..o....',
-    '....oaaaaaaabao.......',
-    '...oaaaooooaaaao......',
-    '..oaaao....oaaao......',
-    '.oaaao......oaaao.....',
-    '.oooo........oooo.....',
-  ],
-  knight: [
-    '.......rr.........',
-    '......rrrr........',
-    '.....oooooo.......',
-    '....oaaaaaao......',
-    '....oaccccao......',
-    '....oayoayao......',
-    '....oaaaaaao......',
-    '.....oaaaao.....w.',
-    '...oooaaaaooo..ww.',
-    '..oaaaaaaaaaao.ww.',
-    '.oaacaaaaaacaaoww.',
-    '.oaaoaaccaaoaaow..',
-    '.oao.oaaaao.oao...',
-    '.ooo.oaaaao.ooo...',
-    '.....oaaaao.......',
-    '.....oabbao.......',
-    '....oaao.oaao.....',
-    '....oaao.oaao.....',
-    '...oaaao.oaaao....',
-    '...ooooo.ooooo....',
-  ],
-  eye: [
-    '......oooooooo......',
-    '....oowwwwwwwwoo....',
-    '...owwwwwwwwwwwwo...',
-    '..owwmwwwrrrwwwmwo..',
-    '.owwwwwwrrrrrwwwwwo.',
-    '.owwwwwrrreerrwwwwo.',
-    'owwwwwwrreeeerrwwwwo',
-    'owmwwwwrreeeerrwwmwo',
-    '.owwwwwrrreerrwwwwo.',
-    '.owwwwwwrrrrrwwwwwo.',
-    '..owwmwwwrrrwwwmwo..',
-    '...owwwwwwwwwwwwo...',
-    '....oowwwwwwwwoo....',
-    '.....oaoaooaoao.....',
-    '....oa.oa..ao.ao....',
-    '...oa..oa..ao..ao...',
-    '...o....o..o....o...',
-  ],
+  slime: ol([
+    '........aaaaaa........',
+    '......aaaaaaaaaa......',
+    '.....aacwaaaaaaaa.....',
+    '....aacwcaaaaaaaaa....',
+    '...aaaccaaaaaaaaaaa...',
+    '..aaaaaaaaaaaaaaaaaa..',
+    '..aaaaaeeaaaaaeeaaaa..',
+    '.aaaaaaweaaaaaweaaaaa.',
+    '.aaaaaaeeaaaaaeeaaaaa.',
+    '.aaaarraaaommaarraaaa.',
+    'aaaaaaaaaaaaaaaaaaaaaa',
+    'aaaaaaaaaaaaaaaaaaaabb',
+    'baaaaaaaaaaaaaaaaaabbb',
+    'bbaaaaaaaaaaaaaaaabbbb',
+    '.bbbbbbbbbbbbbbbbbbbb.',
+  ]),
+  shroom: ol([
+    '.......aaaaaaaa.......',
+    '.....aaawwaaaaaaa.....',
+    '....aaawwwwaaaawwa....',
+    '...acaaawwaaaawwwwa...',
+    '..acwwaaaaaaaaaawwaa..',
+    '.acwwwwaaaaawwaaaaaaa.',
+    'aaaawwaaaawwwwaaaawwaa',
+    'baaaaaaaaaawwaaaaaaaab',
+    '.bbbbbbbbbbbbbbbbbbbb.',
+    '....osssssssssssso....',
+    '.....sseessseesss.....',
+    '.....swesssswesss.....',
+    '.....seesssseessS.....',
+    '.....rrssmmmssrrS.....',
+    '......sssssssssS......',
+    '....ssSssssssssSss....',
+    '....ss.SssssssS.ss....',
+    '.......sSS..sSS.......',
+  ]),
+  frog: ol([
+    '...aaaaa........aaaaa...',
+    '..awwwwwa......awwwwwa..',
+    '..awwweea......aeewwwa..',
+    '..awweeeaaaaaaaaeeewwa..',
+    '.aaawwwaacaacaaaawwwaaa.',
+    '.aarraaaaaaaaaaaaaarraa.',
+    'aaaoooooooooooooooooaaaa',
+    'aaaallllllllllllllllaaaa',
+    'aallllllllllllllllllllaa',
+    '.aallllllllllllllllllaa.',
+    'aaaa.bllllllllllllb.aaaa',
+    'aaaa..bbbbbbbbbbbb..aaaa',
+  ]),
+  bat: ol([
+    '.........a......a.........',
+    '.........aa....aa.........',
+    'aa.......apaaaapa.......aa',
+    'aaa.....aaaaaaaaaa.....aaa',
+    '.aaaa..aaaaaaaaaaaa..aaaa.',
+    '.aaaaaaaaeeaaaaeeaaaaaaaa.',
+    '..aaaaaaaweaaaaweaaaaaaa..',
+    '..aaab.aaeeaaaaeeaa.baaa..',
+    '...ab..aaaaawwaaaaa..ba...',
+    '...b....aaaaaaaaaa....b...',
+    '.........aabaabaa.........',
+  ]),
+  bat2: ol([
+    '..........................',
+    '.........a......a.........',
+    '.........aa....aa.........',
+    '.........apaaaapa.........',
+    '........aaaaaaaaaa........',
+    '.......aaaaaaaaaaaa.......',
+    '....aaaaaeeaaaaeeaaaaa....',
+    '..aaaaaaaweaaaaweaaaaaaa..',
+    '.aaaabbaaeeaaaaeeaabbaaaa.',
+    'aaab..b.aaaawwaaaa.b..baaa',
+    'aab.....baaaaaaaab.....baa',
+    'ab.......aabaabaa.......ba',
+  ]),
+  yeti: ol([
+    '.......aaaaaaaaa........',
+    '.....aacaaaaaaaaaa......',
+    '....acaaaaaaaaaaaaa.....',
+    '...aaaaffffffffffaaa....',
+    '...aaaffffffffffffaa....',
+    '..aaafeeffffffeeffaaa...',
+    '..aaafweffffffweffaaa...',
+    '..aaafeeffffffeeffaaa...',
+    '..aaaffffffffffffffaa...',
+    '...aaffwoooooowffaaa....',
+    '...aaaffffffffffaaaa....',
+    '..aaaaaaaaaaaaaaaaaaa...',
+    '.aaaaaaacccccccaaaaaaa..',
+    'aaabaaaccccccccccaaabaa.',
+    'aaabaaccccccccccccaabaaa',
+    'aabb.accccccccccccab.bba',
+    'ffff.accccccccccccab.fff',
+    'fff..aacccccccccaaab..ff',
+    '.....aaaaaaaaaaaaaab....',
+    '.....aaaab....aaaabb....',
+    '....ffffff....ffffff....',
+  ]),
+  eye: ol([
+    '.........c.......c.......c',
+    '........cb......cb......cb',
+    '........cbc...ccaacccc..cbc',
+    '...........cccaaaaaaaaccb',
+    '.........ccaaaaaaaaaaaaaacc',
+    '........caaaaaaawwwwaaaaaaac',
+    '.......caaaaawwwwwwwwwwaaaaac',
+    '......caaaawwwwwwwwwwwmwwaaaac',
+    '.....caaawwwwwwwwwwwwwmwwwwaaac',
+    '....caaawwwwwwwwwwwwwwwwwwwwaaac',
+    '....caaawwwwwwwrrrrrrwwwwwwwaaab',
+    '...caaawwwwwwrrrrrrrrrrwwwwmwaaac',
+    '...caawwmmmwrrwwRRRRRrrrwwmwwwaab',
+    '..caaawwwwwwrrwRReeRRRrrwmwwwwaaac',
+    '..caaawwwwwrrRRRReeRRRRrrwwwwwaaab',
+    '..caaawwwwwrrRRReeeeRRRrrwwwwwaaab',
+    '..caawwwwwwrrRRReeeeRRRrrwwwwwwaab',
+    '..caawwwwwwrrRRReeeeRRRrrwwwwwwaab',
+    '..caaawwwwwrrRRReeeeRRRrrwwwwwaaab',
+    '..caaawmwwwrrRRRReeRRRRrrwwwwwaaab',
+    '..caaawwmwwwrrRRReeRRRrrwwmmmwaabb',
+    '...caawwwmwwrrrRRRRRRrrrwwwwwwaab',
+    '...caaawwwwwwrrrrrrrrrrwwwwwwaabb',
+    '....caaawwwwwwwrrrrrrwwwwwwwaaab',
+    '....caaawwwwwwwwwwwwwwwwwwwwaabb',
+    '.....caaawwwwwmwwwwwwwwwwwwaaab',
+    '......caaaawwwmwwwwwwwwwwaaaaabc',
+    '.......caaaaawwwwwwwwwwaaaabbab',
+    '........caaaaaaawwwwaaaaaabb.cb',
+    '.........caaaaaaaaaaaaaaabb.cb',
+    '..........cbaaaaaaaaabbabb.cb',
+    '.........cb.cbbbabbbbb.cb..cb',
+    '.........cb.cb..cb.....cb.cb',
+    '........c..c.....c....c...c',
+    '.......c...c.....c....c....c',
+    '.......c....c.....c..c.....c',
+    '............c.........c',
+    '.............c........c',
+    '..............c........c',
+  ]),
+  treant: ol([
+    '..............llllllllllll',
+    '.............lggggggggggggl',
+    '............lggggggggggggggl',
+    '..........llggggggggggggggggll',
+    '........llggggllggggggggggggggll',
+    '....llllgggggglgggggggggggggggggllll',
+    '...lgggggggggggggggggggggGggggggggggl',
+    '..lgggggggggggggggggggggGGgggggllggggl',
+    '..lggggggllggGggggggggggggggggglgggggG',
+    '..lgggggglggGGgggggggggggggggggggggggG',
+    '..lggggggggggggggggggggggllggggggggggG',
+    '..lgggggggggggggggggggGgglgggggggggggG',
+    '..lggggggGgggggggggggGGggggggggGgggggG',
+    '..lgggggGGgggggggGggggggggggggGGggggGG',
+    '...lggggggggggggGGgggggggggggggggggGG',
+    '....lgggggggggggggggggggggggggggggGG',
+    '.....lGgggggggGGGGGGGGGGGgggggggGGG',
+    '.......lGGGGaaaaaaaaaaaaaaabGGGGG',
+    '............caaaaaaaaallaaab',
+    'gg..........caaaaaaaaalaaaab',
+    'glaa.......caaaaaaaaaaaaaaaac........gg',
+    '...aa......caaooooaaaaooooaab......aalg',
+    '....aaa....caaayyyaaaayyyaaab.....aa',
+    '.....aaaaaacaaayYyaaaayYyaaab...aaa',
+    '......aaaabcaaaayaaaaaayaaaabaaaaa',
+    '...........caaaaaaaaaaaaaaaabbaaa',
+    '...........caaaaaaaaaaaaaaaab',
+    '...........caaaaooooooooaaaab',
+    '...........caaaaowmmmmwoaaaab',
+    '...........caaaaaooooooaabaab',
+    '...........caabaaaaaaaaaabaab',
+    '...........caabaaaaaaaaaabaab',
+    '...........caabaaaaaaaaaabaab',
+    '...........caabaaaabaaaaabaab',
+    '...........caaaaaaabaaaaabaab',
+    '...........caaaaaaabaaaaaaaab',
+    '...........caaaaaaaaaaaaaaabb',
+    '...........aaaaabbbbbbaaaaab',
+    '..........aaaab........aaaaab',
+    '.........aaab...........aaaab',
+    '........aaa...............aaa',
+  ]),
+  knight: ol([
+    '...............cccrrc',
+    '............cccaarrrrccc',
+    '...........caaaaarrrraaac',
+    '...w......caaaaaarrraaaaac',
+    '...w1....caaaaaaaaaaaaaaaac',
+    '...w1....caaaaaaaaaaaaaaaab',
+    '...w1...caaaaaaaaaaaaaaaaaac',
+    '...w1...caaaaaaaaaaaaaaaaaab',
+    '...w1...caaaaaaaaaaaaaaaaaab',
+    '...w1...caaaaaaaaaaaaaaaaaab',
+    '...w1...caooooooooooooooooob',
+    '...w1...caooyyooooyyooooooob',
+    '...w1....coooYooooYoooooooob',
+    '...w1.kkkaoooooooooooooooooakK',
+    '...w1.kkkaaaaaaaaaaaaaaaaaaakK',
+    '...w1.kkkaaaaaaaaaaaaaaaaaaakK',
+    '...w1kkkkaaaaaaaaaaaaaaaaaaakkK',
+    '...w1kkaaabbbbbbbbbbbbbbbbbaakK',
+    '...w1kaaaaaaaaaaaaaaaaaaaaaaaaK',
+    '...w1kaaaaaaaaaaaaaaaaaaaaaaaaK',
+    '...w1kaaaaaaaaaaaaaaaaaaaaaaaaK',
+    '...w1kaaaaaaaaaaayyaaaaaaaaaaaK',
+    '...w1kkaaaaaaaaayYYyaaaaaaaaakK',
+    '...w1kkkkkaaaaaaayyaaaaaaaakkkK',
+    '...w1kkkkkaaaaaaaaaaaaaaaaakkkK',
+    '...cckkkkkaaaaaaaaaaaaaaaaakkkK',
+    '..cccckkkkaaaaaaaaaaaaaaaaakkkK',
+    '..caabkkkkBBBBBBByyBBBBBBBBkkkK',
+    'yyyyyyyykkBBBBBBByyBBBBBBBBkkkK',
+    '...BBkkkkkaaaaaaaaaaaaaaaaakkkK',
+    '...BBkkkkkkaaaaaaaaaaaaaaakkkkK',
+    '...BBkkkkkkaaaaakkkkkaaaaakkkkK',
+    '...BBkkkkkkaaaaakkkkkaaaaakkkkK',
+    '.....kkkkkkaaaaakkkkkaaaaakkkkK',
+    '.....kkkkkkaaaaakkkkkaaaaakkkkK',
+    '.....kkkkkkkkkkkkkkkkkkkkkkkkkK',
+    '.....KKKKKKKKKKKKKKKKKKKKKKKKKK',
+  ]),
+  frogking: ol([
+    '.......cccc....................cccc',
+    '.....ccaaaacc................ccaaaacc',
+    '....caawwwwaac..............caawwwwaac',
+    '....cawwwwwwab..............cawwwwwwab',
+    '...cawwwweewwac............cawweewwwwac',
+    '...cawwweweewab............caweweewwwab',
+    '...cawwweeeewaacppccccccccppaweeeewwwab',
+    '...cawwweeeewaaapaaaaaaaaapaaweeeewwwbb',
+    '....cawweeeeaaaaaaaaappaaaaaaaeeeewwab',
+    '....caawweeaaaaaaaaaapaaaaaaaaaeewwabb',
+    '.....caaaaaappaaaaaaaaaaaaaaappaaaaab',
+    '....caaaaaaapaaaaaaaaaaaaaaaapaaaaaaac',
+    '...caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac',
+    '..caoaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaoc',
+    '..caaoooooooooooooooooooooooooooooooooab',
+    '.caaaaaaarraaaaaaaaaaaaaaaaaaaarraaaaaaac',
+    '.caaaaaaaaaaaaaallllllllllaaaaaaaaaaaaaab',
+    'kkaaaaaaaaaaallllllllllllllllaaaaaaaaaaakk',
+    'kkkaaaaaaaallllllllllllllllllllaaaaaaaakkk',
+    'kkkkaaappallllllllllllllllllllllaappaakkkk',
+    'kkkkaaapallllllllllllllllllllllllapaaakkkk',
+    'kkkkkaaallllllllllllllllllllllllllaaakkkkk',
+    'kkkkkaaallllllllllllllllllllllllllaaakkkkk',
+    'kkkkkyaallllllllllllllllllllllllllaaykkkkk',
+    'kkkkkyaallllllllllllllllllllllllllaaykkkkk',
+    'yyyyyybaallllllllllllllllllllllllabbyyyyyy',
+    '.......cballllllllllllllllllllllbbb',
+    '.........cbllllllllllllllllllllbb',
+    '......aaaabcbllllllllllllllllbbaaaab',
+    '.......bbbb....cllllllllllb....bbbb',
+  ]),
+  yetiking: ol([
+    '.....ii............................ii',
+    '.....iii........cccccccc..........iii',
+    '......iii.....ccaaaaaaaacc.......iii',
+    '.......iii..ccaaaaaaaaaaaacc....iii',
+    '........iiicaaaaaaaaaaaaaaaac..iii',
+    '..........caaaaaaaaaaaaaaaaaac',
+    '..........caaaaaaaaaaaaaaaaaab',
+    '.........caaaaaaaffffffaaaaaaac',
+    '.........caaaaffffffffffffaaaab',
+    '........caaaaffffffffffffffaaaac',
+    '........caaaffffffffffffffffaaab',
+    '........caaafeefffffeeffffffaaab',
+    '........caaffwefffffwefffffffaab',
+    '........caaffeefffffeefffffffaab',
+    '........caaffffffffffffffffffabb',
+    '.........caffffffffffffffffffab',
+    '.........caaffffffffffffffffabb',
+    '..........caffooooooooofffffab',
+    '..........caaffwofffowfffffaab',
+    '..........caaaffffffffffffaaab',
+    '........ccaaaaaaaffffffaaaaaaacc',
+    '.......caaaaaaaaaaaaaaaaaaaaaaaac',
+    '......iiiiiiiiiiiCCCCCCiiiiiiiiiii',
+    '.....iiiiiiiiiCCCCCCCCCCCCiiiiiiiii',
+    '.....caaaaaaaCCCCCCCCCCCCCCaaaaaaab',
+    '....caaaaaaaCCCCCCCCCCCCCCCCaaaaaaac',
+    '.aa.caaaaaaCCCCCCCCCCCCCCCCCCaaaaaabaa',
+    '.aaaaaaaaaaCCCCCCCCCCCCCCCCCCaaaaaaaaa',
+    '.aaaaaaaaaCCCCCCCCCCCCCCCCCCCCaaaaaaaa',
+    '.aaabaaaaaCCCCCCCCCCCCCCCCCCCCaaaabaaa',
+    '.ffffaaaaaCCCCCCCCCCCCCCCCCCCCaaaaffff',
+    '.fffaaaaaaCCCCCCCCCCCCCCCCCCCCaaaaafff',
+    '...caaaaaaaCCCCCCCCCCCCCCCCCCaaaaaabb',
+    '....caaaaaaCCCCCCCCCCCCCCCCCCaaaaaab',
+    '....caaaaaaaCCCCCCCCCCCCCCCCaaaaaaab',
+    '.....caaaaaaaCCCCCCCCCCCCCCaaaaaaaab',
+    '.....caaaaaaaaCCCCCCCCCCCCaaaaaaaaab',
+    '.....caaaaaaaaaaaCCCCCCaaaaaaaaaaaab',
+    '.....cbbaaaaaaaaaaaaaaaaaaaaaaabbbbb',
+    '........caaaaaabaaaaaaaaaaaabbbb',
+    '.........ffffffffaaaaffffffffb',
+    '............cbbaaaaaaaaabbbb',
+    '...............cbbbbbbbbb',
+  ]),
 };
 const MON_BASE_PAL = {
-  treant: { a: '#7a5432', y: '#ffe066', m: '#2a1a10' },
-  knight: { a: '#4a4060', r: '#ff3a5a', y: '#ff5aff' },
-  eye: { r: '#c83aff', m: '#ff6a8a', a: '#6a3a8a', w: '#f4eef8' },
-  slime: { a: '#5a8a3a', y: '#e8d040', e: '#16121c', w: '#e8e0c8', m: '#3a1a1a' },
-  shroom: { r: '#8a3a2a', w: '#d8c8a8', s: '#c8b89a', S: '#9a8a6a', y: '#e8d040', e: '#16121c', m: '#3a1a1a' },
-  frog: { a: '#5a4a7a', c: '#7a6a9a', l: '#a8a078', y: '#e8d040', e: '#16121c', m: '#2a1a24' },
-  bat: { a: '#3a4a6a', r: '#e83a4a' },
-  bat2: { a: '#3a4a6a', r: '#e83a4a' },
-  yeti: { a: '#b8c4d0', f: '#5a6a80', c: '#dce4ec', e: '#e8d040' },
+  treant: { a: '#8a5a32', g: '#5ab84a', G: '#2e7d32', l: '#a8e070', y: '#ffe066', Y: '#fff8c0', w: '#fff4e0', m: '#3a1a10' },
+  knight: { a: '#5a5478', k: '#4a1a3a', K: '#2a1028', r: '#ff3a5a', y: '#ff5aff', Y: '#ffffff', w: '#e8eef8', 1: '#9aa4b8', B: '#2a2438' },
+  eye: { a: '#7a3a9a', w: '#f4eef8', r: '#c83aff', R: '#8a1ac8', e: '#1e1626', m: '#ff6a8a' },
+  frogking: { a: '#5a3a8a', w: '#ffffff', e: '#1e1626', r: '#ff8ab8', l: '#d8d0a0', p: '#9a7ad0', k: '#c8283a', y: '#ffd34d' },
+  yetiking: { a: '#c8d8f0', f: '#7a8ec0', C: '#ffffff', i: '#7ae8ff', e: '#1e1626', w: '#ffffff' },
+  slime: { a: '#6ac04a', w: '#ffffff', e: '#1e1626', r: '#ff8aa0', m: '#8a2a3a' },
+  shroom: { a: '#d8443a', w: '#fff4e0', s: '#f6e2c4', S: '#d8b890', e: '#1e1626', r: '#ff9aa0', m: '#8a2a3a' },
+  frog: { a: '#7a5ab0', l: '#d8d0a0', w: '#ffffff', e: '#1e1626', r: '#ff8ab8' },
+  bat: { a: '#4a5a8a', p: '#ff9ab8', e: '#ffe066', w: '#ffffff' },
+  bat2: { a: '#4a5a8a', p: '#ff9ab8', e: '#ffe066', w: '#ffffff' },
+  yeti: { a: '#dfe8f2', f: '#8aa0c8', c: '#ffffff', e: '#1e1626', w: '#ffffff' },
 };
 
-const CROWN = [
-  'o.o.o.o',
-  'oyoyoyo',
-  'oyyryyo',
-  'ooooooo',
+// Wandering wisp: a tiny glowing fairy, two wing frames.
+const WISP = [
+  ol(['cc.....cc', 'ccc...ccc', '.ccyyycc.', '..yeyey..', '..yrYry..', '...yyy...']),
+  ol(['.........', '...yyy...', 'ccyeyeycc', 'cccrYrccc', '.c.yyy.c.', '....y....']),
 ];
+const WISP_PAL = { c: '#bff8ff', y: '#fff6b0', Y: '#ffffff', e: '#2a1838', r: '#ffb0c0' };
+
+const CROWN = ol([
+  'y...y...y',
+  'yy.yyy.yy',
+  'yyyyyyyyy',
+  'yryyyyyry',
+  'yyyyyyyyy',
+]);
 
 // Animals for hunting.
 const ANIMALS = {
-  boar: [
-    '....oooooo......',
-    '..ooaaaaaaoo....',
-    '.oaaaaaaaaaaoo..',
-    'oaaaaaaaaaaaaeo.',
-    'oaaaaaaaaaaaaaao',
-    'oaaaaaaaaaaawwmo',
-    '.oaaaaaaaaaaaoo.',
-    '..oaaaaaaaaao...',
-    '..oao.oao.oao...',
-    '..oo..oo..oo....',
-  ],
-  wolf: [
-    '.............oo.',
-    '............oao.',
-    '.ooooooooooooaao',
-    'oaaaaaaaaaaaaaeo',
-    '.oaaaaaaaaaaaaamo',
-    '..oaaaaaaaaaaoo.',
-    '..oaaoooaaaao...',
-    '..oao..oaoao....',
-    '..oo...oo.oo....',
-  ],
-  unicorn: [
-    '..............y.',
-    '.............y..',
-    '...........pooo.',
-    '..........ppaaao',
-    '..........paaeao',
-    '.........ppaaaao',
-    '..ooooooopaaao..',
-    '.oaaaaaaaaaao...',
-    'paaaaaaaaaaao...',
-    'p.oaaaaaaaaao...',
-    '..oaaaaaaaao....',
-    '..oao.oao.oao...',
-    '..oao.oao.oao...',
-    '..oo..oo..oo....',
-  ],
-  rabbit: [
-    '...oo.oo..',
-    '...oaooao.',
-    '...oaooao.',
-    '..oaaaaaao',
-    '.oaaaaeaao',
-    'oaaaaaaaro',
-    'oaaaaaaao.',
-    '.oaaaaaao.',
-    '.oo.oo.oo.',
-  ],
-  deer: [
-    'y.y.......y.y.',
-    '.yy.......yy..',
-    '..yy.....yy...',
-    '...oooooooo...',
-    '..oaaaaaaeao..',
-    '..oaaaaaaaaaro',
-    '...oaaaaaaoo..',
-    'ooaaaaaaaao...',
-    'oaaaaaaaaao...',
-    '.oaaaaaaaao...',
-    '.oao.oao.oao..',
-    '.oo..oo..oo...',
-  ],
+  rabbit: ol([
+    '..........ab..ab',
+    '..........ar..ar',
+    '..........ar..ar',
+    '..........araaar',
+    '.........aaaaaaab',
+    '.......b.aaaaewab',
+    '...aaaaaaaaaaeeaab',
+    '.waaaaaaaaaaaaaabb',
+    'wwwaaaaaaaaaaaaabr',
+    'wwwaaaaaaaaaaabrb',
+    '.waaaaaaaaaaabb',
+    '.baaaaaaaaaabb',
+    '..baaaaaaaaab',
+    '...bbbbbbbbbb',
+    '.......b',
+  ]),
+  deer: ol([
+    '................y...y.y...y',
+    '.................y.y...y.y',
+    '..................y.....y',
+    '..................y.....y',
+    '..................yy....yy',
+    '.................cyy.cc.yy',
+    '.................ccccaacc',
+    '..................caaaaaac',
+    '..................caaewaab',
+    '.................caaaeeaaaee',
+    '.................caaaaaaaab',
+    '.................caaaabbbbb',
+    '.................caaabbr',
+    '.................caaab',
+    '..w.....cccccccc.caaab',
+    '.www.cccaaaaaaaacaaaab',
+    '.wwwcaaaaaawaaaaaaaaab',
+    '..wcaaawaaaaaaaaaaaabb',
+    '...caaaaaaaaaawaaaaab',
+    '...caaaaawaaaaaaaaaab',
+    '...caaaaaaaaaaaaaaabb',
+    '....caaaaaaaaaaaaaab',
+    '.....cbbaaaaaaaabbbac',
+    '.....cb.cabbbbbab..cb',
+    '.....cb..cb....cb..cb',
+    '.....cb..cb....cb..cb',
+    '.....cb..cb....cb..cb',
+    '.....cb..cb....cb..cb',
+    '.....ee..ee....ee..ee',
+  ]),
+  boar: ol([
+    '.....m..m..m..m..m',
+    '..m..mm.mm.mm.mm.mm.c',
+    '..mm..cccccccccccc.cb',
+    '....ccaaaaaaaaaaaacab',
+    '...caaaaaaaaaaaaaaaaacc',
+    '..caaaaaaaaaaaaaaaaaaaacc',
+    '.caaaaaaaaaaaaaaaaaaaewaac',
+    '.caaaaaaaaaaaaaaaaaaaeeaaac',
+    '.caaaaaaaaaaaaaaaaaaaaaaaar',
+    '.caaaaaaaaaaaaaaaaaaaaaarrrrr',
+    '.caaaaaaaaaaaaaaaaaaaaaarrrer',
+    '..caaaaaaaaaaaaaaaaaaaaarrrer',
+    '...caaaaaaaaaaaaaaaaaaawbbr',
+    '....caaaaaaaaaaaabbaaabww',
+    '....cabbbaabbbbaab.caab',
+    '....cab..cab...cab..cab',
+    '....eee..eee...eee..eee',
+  ]),
+  wolf: ol([
+    '...................c....c',
+    '...................cr..cr',
+    '...................cbc.cb',
+    'cc....................cb',
+    'cac.................ccaacc',
+    '.cac...............caaaaaac',
+    '..cac...cccccccc..caaaewaaac',
+    '...cmmmmmmmmmmmmmmmaaaeeaaab',
+    '...caammmmmmmmmmmaaaaaaaaaaacee',
+    '..caaaaaaaaaaaaaaaaaaaaaaaaaab',
+    '..caaaaaaaaaaaaaaaaaaaaaaawwww',
+    '..caaaaaaawwwwwwwwaaaaabbbwwww',
+    '..caaaaawwwwwwwwwwwwbbbb',
+    '...cbaaawwwwwwwwwwwwb',
+    '.....cbbaawwwwwwwwbab',
+    '.....cb.cabbbbbab..cb',
+    '.....cb..cb....cb..cb',
+    '.....cb..cb....cb..cb',
+    '.....cb..cb....cb..cb',
+    '.....ee..ee....ee..ee',
+  ]),
+  unicorn: ol([
+    '............................y',
+    '...........................yy',
+    '..........................yy',
+    '.........................yy',
+    '...................c....yy',
+    '...............ppp.cccccy',
+    '..............pppp.caaaaacc',
+    '..............ppp..caaaaaab',
+    '..............pp..caaaewaaac',
+    '..............pp.caaaaeeaaaac',
+    '..............pp.caaaaaaaaaab',
+    '..............p..caaaaaaaaaab',
+    '..............p..caaabbbbbbrb',
+    '..............pp.caaab',
+    '.......cccccccppcaaaab',
+    '..pp.ccaaaaaaaaaaaaaab',
+    '.pppcaaaaaaaaaaaaaaaab',
+    'pppcaaaaaaaaaaaaaaaaaac',
+    'pp.caaaaaaaaaaaaaaaaaab',
+    'pp.caaaaaaaaaaaaaaaaaab',
+    'pppcaaaaaaaaaaaaaaaaabb',
+    '.pp.caaaaaaaaaaaaaaabb',
+    '.....caaaaaaaaaaaabbb',
+    '......cbbbabbbbbabb.cc',
+    '......cb..cb....cb..cb',
+    '......cb..cb....cb..cb',
+    '......cb..cb....cb..cb',
+    '......cb..cb....cb..cb',
+    '......cb..cb....cb..cb',
+    '......yy..yy....yy..yy',
+  ]),
 };
 
 // ---------------- Tools (held upright; pivot is the bottom of the handle) ----------------
 const TOOLS = {
-  pick: [
-    '..ooooooo..',
-    '.oaaaaaaao.',
-    'oaao.d.oaao',
-    'oo...d...oo',
+  pick: ol([
+    '..ccaaaaa..',
+    '.caaaaaaab.',
+    'ca...d...bb',
+    'a....d....b',
+    '.....d.....',
     '.....d.....',
     '.....d.....',
     '.....d.....',
     '.....d.....',
     '.....d.....',
     '.....D.....',
-  ],
-  axe: [
-    '...oooo.',
-    '..oaaaao',
-    '.oaaaaao',
-    '.oaaado.',
-    '..oood..',
-    '....d...',
-    '....d...',
-    '....d...',
-    '....d...',
-    '....D...',
-  ],
-  sword: [
-    '..o..',
-    '.oao.',
-    '.oao.',
-    '.oao.',
-    '.oao.',
-    '.oao.',
-    '.oao.',
-    'ooooo',
-    'oyyyo',
-    '.odo.',
-    '.oDo.',
-  ],
-  sickle: [
-    '.oooo...',
-    'oaaaao..',
-    'oo..oao.',
-    '.....oo.',
-    '....d...',
-    '....d...',
-    '....d...',
-    '....D...',
-  ],
-  rod: [
-    'a',
-    'd',
-    'd',
-    'a',
-    'd',
-    'd',
-    'd',
-    'd',
-    'd',
-    'd',
-    'D',
-    'D',
-  ],
-  ladle: [
-    '.ooo.',
-    'oaaao',
-    'oaaao',
-    '.odo.',
+  ]),
+  axe: ol([
+    '...dcc..',
+    '...dcaa.',
+    '...daaab',
+    '...daaab',
+    '...dbbb.',
+    '...d....',
+    '...d....',
+    '...d....',
+    '...d....',
+    '...d....',
+    '...D....',
+  ]),
+  sword: ol([
+    '..c..',
+    '.cab.',
+    '.cab.',
+    '.cab.',
+    '.cab.',
+    '.cab.',
+    '.cab.',
+    '.cab.',
+    '.cab.',
+    '.cab.',
+    'yyyyy',
+    '..d..',
+    '..d..',
+    '..y..',
+  ]),
+  sickle: ol([
+    '.ccaa..',
+    'c....a.',
+    '.....ab',
+    '....db.',
+    '....d..',
+    '....d..',
+    '....d..',
+    '....D..',
+  ]),
+  rod: ol(['a', 'd', 'd', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'D', 'D']),
+  ladle: ol([
+    '.caa.',
+    'caaab',
+    '.abb.',
+    '..d..',
     '..d..',
     '..d..',
     '..d..',
     '..d..',
     '..D..',
-  ],
+  ]),
 };
-const TOOL_PIVOT = { pick: [5, 9], axe: [4, 9], sword: [2, 10], sickle: [4, 7], rod: [0, 11], ladle: [2, 8] };
+const TOOL_PIVOT = { pick: [6, 11], axe: [4, 11], sword: [3, 13], sickle: [5, 8], rod: [1, 12], ladle: [3, 9] };
 const TOOL_FOR = { combat: 'sword', mining: 'pick', wood: 'axe', forage: 'sickle', fish: 'rod', hunt: 'bow', alchemy: 'ladle' };
-const WOOD_PAL = { d: '#9a6a3a', D: '#6a4424', y: '#ffd34d' };
+const WOOD_PAL = { d: '#b07a44', D: '#7a4e2a', y: '#ffd34d' };
 
-const BOW = [
-  '.oo..',
-  'oaao.',
-  '.oao.',
-  '..oao',
-  '..oao',
-  '..oao',
-  '..oao',
-  '.oao.',
-  'oaao.',
-  '.oo..',
-];
+const BOW = ol([
+  'ca...',
+  '.ca..',
+  '..a..',
+  '..ab.',
+  '...a.',
+  '...a.',
+  '...a.',
+  '..ab.',
+  '..a..',
+  '.ab..',
+  'ab...',
+]);
 
 // ---------------- Item icons (12x12) ----------------
 const ICONS = {
@@ -2459,34 +2696,18 @@ const ICONS = {
     '............',
     '............',
   ],
-  log: [
-    '............',
-    '............',
-    '..ooooooooo.',
-    '.obbbbbbbocco',
-    'obaaaaaaoc44co',
-    'obaaaaaaoc44co',
-    '.obbbbbbbocco',
-    '..ooooooooo.',
-    '............',
-    '............',
-    '............',
-    '............',
-  ].map(r => r.slice(0, 12)),
-  drop: [
-    '.....oo.....',
-    '....oco.....',
-    '....oaco....',
-    '...oacaao...',
-    '..oacaaaao..',
-    '..ocaaaaao..',
-    '.ocwaaaaabo.',
-    '.oaaaaaaabo.',
-    '.oaaaaaabbo.',
-    '..obbbbbbo..',
-    '...oooooo...',
-    '............',
-  ],
+  log: ol([
+    '',
+    '',
+    '.aaaaaa33.',
+    'acccccc343',
+    'aaaaaaa343',
+    'abbbbbb343',
+    '.bbbbbb33.',
+    '',
+    '',
+    '',
+  ]),
   leaf: [
     '.......ooo..',
     '.....ooccao.',
@@ -2529,48 +2750,42 @@ const ICONS = {
     '...oooooo...',
     '............',
   ],
-  fish: [
-    '............',
-    '............',
-    '....ooooo...',
-    '..ooccccaoo.',
-    'oooaaaaaaaeo',
-    'ocoaaaaaaaao',
-    'ocoaaaaaaao.',
-    'oooobbbbboo.',
-    '...ooooo....',
-    '............',
-    '............',
-    '............',
-  ],
-  meat: [
-    '............',
-    '....ooooo...',
-    '...oaaacao..',
-    '..oaacaaaao.',
-    '..oaaaaaaao.',
-    '..obaaaaabo.',
-    '...obbbbbo..',
-    '....oowoo...',
-    '.....owo....',
-    '....owwwo...',
-    '....ooooo...',
-    '............',
-  ],
-  hide: [
-    '............',
-    '.oo......oo.',
-    '.oaooooooao.',
-    '..oaaaaaao..',
-    '.oacaaaaaao.',
-    '.oaaaaacaao.',
-    '.oaacaaaaao.',
-    '..oaaaaaao..',
-    '.oaobbbboao.',
-    '.oo.oooo.oo.',
-    '............',
-    '............',
-  ],
+  fish: ol([
+    '',
+    '',
+    '....ccc...',
+    'a.ccaaaaa.',
+    'aacaaaaaea',
+    'aaaaaaaaaa',
+    'a.bbbbbbb.',
+    '....bbb...',
+    '',
+    '',
+  ]),
+  meat: ol([
+    '...aaaa...',
+    '..acccaa..',
+    '.acaaaaab.',
+    '.aaaaaaab.',
+    '.aaaaaabb.',
+    '..abbbbb..',
+    '....ww....',
+    '....ww....',
+    '...wwww...',
+    '...w..w...',
+  ]),
+  hide: ol([
+    'a........a',
+    'aa.aaaa.aa',
+    '.aaccaaaa.',
+    '.acaaaaaa.',
+    'aaaaaaaaaa',
+    '.aaaaaaab.',
+    '.aaaaaabb.',
+    'aa.bbbb.aa',
+    'a........a',
+    '',
+  ]),
   feather: [
     '..........o.',
     '........ooao',
@@ -2949,20 +3164,18 @@ const ICONS = {
     '..oooooooo..',
     '............',
   ],
-  person: [
-    '............',
-    '....oooo....',
-    '...ohhhho...',
-    '..ohhssssho.',
-    '..ohsseseo..',
-    '..ohssssso..',
-    '...ooooo....',
-    '..otttttto..',
-    '.otttttttto.',
-    '.ottbbbbtto.',
-    '.otttttttto.',
-    '.oooooooooo.',
-  ],
+  person: ol([
+    '..hhhhh...',
+    '.hhhcchhh.',
+    'hhhhhhhhhh',
+    'hhHshhsHhh',
+    'hHsssssssh',
+    'hseessseeh',
+    'hsiissiish',
+    '.srsssssr.',
+    '.kkkkkkkk.',
+    'aaakkkkaaa',
+  ]),
   scroll: [
     '............',
     '.oooooooooo.',
@@ -3022,6 +3235,7 @@ const ICONS = {
 };
 
 function icon(template, color, extra = {}) {
+  if (template === 'person') return sprite('icon:person', ICONS.person, HERO_PAL);
   return sprite('icon:' + template, ICONS[template] || ICONS.orb, {
     a: color, y: '#ffd34d', s: '#f6e6cc', h: '#3f9a5c', t: '#efe9d8', b2: '#7a4a2a', ...extra,
   });
@@ -3077,13 +3291,13 @@ function drawText(ctx, str, x, y, color, scale = 1, outline = OUTLINE) {
   }
 }
 
-return { OUTLINE, sprite, silhouette, drawRotated, HERO, HERO_LEG, HERO_STEP, HERO_CROUCH_AT, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW, ICONS, icon, textWidth, drawText, shade };
+return { OUTLINE, sprite, silhouette, drawRotated, ol, HERO, HERO_STEP, HERO_CROUCH, HERO_HAND, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, WISP, WISP_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW, ICONS, icon, textWidth, drawText, shade };
 })();
 
 __m.render = (() => {
 // Canvas renderer: parallax backgrounds, the battle scene, the campfire scene with
 // animated life-skill stations, clone insets, floaters and rare-drop effects.
-const { sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO_LEG, HERO_CROUCH_AT, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW } = __m.sprites;
+const { sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO, HERO_STEP, HERO_CROUCH, HERO_HAND, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW, WISP, WISP_PAL } = __m.sprites;
 const { ITEMS, TIERS, MONSTERS, TOOL_TIERS, REGIONS, SPOTS } = __m.data;
 const { toolTier, spotsUnlocked } = __m.engine;
 
@@ -3562,32 +3776,28 @@ class Renderer {
   // ---------- Actors ----------
   drawHero(ctx, x, y, opts = {}) {
     const pal = opts.pal || HERO_PAL;
-    const body = sprite('hero', HERO, pal);
-    const w = body.width, x0 = x - 8;
+    const step = opts.walk && Math.sin(this.t * 10) > 0;
+    const body = opts.crouch ? sprite('heroc', HERO_CROUCH, pal) : step ? sprite('heros', HERO_STEP, pal) : sprite('hero', HERO, pal);
+    const x0 = x - 11;
     const bob = opts.walk ? Math.round(Math.abs(Math.sin(this.t * 10))) : Math.round(Math.sin(this.t * 2.5) * 0.5 + 0.5);
-    const crouch = opts.crouch ? body.height - (HERO_CROUCH_AT + HERO_CROUCH.length) : 0;
-    const top = y - body.height - bob + crouch;
+    const top = y - body.height - bob;
     if (opts.shadow !== false) {
       ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.fillRect(x - 7, y - 1, 15, 2);
+      ctx.fillRect(x - 8, y - 1, 17, 2);
     }
-    if (opts.crouch) {
-      ctx.drawImage(body, 0, 0, w, HERO_CROUCH_AT, x0, top, w, HERO_CROUCH_AT);
-      ctx.drawImage(sprite('heroc', HERO_CROUCH, pal), x0, top + HERO_CROUCH_AT);
-    } else if (opts.walk && Math.sin(this.t * 10) > 0) {
-      ctx.drawImage(body, 0, 0, w, HERO_LEG, x0, top, w, HERO_LEG);
-      ctx.drawImage(sprite('heros', HERO_STEP, pal), x0, top + HERO_LEG);
-    } else ctx.drawImage(body, x0, top);
+    ctx.drawImage(body, x0, top);
     if (opts.hurt > 0) {
       ctx.globalAlpha = 0.65;
       ctx.drawImage(silhouette(body, '#ff4a4a'), x0, top);
       ctx.globalAlpha = 1;
     }
     if (opts.soot) {
-      ctx.fillStyle = 'rgba(40,30,30,0.75)';
-      ctx.fillRect(x, top + 5, 6, 4);
+      ctx.fillStyle = 'rgba(40,30,30,0.7)';
+      ctx.fillRect(x0 + 12, top + 11, 5, 2);
+      ctx.fillRect(x0 + 7, top + 14, 3, 2);
+      ctx.fillRect(x0 + 15, top + 15, 2, 1);
     }
-    return { hx: x + 5, hy: top + 13 };
+    return { hx: x0 + HERO_HAND[0], hy: top + HERO_HAND[1] };
   }
 
   drawTool(ctx, kind, hand, angle, color, flip = false) {
@@ -3611,8 +3821,8 @@ class Renderer {
     const region = this.g.region(mon.f);
     if (region.theme === 'tower' && !mon.variant) { pal.a = shade(pal.a || '#888', -0.45); if (pal.r) pal.r = shade(pal.r, -0.45); }
     const img = sprite('mon:' + key, MON[key], pal);
-    // Monsters stand eye to eye with the 24px hero; bosses and giants tower over him.
-    const scale = mon.boss ? M.scale || 2 : mon.variant === 'giant' || mon.variant === 'ancient' ? 3 : 2;
+    // Drawn at native size so every sprite shares one pixel grid; bosses have their own big sprites.
+    const scale = mon.variant === 'giant' || mon.variant === 'ancient' ? 2 : 1;
     const w = img.width * scale, h = img.height * scale;
     const fly = M.fly ? 26 + Math.sin(this.t * 3) * 4 : 0;
     const squash = key === 'slime' ? Math.sin(this.t * 6) * 0.08 : 0;
@@ -3640,8 +3850,7 @@ class Renderer {
     }
     if ((M.crown && mon.boss) || mon.elite) {
       const cr = sprite('crown', CROWN, { y: mon.elite ? '#c8ccd8' : '#ffd34d', r: '#ff3a5a' });
-      const cs = mon.elite ? 1 : 2;
-      ctx.drawImage(cr, Math.round(x - (cr.width * cs) / 2), Math.round(top - 4 * cs), cr.width * cs, cr.height * cs);
+      ctx.drawImage(cr, Math.round(x - cr.width / 2), Math.round(top - cr.height + 3));
     }
     ctx.globalAlpha = 1;
     return { top, w };
@@ -3719,19 +3928,20 @@ class Renderer {
           ctx.drawImage(animal, -Math.round(animal.width / 2), gy - animal.height);
           ctx.restore();
         } else if (since < 0.05 && fx) this.burst(hx + 72, gy - 6, ANIMAL_PAL[kind].a, 6 + spot * 2);
-        this.drawHero(ctx, hx, gy, { pal, crouch: true });
+        const hand = this.drawHero(ctx, hx, gy, { pal, crouch: true });
         const draw = p > 0.6 ? Math.min(1, (p - 0.6) / 0.35) : 0;
         const bow = sprite('bow', BOW, { a: tc });
-        ctx.drawImage(bow, hx + 5, gy - 18);
+        const bx = hand.hx - 2, by = hand.hy - 12, ay = by + 6;
+        ctx.drawImage(bow, bx, by);
         ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.fillRect(hx + 6 - Math.round(draw * 3), gy - 17, 1, 8);
-        if (draw > 0 && !hit) { ctx.fillStyle = '#c8a86a'; ctx.fillRect(hx + 3 - Math.round(draw * 3), gy - 13, 10, 1); }
+        ctx.fillRect(bx + 1 - Math.round(draw * 3), by + 1, 1, 11);
+        if (draw > 0 && !hit) { ctx.fillStyle = '#c8a86a'; ctx.fillRect(bx - 2 - Math.round(draw * 3), ay, 10, 1); }
         if (since < 0.3) {
-          const ax2 = lerp(hx + 12, hx + 72, Math.min(1, since / 0.18));
+          const ax2 = lerp(bx + 7, hx + 72, Math.min(1, since / 0.18));
           ctx.fillStyle = '#c8a86a';
-          ctx.fillRect(ax2, gy - 13, 8, 1);
+          ctx.fillRect(ax2, ay, 8, 1);
           ctx.fillStyle = '#fff';
-          ctx.fillRect(ax2 + 7, gy - 14, 2, 3);
+          ctx.fillRect(ax2 + 7, ay - 1, 2, 3);
         }
         bush(ctx, hx + 10, gy, 0, false, t, true);
         break;
@@ -3807,8 +4017,8 @@ class Renderer {
         click(x, y) { const p = spots.find(q => !q.hit && Math.hypot(x - q.x, y - q.y) < 11); if (!p) return false; p.hit = true; g.lifeBurst('forage', 2, 2); self.burst(p.x, p.y, '#d8ff8a', 8); this.found++; if (this.found === 3) self.miniDone('약초를 모두 찾았다! 채집물 ×6', true); return true; } };
     } else if (k === 'hunt') {
       m = { life: 3.2, hint: '달리는 사냥감을 클릭!', hx: 200, hy: 120, x: 400,
-        draw(ctx, t) { this.x = 400 - t * 95; const img = sprite('an:deer', ANIMALS.deer, { a: '#ffd34d', y: '#fff6b0', r: '#ff9aa8' }); ctx.globalAlpha = 0.3; ctx.fillStyle = '#ffe066'; circle(ctx, this.x, GROUND - 7, 10); ctx.globalAlpha = 1; ctx.drawImage(img, Math.round(this.x - 7), GROUND - 13 + Math.round(Math.abs(Math.sin(t * 14)) * -2)); },
-        click(x, y) { if (Math.abs(x - this.x) < 13 && y > GROUND - 26) { ok(5, 3, '명중! 사냥감 ×5, 희귀 확률 ×3'); return true; } return false; } };
+        draw(ctx, t) { this.x = 400 - t * 95; const img = sprite('an:deer', ANIMALS.deer, { a: '#ffd34d', y: '#fff6b0', r: '#ff9aa8' }); ctx.globalAlpha = 0.3; ctx.fillStyle = '#ffe066'; circle(ctx, this.x, GROUND - img.height / 2, img.width * 0.6); ctx.globalAlpha = 1; ctx.save(); ctx.translate(Math.round(this.x), 0); ctx.scale(-1, 1); ctx.drawImage(img, -Math.round(img.width / 2), GROUND - img.height + Math.round(Math.abs(Math.sin(t * 14)) * -2)); ctx.restore(); },
+        click(x, y) { if (Math.abs(x - this.x) < 16 && y > GROUND - 34) { ok(5, 3, '명중! 사냥감 ×5, 희귀 확률 ×3'); return true; } return false; } };
     } else if (k === 'alchemy') {
       m = { life: 5, hint: '거품이 가장 높을 때 클릭!', hx: 183, hy: GROUND - 44, v: 0,
         draw(ctx, t) { this.v = (Math.sin(t * 2.4 - Math.PI / 2) + 1) / 2; ctx.fillStyle = OUTLINE; ctx.fillRect(205, GROUND - 46, 6, 40); ctx.fillStyle = '#2a2a3a'; ctx.fillRect(206, GROUND - 45, 4, 38); ctx.fillStyle = this.v > 0.85 ? '#ffe066' : '#7affe8'; const h = Math.round(38 * this.v); ctx.fillRect(206, GROUND - 7 - h, 4, h); ctx.fillStyle = '#ffe066'; ctx.fillRect(204, GROUND - 40, 8, 1); },
@@ -3839,9 +4049,9 @@ class Renderer {
       w.x = -10 + w.t * 32;
       w.y = 70 + Math.sin(w.t * 1.7) * 24;
       ctx.globalAlpha = 0.3; ctx.fillStyle = '#fff6b0'; circle(ctx, w.x, w.y, 9); ctx.globalAlpha = 1;
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(w.x) - 1, Math.round(w.y) - 1, 3, 3);
-      const flap = Math.sin(this.t * 25) > 0 ? 2 : 1;
-      ctx.fillStyle = '#bff8ff'; ctx.fillRect(Math.round(w.x) - 4, Math.round(w.y) - flap - 1, 3, flap); ctx.fillRect(Math.round(w.x) + 2, Math.round(w.y) - flap - 1, 3, flap);
+      const fr = Math.sin(this.t * 25) > 0 ? 1 : 0;
+      const img = sprite('wisp' + fr, WISP[fr], WISP_PAL);
+      ctx.drawImage(img, Math.round(w.x - img.width / 2), Math.round(w.y - img.height / 2));
       if (!this.reduced && Math.random() < 0.5) this.parts.push({ x: w.x, y: w.y, vx: -6, vy: 4, g: 0, life: 0.8, t: 0, color: '#fff6b0', size: 1 });
       if (w.x > W + 12) this.wisp = null;
     }
@@ -3979,11 +4189,11 @@ class Renderer {
     // Hero HP bar over the head
     const hb = 22, hf = Math.max(0, Math.min(1, c.hp / d.hp));
     ctx.fillStyle = OUTLINE;
-    ctx.fillRect(HX - hb / 2 - 1, GROUND - 33, hb + 2, 4);
+    ctx.fillRect(HX - hb / 2 - 1, GROUND - 39, hb + 2, 4);
     ctx.fillStyle = '#1a3a1a';
-    ctx.fillRect(HX - hb / 2, GROUND - 32, hb, 2);
+    ctx.fillRect(HX - hb / 2, GROUND - 38, hb, 2);
     ctx.fillStyle = hf > 0.3 ? '#6ac05a' : '#d84a4a';
-    ctx.fillRect(HX - hb / 2, GROUND - 32, Math.round(hb * hf), 2);
+    ctx.fillRect(HX - hb / 2, GROUND - 38, Math.round(hb * hf), 2);
 
     const nameEl = this.el.mon;
     if (mon) {
@@ -4943,7 +5153,7 @@ class UI {
     const bar = $('#bar');
     bar.innerHTML = `
       <div class="who">
-        <canvas id="portrait" class="px" width="16" height="24"></canvas>
+        <canvas id="portrait" class="px" width="${HERO[0].length}" height="${HERO.length}"></canvas>
         <div class="who-txt"><div class="who-nm">모험가</div><div class="who-sub" id="whoSub"></div></div>
       </div>
       <div class="bars">
@@ -4971,7 +5181,7 @@ class UI {
       b.className = 'btn';
       b.id = 'b-' + id;
       b.type = 'button';
-      b.appendChild(iconCanvas(tpl, col, 30, { h: '#3f9a5c', s: '#ffd8b0', t: '#efe9d8' }));
+      b.appendChild(iconCanvas(tpl, col, 30));
       const l = document.createElement('span');
       l.className = 'lbl';
       l.textContent = label;
@@ -5187,7 +5397,7 @@ class UI {
     const g = this.g, s = g.s, c = s.char, d = g.d;
     const top = this.html(body, '', 'char-top');
     const pic = document.createElement('canvas');
-    pic.width = 16; pic.height = 24;
+    pic.width = HERO[0].length; pic.height = HERO.length;
     pic.className = 'px char-pic';
     pic.getContext('2d').drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
     top.appendChild(pic);

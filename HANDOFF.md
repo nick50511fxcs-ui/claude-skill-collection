@@ -12,17 +12,15 @@
 - Engine/data are done and balanced (sim: Lv 1000 in 116 days for one focused skill, codex 233/234 at 1 year). Do not rebalance while doing art.
 
 ## Current state
-- Branch `claude/elegant-knuth-75u6c9`, last feature commit `b4f0b36` (active play, skill dock, 234 items, prior art pass).
+- Art redraw done on branch `claude/vigilant-pascal-3eeqx2` (continues `claude/elegant-knuth-75u6c9`): chibi hero (stand / step / crouch, `HERO_HAND` grip), clone palette, all monsters at native 1x size, new boss sprites (treant, knight, eye, `frogking`, `yetiking`), animals, wisp fairy, outlined tools and bow, crown, a few icons. Outlines come from `ol()` in `js/sprites.js`.
+- Monsters no longer scale 2x; giant/ancient variants draw at 2x. `MONSTERS.*.scale` was removed.
 - Published artifact (update in place by URL): https://claude.ai/artifact/Vv7YCsw5NTuJmTHicER4tt. Publish `dist/campfire-chronicle.html` with capabilities `{db:{}, user:{}}`.
 - Design doc artifact: https://claude.ai/artifact/W9yBrgS9HYepRrcRoYnrwk (rev 34).
 - Build: `cd campfire-chronicle && node build.mjs` produces `dist/play.html`, `dist/campfire-chronicle.html`, and `index.html`. Sim: `node sim/simulate.mjs`.
 
 ## Next steps
-1. Look at `art-refs/`, then redraw the hero (all poses) and the clone palette in `js/sprites.js`. Adjust offsets in `js/render.js` for the new size.
-2. Redraw the monsters, bosses (treant, knight, eye, and the others in data `MONSTERS`), animals, and the wisp in the same style.
-3. Restyle the stations and item icons if time allows.
-4. Build, then check with Playwright screenshots (Chromium at `/opt/pw-browsers`, Playwright from the global npm root, `#debug` exposes `window.__cc`). Make sure there are no console errors.
-5. Commit, push, republish the artifact, and update the README art line. Reply in Korean.
+- Station props (rocks, trees, bushes, cauldron in `js/render.js`) could get the same outline treatment.
+- `drawAmbient` in `js/render.js` is never called (dead code).
 
 ## Notes
 - The user writes in Korean and wants concise Korean replies. Fixes go in priority order when they number them.

@@ -395,15 +395,15 @@ export const RECIPES = [
 ];
 
 export const MONSTERS = {
-  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#5a8a3a' }, hp: 1, atk: 1 },
-  shroom: { name: '포자 괴물', sprite: 'shroom', pal: { r: '#8a3a2a' }, hp: 1.2, atk: 0.9 },
+  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#6ac04a' }, hp: 1, atk: 1 },
+  shroom: { name: '포자 괴물', sprite: 'shroom', pal: { a: '#d8443a' }, hp: 1.2, atk: 0.9 },
   kingslime: { name: '숲의 수호자 트렌트', sprite: 'treant', pal: {}, hp: 1, atk: 1, unique: true },
-  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#5a4a7a', c: '#7a6a9a' }, hp: 1, atk: 1.1 },
-  pshroom: { name: '독버섯 괴물', sprite: 'shroom', pal: { r: '#5a2a6a' }, hp: 1.3, atk: 0.9 },
-  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#4a2a6a', c: '#6a4a8a' }, hp: 1, atk: 1, crown: true, scale: 3 },
-  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#3a4a6a' }, hp: 0.8, atk: 1.2, fly: true },
-  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#b8c4d0' }, hp: 1.4, atk: 1 },
-  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#9aaabb' }, hp: 1, atk: 1, crown: true, scale: 3 },
+  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#7a5ab0' }, hp: 1, atk: 1.1 },
+  pshroom: { name: '독버섯 괴물', sprite: 'shroom', pal: { a: '#9a4ad0', w: '#d8ff8a' }, hp: 1.3, atk: 0.9 },
+  frogking: { name: '독두꺼비 대왕', sprite: 'frogking', pal: {}, hp: 1, atk: 1, crown: true },
+  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#5a78b8' }, hp: 0.8, atk: 1.2, fly: true },
+  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#dfe8f2' }, hp: 1.4, atk: 1 },
+  yetiking: { name: '설인 왕', sprite: 'yetiking', pal: {}, hp: 1, atk: 1, crown: true },
   knight: { name: '그림자 기사', sprite: 'knight', pal: {}, hp: 1, atk: 1, unique: true },
   eye: { name: '심연의 눈', sprite: 'eye', pal: {}, hp: 1, atk: 1, unique: true, fly: true },
 };

@@ -262,7 +262,7 @@ export class UI {
     const bar = $('#bar');
     bar.innerHTML = `
       <div class="who">
-        <canvas id="portrait" class="px" width="16" height="24"></canvas>
+        <canvas id="portrait" class="px" width="${HERO[0].length}" height="${HERO.length}"></canvas>
         <div class="who-txt"><div class="who-nm">모험가</div><div class="who-sub" id="whoSub"></div></div>
       </div>
       <div class="bars">
@@ -290,7 +290,7 @@ export class UI {
       b.className = 'btn';
       b.id = 'b-' + id;
       b.type = 'button';
-      b.appendChild(iconCanvas(tpl, col, 30, { h: '#3f9a5c', s: '#ffd8b0', t: '#efe9d8' }));
+      b.appendChild(iconCanvas(tpl, col, 30));
       const l = document.createElement('span');
       l.className = 'lbl';
       l.textContent = label;
@@ -506,7 +506,7 @@ export class UI {
     const g = this.g, s = g.s, c = s.char, d = g.d;
     const top = this.html(body, '', 'char-top');
     const pic = document.createElement('canvas');
-    pic.width = 16; pic.height = 24;
+    pic.width = HERO[0].length; pic.height = HERO.length;
     pic.className = 'px char-pic';
     pic.getContext('2d').drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
     top.appendChild(pic);
