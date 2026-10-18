@@ -1,7 +1,7 @@
 // Canvas renderer: parallax backgrounds, the battle scene, the campfire scene with
 // animated life-skill stations, clone insets, floaters and rare-drop effects.
 import {
-  sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL,
+  sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO_LEG, HERO_CROUCH_AT, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL,
   MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW,
 } from './sprites.js';
 import { ITEMS, TIERS, MONSTERS, TOOL_TIERS, REGIONS, SPOTS } from './data.js';
@@ -35,21 +35,21 @@ function mixHex(a, b, t) {
 }
 
 const THEMES = {
-  meadow: { far: '#7a9ad8', mid: '#5aa85a', mid2: '#3f8a4a', top: '#6ad04a', topD: '#3f9a3a', dirt: '#a8743a', dirtD: '#7a4e24' },
-  swamp: { far: '#6a5a8a', mid: '#4a5a4a', mid2: '#384838', top: '#6a8a4a', topD: '#4a6a3a', dirt: '#5a4a3a', dirtD: '#3a2e24' },
-  ice: { far: '#5a7ab8', mid: '#8ab8e8', mid2: '#6a98d0', top: '#d8f0ff', topD: '#a8d0f0', dirt: '#5a78a8', dirtD: '#3a5888' },
-  tower: { far: '#3a2a5a', mid: '#4a3a6a', mid2: '#2e2448', top: '#8a6ac8', topD: '#5a4a8a', dirt: '#3a2a4a', dirtD: '#24182e' },
-  camp: { far: '#7a8ac8', mid: '#4a8a5a', mid2: '#3a6a4a', top: '#5ac04a', topD: '#3a8a3a', dirt: '#9a6a3a', dirtD: '#6a4424' },
+  meadow: { far: '#5a6a8a', mid: '#46704c', mid2: '#34583c', top: '#5a8a42', topD: '#3e6a32', dirt: '#6a4e34', dirtD: '#4a3424' },
+  swamp: { far: '#4a4560', mid: '#3a4a40', mid2: '#2c3a30', top: '#4e6a3e', topD: '#3a5230', dirt: '#463a30', dirtD: '#2e261e' },
+  ice: { far: '#465a80', mid: '#7090b0', mid2: '#56789c', top: '#c8dcea', topD: '#98b8d0', dirt: '#4a6080', dirtD: '#344660' },
+  tower: { far: '#2e2440', mid: '#3a3050', mid2: '#26203a', top: '#6a5a90', topD: '#4a3e6a', dirt: '#2e2438', dirtD: '#1e1626' },
+  camp: { far: '#5a6a8a', mid: '#46704c', mid2: '#34583c', top: '#5a8a42', topD: '#3e6a32', dirt: '#6a4e34', dirtD: '#4a3424' },
 };
 
 function skyColors(hour, theme) {
   if (theme === 'ice') return ['#1a2a4a', '#3a5a8a'];
   if (theme === 'tower') return ['#120a24', '#3a2458'];
   let top, bot;
-  if (hour >= 20 || hour < 5) { top = '#141a3a'; bot = '#2e3468'; }
-  else if (hour < 7) { top = '#5a6ab8'; bot = '#f6a37a'; }
-  else if (hour < 17) { top = '#5ab4ff'; bot = '#c8ecff'; }
-  else { top = '#6a5a9a'; bot = '#ff9a6a'; }
+  if (hour >= 20 || hour < 5) { top = '#0e1226'; bot = '#262a48'; }
+  else if (hour < 7) { top = '#46507a'; bot = '#c8907a'; }
+  else if (hour < 17) { top = '#4a76a8'; bot = '#a8c0d4'; }
+  else { top = '#4a4268'; bot = '#c07a5e'; }
   if (theme === 'swamp') { top = mixHex(top, '#4a3a6a', 0.45); bot = mixHex(bot, '#8a9a7a', 0.45); }
   return [top, bot];
 }
@@ -80,6 +80,11 @@ export class Renderer {
     this.lastMode = null;
     this.modeFade = 0;
     this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.mini = null;
+    this.nextMini = 10;
+    this.wisp = null;
+    this.nextWisp = 90 + Math.random() * 120;
+    this.onNotice = () => {};
     this.makeOverlay();
   }
 
@@ -91,6 +96,7 @@ export class Renderer {
       <div class="banner" id="banner" hidden></div>
       <div class="bossbar" id="bossBar" hidden><div class="bb-name" id="bossName"></div><div class="bb-track"><i id="bossFill"></i></div></div>
       <div class="bosswarn" id="bossWarn" hidden></div>
+      <div class="minihint" id="miniHint" hidden></div>
       <div class="blackout" id="blackout" hidden></div>`;
     this.el = {
       name: this.ov.querySelector('#nameTag'), title: this.ov.querySelector('#titleBadge'),
@@ -98,6 +104,7 @@ export class Renderer {
       banner: this.ov.querySelector('#banner'), blackout: this.ov.querySelector('#blackout'),
       bossBar: this.ov.querySelector('#bossBar'), bossName: this.ov.querySelector('#bossName'),
       bossFill: this.ov.querySelector('#bossFill'), bossWarn: this.ov.querySelector('#bossWarn'),
+      miniHint: this.ov.querySelector('#miniHint'),
     };
   }
 
@@ -122,9 +129,12 @@ export class Renderer {
       switch (e.t) {
         case 'hit':
           if (e.who === 'mon') {
-            this.heroAnim.swing = 0.22;
+            if (e.src !== 'tap') this.heroAnim.swing = 0.22;
             this.monAnim.hurt = 0.15;
-            this.floater(fmtShort(e.dmg) + (e.crit ? '!' : ''), MX + rnd(-8, 8), 136 + rnd(-6, 4), e.crit ? '#ff6ad5' : '#fff2a8', e.crit ? 2 : 1);
+            const big = e.src === 'strike';
+            this.floater(fmtShort(e.dmg) + (e.crit || big ? '!' : ''), MX + rnd(-8, 8), 136 + rnd(-6, 4), big ? '#ff9a3a' : e.src === 'tap' ? '#bfe6ff' : e.crit ? '#ff6ad5' : '#fff2a8', big || e.crit ? 2 : 1);
+            if (big && !this.reduced) { this.shake = Math.max(this.shake, 0.3); this.burst(MX, 150, '#ffb84a', 14); }
+            if (e.src === 'tap' && !this.reduced) this.burst(MX + rnd(-6, 6), 160 + rnd(-10, 6), '#bfe6ff', 3);
             if (e.crit && !this.reduced) this.shake = Math.max(this.shake, 0.12);
           } else {
             this.heroAnim.hurt = 0.2;
@@ -134,6 +144,9 @@ export class Renderer {
           }
           break;
         case 'miss': this.floater('MISS', HX, 130, '#a8d8ff', 1); this.monAnim.atk = 0.28; this.heroAnim.dodge = 0.3; break;
+        case 'heal': this.ring(HX, 168, '#7affa0'); this.floater('+', HX, 128, '#7affa0', 2); break;
+        case 'rage': this.ring(HX, 168, '#ff5a3a'); this.say('간다!!', 1500); break;
+        case 'fever': this.flash = 0.25; this.flashColor = '#ffb84a'; this.say('열정 폭발! 모든 속도 ×2!', 2500); break;
         case 'spawn':
           if (e.mon.boss || e.mon.elite) this.bossIntro(e.mon);
           break;
@@ -470,31 +483,31 @@ export class Renderer {
   drawHero(ctx, x, y, opts = {}) {
     const pal = opts.pal || HERO_PAL;
     const body = sprite('hero', HERO, pal);
-    const bob = opts.walk ? Math.round(Math.abs(Math.sin(this.t * 10))) : Math.round(Math.sin(this.t * 3) * 0.5 + 0.5);
-    const crouch = opts.crouch ? 2 : 0;
-    const flash = opts.hurt;
+    const w = body.width, x0 = x - 8;
+    const bob = opts.walk ? Math.round(Math.abs(Math.sin(this.t * 10))) : Math.round(Math.sin(this.t * 2.5) * 0.5 + 0.5);
+    const crouch = opts.crouch ? body.height - (HERO_CROUCH_AT + HERO_CROUCH.length) : 0;
     const top = y - body.height - bob + crouch;
     if (opts.shadow !== false) {
       ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.fillRect(x - 6, y - 1, 13, 2);
+      ctx.fillRect(x - 7, y - 1, 15, 2);
     }
     if (opts.crouch) {
-      ctx.drawImage(body, 0, 0, body.width, 14, x - 7, top, body.width, 14);
-      ctx.drawImage(sprite('heroc', HERO_CROUCH, pal), x - 7, top + 14);
+      ctx.drawImage(body, 0, 0, w, HERO_CROUCH_AT, x0, top, w, HERO_CROUCH_AT);
+      ctx.drawImage(sprite('heroc', HERO_CROUCH, pal), x0, top + HERO_CROUCH_AT);
     } else if (opts.walk && Math.sin(this.t * 10) > 0) {
-      ctx.drawImage(body, 0, 0, body.width, 14, x - 7, top, body.width, 14);
-      ctx.drawImage(sprite('heros', HERO_STEP, pal), x - 7, top + 14);
-    } else ctx.drawImage(body, x - 7, top);
-    if (flash > 0) {
+      ctx.drawImage(body, 0, 0, w, HERO_LEG, x0, top, w, HERO_LEG);
+      ctx.drawImage(sprite('heros', HERO_STEP, pal), x0, top + HERO_LEG);
+    } else ctx.drawImage(body, x0, top);
+    if (opts.hurt > 0) {
       ctx.globalAlpha = 0.65;
-      ctx.drawImage(silhouette(body, '#ff4a4a'), x - 7, top);
+      ctx.drawImage(silhouette(body, '#ff4a4a'), x0, top);
       ctx.globalAlpha = 1;
     }
     if (opts.soot) {
       ctx.fillStyle = 'rgba(40,30,30,0.75)';
-      ctx.fillRect(x - 3, top + 4, 8, 5);
+      ctx.fillRect(x, top + 5, 6, 4);
     }
-    return { hx: x + 4, hy: top + 12 };
+    return { hx: x + 5, hy: top + 13 };
   }
 
   drawTool(ctx, kind, hand, angle, color, flip = false) {
@@ -518,7 +531,8 @@ export class Renderer {
     const region = this.g.region(mon.f);
     if (region.theme === 'tower' && !mon.variant) { pal.a = shade(pal.a || '#888', -0.45); if (pal.r) pal.r = shade(pal.r, -0.45); }
     const img = sprite('mon:' + key, MON[key], pal);
-    const scale = mon.boss ? M.scale || 2 : mon.variant === 'giant' || mon.variant === 'ancient' ? 2 : 1;
+    // Monsters stand eye to eye with the 24px hero; bosses and giants tower over him.
+    const scale = mon.boss ? M.scale || 2 : mon.variant === 'giant' || mon.variant === 'ancient' ? 3 : 2;
     const w = img.width * scale, h = img.height * scale;
     const fly = M.fly ? 26 + Math.sin(this.t * 3) * 4 : 0;
     const squash = key === 'slime' ? Math.sin(this.t * 6) * 0.08 : 0;
@@ -657,6 +671,102 @@ export class Renderer {
     }
   }
 
+  // ---------- Active play: chance events at the station, the wisp, clicks ----------
+  click(x, y) {
+    const g = this.g;
+    if (this.wisp) {
+      const w = this.wisp;
+      if (Math.hypot(x - w.x, y - w.y) < 16) {
+        const text = g.claimWisp();
+        this.burst(w.x, w.y, '#fff6b0', 16);
+        this.ring(w.x, w.y, '#ffe066');
+        this.onNotice(`떠돌이 요정을 잡았다! ${text}`, 4);
+        this.wisp = null;
+        return;
+      }
+    }
+    if (this.mini && this.mini.click(x, y)) return;
+    if (g.s.mode === 'fight' && g.mon && Math.abs(x - MX) < 30 && y > GROUND - 70 && y < GROUND + 6) g.tap();
+  }
+
+  miniDone(text, good) {
+    this.el.miniHint.hidden = true;
+    this.mini = null;
+    this.nextMini = 18 + Math.random() * 17;
+    if (text) this.floater(good ? '+' : '-', 157, 120, good ? '#ffe066' : '#a8a8b8', 2);
+    if (text) this.onNotice(text, good ? 3 : 0);
+  }
+  hint(text, x, y) {
+    const h = this.el.miniHint;
+    h.textContent = text;
+    h.hidden = false;
+    this.place(h, x, y);
+  }
+  spawnMini(k) {
+    const g = this.g, self = this, nx = 181;
+    const ok = (n, boost, text) => { g.lifeBurst(k, n, boost); self.burst(nx, GROUND - 14, '#ffe066', 16); self.miniDone(text, true); };
+    let m;
+    if (k === 'mining') {
+      const tx = nx + rnd(-7, 7), ty = GROUND - 9 + rnd(-4, 2);
+      m = { life: 3.5, hint: '빛나는 약점을 클릭!', hx: nx, hy: GROUND - 34,
+        draw(ctx, t) { ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 12); ctx.fillStyle = '#fff6b0'; circle(ctx, tx, ty, 4); ctx.globalAlpha = 1; ctx.fillStyle = '#ffffff'; ctx.fillRect(tx - 3, ty, 7, 1); ctx.fillRect(tx, ty - 3, 1, 7); ctx.strokeStyle = '#ffe066'; ctx.beginPath(); ctx.arc(tx + 0.5, ty + 0.5, 9 - (t % 0.6) * 8, 0, 6.3); ctx.stroke(); },
+        click(x, y) { if (Math.hypot(x - tx, y - ty) < 11) { ok(5, 3, '약점 적중! 광석 ×5, 희귀 확률 ×3'); return true; } return false; } };
+    } else if (k === 'wood') {
+      m = { life: 4.5, hint: '표시가 초록 칸에 올 때 클릭!', hx: 200, hy: 92, pos: 0,
+        draw(ctx, t) { this.pos = 0.5 + 0.5 * Math.sin(t * 4.2); ctx.fillStyle = OUTLINE; ctx.fillRect(159, 99, 82, 8); ctx.fillStyle = '#3a2a2a'; ctx.fillRect(160, 100, 80, 6); ctx.fillStyle = '#5ab45a'; ctx.fillRect(160 + 80 * 0.32, 100, 80 * 0.36, 6); ctx.fillStyle = '#ffe066'; ctx.fillRect(160 + 80 * 0.42, 100, 80 * 0.16, 6); ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(160 + 80 * this.pos) - 1, 97, 3, 12); },
+        click() { const d = Math.abs(this.pos - 0.5); if (d < 0.08) ok(6, 3, '완벽한 일격! 원목 ×6, 희귀 확률 ×3'); else if (d < 0.18) ok(3, 1.5, '좋은 일격! 원목 ×3'); else self.miniDone('빗나갔다… 다음 기회에!', false); return true; } };
+    } else if (k === 'fish') {
+      const bite = 1 + Math.random() * 2.5;
+      m = { life: bite + 1.4, hint: '찌가 크게 흔들리면 클릭!', hx: 209, hy: GROUND - 20,
+        draw(ctx, t) { if (t > bite) { if (Math.sin(t * 30) > 0) drawText(ctx, '!', 209, GROUND - 26, '#ff5a5a', 3); this.hintNow = '지금!'; } },
+        click() { const r = self.mini.t - bite; if (r < 0) self.miniDone('너무 일렀다! 물고기가 도망갔다', false); else if (r < 0.45) ok(6, 3, '완벽한 챔질! 물고기 ×6, 희귀 확률 ×3'); else ok(3, 1.5, '챔질 성공! 물고기 ×3'); return true; } };
+    } else if (k === 'forage') {
+      const spots = [0, 1, 2].map(() => ({ x: 60 + Math.random() * 280, y: 120 + Math.random() * 50, hit: false }));
+      m = { life: 6, hint: '반짝이는 약초 3개를 클릭!', hx: 200, hy: 112, found: 0,
+        draw(ctx, t) { for (const p of spots) if (!p.hit) { ctx.globalAlpha = 0.4 + 0.4 * Math.sin(t * 8 + p.x); ctx.fillStyle = '#d8ff8a'; circle(ctx, p.x, p.y, 5); ctx.globalAlpha = 1; sparkle(ctx, p.x, p.y, t * 3, p.x, '#ffffff'); ctx.fillStyle = '#7ad85a'; ctx.fillRect(p.x - 1, p.y - 1, 3, 3); } },
+        click(x, y) { const p = spots.find(q => !q.hit && Math.hypot(x - q.x, y - q.y) < 11); if (!p) return false; p.hit = true; g.lifeBurst('forage', 2, 2); self.burst(p.x, p.y, '#d8ff8a', 8); this.found++; if (this.found === 3) self.miniDone('약초를 모두 찾았다! 채집물 ×6', true); return true; } };
+    } else if (k === 'hunt') {
+      m = { life: 3.2, hint: '달리는 사냥감을 클릭!', hx: 200, hy: 120, x: 400,
+        draw(ctx, t) { this.x = 400 - t * 95; const img = sprite('an:deer', ANIMALS.deer, { a: '#ffd34d', y: '#fff6b0', r: '#ff9aa8' }); ctx.globalAlpha = 0.3; ctx.fillStyle = '#ffe066'; circle(ctx, this.x, GROUND - 7, 10); ctx.globalAlpha = 1; ctx.drawImage(img, Math.round(this.x - 7), GROUND - 13 + Math.round(Math.abs(Math.sin(t * 14)) * -2)); },
+        click(x, y) { if (Math.abs(x - this.x) < 13 && y > GROUND - 26) { ok(5, 3, '명중! 사냥감 ×5, 희귀 확률 ×3'); return true; } return false; } };
+    } else if (k === 'alchemy') {
+      m = { life: 5, hint: '거품이 가장 높을 때 클릭!', hx: 183, hy: GROUND - 44, v: 0,
+        draw(ctx, t) { this.v = (Math.sin(t * 2.4 - Math.PI / 2) + 1) / 2; ctx.fillStyle = OUTLINE; ctx.fillRect(205, GROUND - 46, 6, 40); ctx.fillStyle = '#2a2a3a'; ctx.fillRect(206, GROUND - 45, 4, 38); ctx.fillStyle = this.v > 0.85 ? '#ffe066' : '#7affe8'; const h = Math.round(38 * this.v); ctx.fillRect(206, GROUND - 7 - h, 4, h); ctx.fillStyle = '#ffe066'; ctx.fillRect(204, GROUND - 40, 8, 1); },
+        click() { if (this.v > 0.85) ok(3, 1, '완벽한 젓기! 다음 3번 대성공 확정'); else self.miniDone('타이밍이 아쉬워요', false); return true; } };
+    }
+    if (m) { m.t = 0; this.mini = m; this.mini.k = k; this.hint(m.hint, m.hx, m.hy); this.onNotice(null, 0, 'mini'); }
+  }
+  updateActive(ctx, dt, camp) {
+    const g = this.g;
+    // Chance events only at the main station, and only while someone is watching (live).
+    if (camp) {
+      const k = g.s.slots[0].k;
+      if (this.mini && this.mini.k !== k) { this.el.miniHint.hidden = true; this.mini = null; }
+      if (!this.mini) { this.nextMini -= dt; if (this.nextMini <= 0) this.spawnMini(k); }
+      if (this.mini) {
+        this.mini.t += dt;
+        this.mini.draw(ctx, this.mini.t);
+        if (this.mini && this.mini.hintNow) this.hint(this.mini.hintNow, this.mini.hx, this.mini.hy);
+        if (this.mini && this.mini.t > this.mini.life) this.miniDone(null, false);
+      }
+    } else if (this.mini) { this.el.miniHint.hidden = true; this.mini = null; this.nextMini = 8; }
+    // Wandering wisp: crosses the sky every few minutes; click it for a gift.
+    this.nextWisp -= dt;
+    if (!this.wisp && this.nextWisp <= 0) { this.wisp = { t: 0, x: -10, y: 70 }; this.nextWisp = 150 + Math.random() * 180; }
+    if (this.wisp) {
+      const w = this.wisp;
+      w.t += dt;
+      w.x = -10 + w.t * 32;
+      w.y = 70 + Math.sin(w.t * 1.7) * 24;
+      ctx.globalAlpha = 0.3; ctx.fillStyle = '#fff6b0'; circle(ctx, w.x, w.y, 9); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(w.x) - 1, Math.round(w.y) - 1, 3, 3);
+      const flap = Math.sin(this.t * 25) > 0 ? 2 : 1;
+      ctx.fillStyle = '#bff8ff'; ctx.fillRect(Math.round(w.x) - 4, Math.round(w.y) - flap - 1, 3, flap); ctx.fillRect(Math.round(w.x) + 2, Math.round(w.y) - flap - 1, 3, flap);
+      if (!this.reduced && Math.random() < 0.5) this.parts.push({ x: w.x, y: w.y, vx: -6, vy: 4, g: 0, life: 0.8, t: 0, color: '#fff6b0', size: 1 });
+      if (w.x > W + 12) this.wisp = null;
+    }
+  }
+
   // ---------- Frame ----------
   frame(dtReal) {
     const dt = dtReal * this.timeScale;
@@ -682,6 +792,7 @@ export class Renderer {
     if (camp) this.drawCamp(ctx, env);
     else this.drawFight(ctx, mon, walking);
 
+    this.updateActive(ctx, dtReal, camp);
     this.drawPops(ctx, dt);
     this.drawParts(ctx, dt);
     this.drawFloaters(ctx, dt);
@@ -771,6 +882,12 @@ export class Renderer {
     const hx = Math.round(HX + lunge + dodge + knock);
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ellipse(ctx, HX + 1, GROUND + 1, 10, 2);
+    if (g.rage() || g.fever()) {
+      ctx.globalAlpha = 0.22 + 0.1 * Math.sin(this.t * 10);
+      ctx.fillStyle = g.rage() ? '#ff3a3a' : '#ffb84a';
+      ellipse(ctx, hx, GROUND - 12, 13, 16);
+      ctx.globalAlpha = 1;
+    }
     const hand = this.drawHero(ctx, hx, GROUND, { walk: walking, hurt: this.heroAnim.hurt, shadow: false });
     const ang = sw > 0 ? lerp(1.9, -0.9, sw / 0.22) : 0.5 + Math.sin(this.t * 3) * 0.05;
     const wt = c.gear.weapon ? c.gear.weapon.tier : 0;
@@ -782,11 +899,11 @@ export class Renderer {
     // Hero HP bar over the head
     const hb = 22, hf = Math.max(0, Math.min(1, c.hp / d.hp));
     ctx.fillStyle = OUTLINE;
-    ctx.fillRect(HX - hb / 2 - 1, GROUND - 27, hb + 2, 4);
+    ctx.fillRect(HX - hb / 2 - 1, GROUND - 33, hb + 2, 4);
     ctx.fillStyle = '#1a3a1a';
-    ctx.fillRect(HX - hb / 2, GROUND - 26, hb, 2);
-    ctx.fillStyle = hf > 0.3 ? '#5ae05a' : '#ff5a5a';
-    ctx.fillRect(HX - hb / 2, GROUND - 26, Math.round(hb * hf), 2);
+    ctx.fillRect(HX - hb / 2, GROUND - 32, hb, 2);
+    ctx.fillStyle = hf > 0.3 ? '#6ac05a' : '#d84a4a';
+    ctx.fillRect(HX - hb / 2, GROUND - 32, Math.round(hb * hf), 2);
 
     const nameEl = this.el.mon;
     if (mon) {

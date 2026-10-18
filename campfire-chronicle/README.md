@@ -23,6 +23,7 @@ Use **설정 → 내보내기** to keep a backup string; browsers may clear site
 | System | Status |
 |---|---|
 | Campfire cycle (fight → tired → camp + life skill → fight), "life focus" toggle | done |
+| Active play: skill dock (switch activity in one click), combat skills (strike / heal / rage, keys 1-3, auto-cast at combat Lv 100), click the monster for extra hits, a chance event per life skill (weak spot, timing bar, bite, hidden herbs, running target, stirring), a wandering wisp with gifts, fever gauge (x2 speed for 30 s) | done |
 | 1-on-1 duel combat: opponent drops in, both sides lunge, knockback, hit flash on the sprite, hero HP bar, spotlight | done |
 | Each life skill has its own place per spot (mine shafts, crystal cave, meteor crater, forests, swamp, alpine, fairy garden, stream to deep sea, hunting grounds, alchemy workshop); clones show their own place | done |
 | Gear goes to a bag (40 slots); equip / unequip / sell by hand, opt-in auto-equip, upgrade dot on the character button | done |
@@ -35,7 +36,7 @@ Use **설정 → 내보내기** to keep a backup string; browsers may clear site
 | Rarity: common → primordial (0.0001%), luck stat with cap, sqrt luck on myth/primordial, soft pity, stacking primordials | done |
 | Rebirth (ash, 3 perk trees, clone slots, all permanent), memory cards (1 of 3 per life), permanent +5% character XP per rebirth, past-life recall (x5 XP and at least 20% of a level per kill until 95% of the best level; back in ~25 min) | done |
 | Offline progress with no cap (long absences compute in one-day chunks behind a progress note), "return journal" report, replay of big drops | done |
-| Codex with permanent bonuses, hall of fame, log, export / import, seeded RNG stored in the save | done |
+| 234 items (5 per spot, 8 rares per skill, boss trophies, 8 seasonal fish, 21 alchemy products), gear affixes; codex with permanent bonuses, hall of fame, log, export / import, seeded RNG stored in the save | done |
 | Second and third prestige layers, crafting gear from materials, cooking, cloud save, sound | not yet |
 
 ## Layout
@@ -72,12 +73,12 @@ are a lower bound for real players. Key results of the last run
 |---|---|
 | One skill to Lv 1000, focused (life-focus mode, no bonuses) | 116 days (target: 3-4 months) |
 | All six life skills unlocked (mining 10 -> wood 10 -> forage 15 -> fish 15 -> hunt 20 -> alchemy) | < 1 day |
-| Floor 21 (rebirth unlocked) | 1.8 h |
-| First rebirth | 4.3 h |
-| First legend / myth / primordial | 5.2 h / 41 h / 5.5 days |
-| Gathering skills at Lv 400 / 1000 / 1600 (bot with maxed rebirth perks) | 30 / ~92 / 180 days |
-| Best floor | 132 (30 d), 254 (180 d), 292 (365 d) |
-| Codex 128/129 | 1 year |
+| Floor 21 (rebirth unlocked) | 2.2 h |
+| First rebirth | 3.3 h |
+| First myth / legend / primordial | 3.3 h / 27 h / 11 days |
+| Gathering skills at Lv 430 / 1000 / 1660 (bot with maxed rebirth perks) | 30 / ~88 / 180 days |
+| Best floor | 134 (30 d), 292 (180 d), 339 (365 d) |
+| Codex 233/234 | 1 year |
 
 ## Debug
 

@@ -28,7 +28,7 @@ const head = `<title>모닥불 연대기</title>
 <meta name="description" content="한 명의 모험가를 키우는 방치형 픽셀 RPG">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Silkscreen&display=swap">`;
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700&family=Silkscreen&display=swap">`;
 
 mkdirSync(new URL('dist/', import.meta.url), { recursive: true });
 const inline = `${head}\n<style>\n${css}</style>\n${markup}<script>\n${bundle.replace(/<\/script/gi, '<\\/script')}\n</script>\n`;

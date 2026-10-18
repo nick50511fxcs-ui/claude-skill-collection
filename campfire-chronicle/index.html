@@ -8,7 +8,7 @@
 <meta name="description" content="한 명의 모험가를 키우는 방치형 픽셀 RPG">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Silkscreen&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700&family=Silkscreen&display=swap">
 <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
@@ -23,6 +23,13 @@
     <div id="panel" hidden>
       <div class="panel-head"><h2 id="panelTitle"></h2><button type="button" class="x" id="panelClose" aria-label="닫기">✕</button></div>
       <div class="panel-body" id="panelBody"></div>
+    </div>
+  </div>
+  <div id="actionBar">
+    <div class="dock" id="skillDock" role="toolbar" aria-label="할 일 고르기"></div>
+    <div class="fight-tools">
+      <div class="fever" id="fever"><span id="feverTxt">열정</span><div class="fv-track"><i id="feverFill"></i></div></div>
+      <div class="cskills" id="combatSkills"></div>
     </div>
   </div>
   <div id="bar"></div>

@@ -2,13 +2,13 @@
 // regions, rebirth perks and memory cards. Player-facing text is Korean.
 
 export const TIERS = [
-  { key: 'common', name: '일반', color: '#d6d6d6', codex: 0.002 },
-  { key: 'uncommon', name: '고급', color: '#7be07b', codex: 0.004 },
-  { key: 'rare', name: '희귀', color: '#5ab4ff', codex: 0.01 },
-  { key: 'epic', name: '영웅', color: '#c27bff', codex: 0.02 },
-  { key: 'legend', name: '전설', color: '#ffbe4d', codex: 0.04 },
-  { key: 'myth', name: '신화', color: '#ff5f87', codex: 0.08 },
-  { key: 'prim', name: '태초', color: '#8ffcff', codex: 0.2 },
+  { key: 'common', name: '일반', color: '#d6d6d6', codex: 0.0012 },
+  { key: 'uncommon', name: '고급', color: '#7be07b', codex: 0.0025 },
+  { key: 'rare', name: '희귀', color: '#5ab4ff', codex: 0.006 },
+  { key: 'epic', name: '영웅', color: '#c27bff', codex: 0.012 },
+  { key: 'legend', name: '전설', color: '#ffbe4d', codex: 0.025 },
+  { key: 'myth', name: '신화', color: '#ff5f87', codex: 0.05 },
+  { key: 'prim', name: '태초', color: '#8ffcff', codex: 0.15 },
 ];
 
 // Base chance per action / kill. Tiers 2+ are multiplied by the luck multiplier.
@@ -201,6 +201,119 @@ it('a_essence', '엘릭서 원액', 4, 'potion', '#ff9aff', 'alchemy');
 it('a_homunculus', '호문쿨루스 플라스크', 5, 'potion', '#9aff9a', 'alchemy');
 it('a_prim', '현자의 돌', 6, 'stone', '#ff2a3a', 'alchemy', { effect: '물약 효과 ×2 (중복마다 +0.1, 최대 10회), 연금 실패 없음' });
 
+// ---- Expansion: two more items per spot, more rares per tier, trophies, seasonal fish, alchemy
+it('m_clay', '점토 덩어리', 0, 'ore', '#b08a6a', 'mining');
+it('m_flint', '부싯돌', 1, 'gem', '#8a8a9a', 'mining');
+it('m_lead', '납 광석', 0, 'ore', '#7a8090', 'mining');
+it('m_garnet', '석류석', 1, 'gem', '#b0304a', 'mining');
+it('m_crystalsand', '수정 모래', 0, 'drop', '#cfe6ff', 'mining');
+it('m_topaz', '토파즈', 1, 'gem', '#ffc04a', 'mining');
+it('m_darksteel', '암흑철 광석', 0, 'ore', '#4a4a6a', 'mining');
+it('m_emerald', '에메랄드', 1, 'gem', '#3ad07a', 'mining');
+it('m_stardust', '별가루', 0, 'drop', '#fff0c0', 'mining');
+it('m_moonstone', '월장석', 1, 'gem', '#c8d8ff', 'mining');
+it('m_geode', '정동석', 3, 'orb', '#a87aff', 'mining');
+it('m_relic', '드워프의 유물', 3, 'charm', '#c8a060', 'mining');
+it('m_titanheart', '거인의 심장석', 4, 'orb', '#ff8a5a', 'mining');
+it('m_voidcore', '공허의 핵석', 5, 'orb', '#5a3a9a', 'mining');
+
+it('w_twig', '잔가지', 0, 'log', '#b08a5a', 'wood');
+it('w_moss', '이끼 덩굴', 1, 'leaf', '#6a9a4a', 'wood');
+it('w_bark', '자작나무 껍질', 0, 'hide', '#efe9d8', 'wood');
+it('w_honey', '야생 벌꿀', 1, 'drop', '#ffb030', 'wood');
+it('w_burl', '옹이 목재', 0, 'log', '#8a5a3a', 'wood');
+it('w_mistletoe', '겨우살이', 1, 'leaf', '#5ad08a', 'wood');
+it('w_starwood', '별나무 가지', 0, 'log', '#8a8aff', 'wood');
+it('w_dryad', '드라이어드의 눈물', 1, 'drop', '#9affd8', 'wood');
+it('w_lightwood', '빛나무 판재', 0, 'log', '#ffeaa0', 'wood');
+it('w_seedpod', '세계수 씨앗꼬투리', 1, 'seed', '#b8ff7a', 'wood');
+it('w_beehive', '황금 벌집', 3, 'chest', '#ffc040', 'wood');
+it('w_carving', '고대 목각상', 3, 'charm', '#a8784a', 'wood');
+it('w_crown', '숲의 왕관', 4, 'charm', '#6bd04a', 'wood');
+it('w_heartwood', '영원의 심재', 5, 'log', '#ffd8a0', 'wood');
+
+it('f_clover', '세잎클로버', 0, 'clover', '#5ab45a', 'forage');
+it('f_wildrose', '들장미', 1, 'flower', '#ff7a9a', 'forage');
+it('f_fern', '고사리', 0, 'leaf', '#4a9a5a', 'forage');
+it('f_raspberry', '산딸기', 1, 'seed', '#e83a5a', 'forage');
+it('f_reed', '갈대', 0, 'leaf', '#a8a06a', 'forage');
+it('f_lotus', '연꽃', 1, 'flower', '#ffa8d8', 'forage');
+it('f_edelweiss', '에델바이스', 0, 'flower', '#f8f8ff', 'forage');
+it('f_cloudberry', '운무 열매', 1, 'seed', '#ffd08a', 'forage');
+it('f_starpetal', '별꽃잎', 0, 'flower', '#fff6a0', 'forage');
+it('f_dreamleaf', '꿈결 잎', 1, 'leaf', '#d8a8ff', 'forage');
+it('f_silverfern', '은빛 고사리', 3, 'leaf', '#e0e8f0', 'forage');
+it('f_bloodroot', '혈근초', 3, 'root', '#c83a4a', 'forage');
+it('f_lifeflower', '생명의 꽃', 4, 'flower', '#7affb0', 'forage');
+it('f_moonherb', '월하 신초', 5, 'leaf', '#c8d0ff', 'forage');
+
+it('s_loach', '미꾸라지', 0, 'fish', '#9a8a6a', 'fish', { w: 0.1 });
+it('s_shrimp', '민물새우', 1, 'fish', '#ffa88a', 'fish', { w: 0.02 });
+it('s_perch', '농어', 0, 'fish', '#8aa060', 'fish', { w: 2 });
+it('s_turtle', '자라', 1, 'shell', '#6a8a4a', 'fish', { w: 3 });
+it('s_trout2', '산천어', 0, 'fish', '#c8a8a8', 'fish', { w: 1 });
+it('s_crab', '참게', 1, 'shell', '#c86a3a', 'fish', { w: 0.5 });
+it('s_squidling', '오징어', 0, 'tentacle', '#ffb0a0', 'fish', { w: 0.6 });
+it('s_swordfish', '황새치', 1, 'fish', '#5a7ab8', 'fish', { w: 120 });
+it('s_lanternfish', '초롱아귀', 0, 'fish', '#2a8a9a', 'fish', { w: 8 });
+it('s_oarfish', '산갈치', 1, 'fish', '#d8e0ff', 'fish', { w: 200 });
+it('s_spring2', '봄 도다리', 2, 'fish', '#d8c09a', 'fish', { w: 1.2, season: 0 });
+it('s_summer2', '여름 전갱이', 2, 'fish', '#9ad0e0', 'fish', { w: 0.5, season: 1 });
+it('s_autumn2', '가을 전어', 2, 'fish', '#c8d0e0', 'fish', { w: 0.3, season: 2 });
+it('s_winter2', '겨울 방어', 2, 'fish', '#5a7ab8', 'fish', { w: 8, season: 3 });
+it('s_pearl', '흑진주', 3, 'orb', '#4a4a5a', 'fish');
+it('s_bottle', '유리병 편지', 3, 'potion', '#a8e0d0', 'fish');
+it('s_seadragon', '해룡의 수염', 4, 'feather', '#7affe0', 'fish');
+it('s_leviathan', '리바이어선의 비늘', 5, 'scale', '#3a5aff', 'fish');
+
+it('h_quail', '메추라기 알', 0, 'seed', '#e8dcc8', 'hunt');
+it('h_fox', '여우 꼬리', 1, 'feather', '#ff8a3a', 'hunt');
+it('h_squirrel', '다람쥐 털', 0, 'hide', '#a8784a', 'hunt');
+it('h_elkhorn', '엘크 뿔', 1, 'horn', '#d8c8a0', 'hunt');
+it('h_bearmeat', '곰 고기', 0, 'meat', '#8a3a2a', 'hunt');
+it('h_eagle', '독수리 깃털', 1, 'feather', '#7a5a3a', 'hunt');
+it('h_reindeer', '순록 가죽', 0, 'hide', '#c8a888', 'hunt');
+it('h_owlwhite', '흰올빼미 깃털', 1, 'feather', '#f0f0ff', 'hunt');
+it('h_phoenixegg', '화조의 알', 0, 'seed', '#ff8a5a', 'hunt');
+it('h_qilinhorn', '기린의 뿔', 1, 'horn', '#7affb8', 'hunt');
+it('h_trophy', '거대 곰 박제', 3, 'chest', '#6a4a32', 'hunt');
+it('h_blackfur', '흑표 가죽', 3, 'hide', '#2a2a32', 'hunt');
+it('h_thunderbird', '천둥새 깃털', 4, 'feather', '#ffe066', 'hunt');
+it('h_fenrir', '펜리르의 송곳니', 5, 'horn', '#c8d8ff', 'hunt');
+
+it('c_slimecore', '슬라임 핵', 0, 'orb', '#7ae05a', 'combat');
+it('c_capshard', '버섯 갓 조각', 1, 'mushroom', '#e8553d', 'combat');
+it('c_toadwart', '두꺼비 혹', 0, 'jelly', '#7a5aa8', 'combat');
+it('c_miasma', '독기 결정', 1, 'gem', '#9a3ad8', 'combat');
+it('c_frostfang', '서리 송곳니', 0, 'horn', '#d8f0ff', 'combat');
+it('c_icicle', '영원한 고드름', 1, 'gem', '#bfe8ff', 'combat');
+it('c_shadowcloth', '그림자 천', 0, 'hide', '#3a2a5a', 'combat');
+it('c_voidsand', '공허의 모래', 1, 'drop', '#6a4aa8', 'combat');
+it('c_t_treant', '트렌트의 옹이 심장', 3, 'orb', '#7a5432', 'combat', { trophy: true });
+it('c_t_frog', '독두꺼비 대왕의 왕관', 3, 'charm', '#a66bff', 'combat', { trophy: true });
+it('c_t_yeti', '설인 왕의 뿔', 3, 'horn', '#e8f0ff', 'combat', { trophy: true });
+it('c_t_knight', '그림자 기사의 투구', 3, 'armor', '#4a4060', 'combat', { trophy: true });
+it('c_t_eye', '심연의 눈동자', 3, 'orb', '#c83aff', 'combat', { trophy: true });
+it('c_banner', '전장의 깃발', 3, 'feather', '#c8433b', 'combat');
+it('c_medal', '용사의 훈장', 3, 'charm', '#ffd34d', 'combat');
+it('c_dragonblood', '용의 피', 4, 'drop', '#ff2a3a', 'combat');
+it('c_godsword', '신검의 파편', 5, 'sword', '#e8f0ff', 'combat');
+
+it('p_haste', '신속의 물약', 1, 'potion', '#7affe8', 'alchemy', { potion: 'haste', desc: '이번 전투 동안 공격 속도 +25%' });
+it('p_focus', '집중의 물약', 1, 'potion', '#ff9a3a', 'alchemy', { potion: 'focus', desc: '이번 전투 동안 치명타 확률 +10%' });
+it('p_wisdom', '지혜의 물약', 1, 'potion', '#9a8aff', 'alchemy', { potion: 'wisdom', desc: '이번 전투 동안 캐릭터 경험치 +30%' });
+it('t_gather', '장인의 강장제', 2, 'potion', '#c8a060', 'alchemy', { use: true, desc: '사용 시 30분 동안 생활 속도 ×1.3' });
+it('t_fever', '열정의 비약', 2, 'potion', '#ff5a3a', 'alchemy', { use: true, desc: '사용 시 열정 게이지 즉시 가득' });
+it('x_agi', '민첩의 영약', 2, 'elixir', '#7affe8', 'alchemy', { elixir: 'agi', desc: '영구 공격 속도 +1% (최대 50회)' });
+it('x_sta', '지구력의 영약', 2, 'elixir', '#4a9aff', 'alchemy', { elixir: 'sta', desc: '영구 최대 스태미나 +2% (최대 50회)' });
+it('x_luck', '행운의 영약', 2, 'elixir', '#ffd34d', 'alchemy', { elixir: 'luck', desc: '영구 행운 배율 +0.01 (최대 50회)' });
+it('x_crit', '예리함의 영약', 2, 'elixir', '#ff6a3a', 'alchemy', { elixir: 'crit', desc: '영구 치명타 피해 +2% (최대 50회)' });
+it('x_master', '대가의 영약', 2, 'elixir', '#c8a060', 'alchemy', { elixir: 'lifexp', desc: '영구 생활 경험치 +2% (최대 50회)' });
+it('a_mercury', '살아있는 수은', 3, 'drop', '#c8c8d8', 'alchemy');
+it('a_retort', '고대 증류기', 3, 'potion', '#a87a4a', 'alchemy');
+it('a_panacea', '만병통치약', 4, 'potion', '#ffffff', 'alchemy');
+it('a_aether', '에테르 결정', 5, 'orb', '#bff8ff', 'alchemy');
+
 export const ITEMS = I;
 
 // Spots unlock at these levels; each gives common / uncommon / rare items.
@@ -208,52 +321,54 @@ export const SPOT_LV = [1, 50, 150, 300, 500];
 export const SPOT_XP = [8, 14, 24, 40, 65];
 export const SPOTS = {
   mining: [
-    { name: '얕은 갱도', items: ['m_copper', 'm_tin', 'm_quartz'] },
-    { name: '철광 언덕', items: ['m_iron', 'm_coal', 'm_amethyst'] },
-    { name: '수정 동굴', items: ['m_silver', 'm_gold', 'm_sapphire'] },
-    { name: '심연 광맥', items: ['m_mithril', 'm_obsidian', 'm_ruby'] },
-    { name: '별똥 분화구', items: ['m_adamant', 'm_meteor', 'm_stardia'] },
+    { name: '얕은 갱도', items: ['m_copper', 'm_clay', 'm_tin', 'm_flint', 'm_quartz'] },
+    { name: '철광 언덕', items: ['m_iron', 'm_lead', 'm_coal', 'm_garnet', 'm_amethyst'] },
+    { name: '수정 동굴', items: ['m_silver', 'm_crystalsand', 'm_gold', 'm_topaz', 'm_sapphire'] },
+    { name: '심연 광맥', items: ['m_mithril', 'm_darksteel', 'm_obsidian', 'm_emerald', 'm_ruby'] },
+    { name: '별똥 분화구', items: ['m_adamant', 'm_stardust', 'm_meteor', 'm_moonstone', 'm_stardia'] },
   ],
   wood: [
-    { name: '참나무 숲', items: ['w_oak', 'w_resin', 'w_acorn'] },
-    { name: '자작나무 길', items: ['w_birch', 'w_maple', 'w_pinecone'] },
-    { name: '고목의 숲', items: ['w_elder', 'w_amber', 'w_owl'] },
-    { name: '마법의 숲', items: ['w_mana', 'w_spirit', 'w_fairy'] },
-    { name: '세계수 뿌리', items: ['w_world', 'w_goldsap', 'w_glowleaf'] },
+    { name: '참나무 숲', items: ['w_oak', 'w_twig', 'w_resin', 'w_moss', 'w_acorn'] },
+    { name: '자작나무 길', items: ['w_birch', 'w_bark', 'w_maple', 'w_honey', 'w_pinecone'] },
+    { name: '고목의 숲', items: ['w_elder', 'w_burl', 'w_amber', 'w_mistletoe', 'w_owl'] },
+    { name: '마법의 숲', items: ['w_mana', 'w_starwood', 'w_spirit', 'w_dryad', 'w_fairy'] },
+    { name: '세계수 뿌리', items: ['w_world', 'w_lightwood', 'w_goldsap', 'w_seedpod', 'w_glowleaf'] },
   ],
   forage: [
-    { name: '들판', items: ['f_mugwort', 'f_dandelion', 'f_mushroom'] },
-    { name: '숲길', items: ['f_mint', 'f_berry', 'f_pine'] },
-    { name: '안개 늪', items: ['f_antidote', 'f_mandrake', 'f_firefly'] },
-    { name: '고산 지대', items: ['f_snowlotus', 'f_poppy', 'f_ginseng'] },
-    { name: '요정 정원', items: ['f_moonflower', 'f_dew', 'f_fairyshroom'] },
+    { name: '들판', items: ['f_mugwort', 'f_clover', 'f_dandelion', 'f_wildrose', 'f_mushroom'] },
+    { name: '숲길', items: ['f_mint', 'f_fern', 'f_berry', 'f_raspberry', 'f_pine'] },
+    { name: '안개 늪', items: ['f_antidote', 'f_reed', 'f_mandrake', 'f_lotus', 'f_firefly'] },
+    { name: '고산 지대', items: ['f_snowlotus', 'f_edelweiss', 'f_poppy', 'f_cloudberry', 'f_ginseng'] },
+    { name: '요정 정원', items: ['f_moonflower', 'f_starpetal', 'f_dew', 'f_dreamleaf', 'f_fairyshroom'] },
   ],
   fish: [
-    { name: '개울', items: ['s_minnow', 's_crucian', 's_trout'] },
-    { name: '호수', items: ['s_carp', 's_catfish', 's_goldcarp'] },
-    { name: '강 하구', items: ['s_salmon', 's_eel', 's_sturgeon'] },
-    { name: '먼 바다', items: ['s_mackerel', 's_tuna', 's_marlin'] },
-    { name: '심해', items: ['s_angler', 's_squid', 's_dragonfish'] },
+    { name: '개울', items: ['s_minnow', 's_loach', 's_crucian', 's_shrimp', 's_trout'] },
+    { name: '호수', items: ['s_carp', 's_perch', 's_catfish', 's_turtle', 's_goldcarp'] },
+    { name: '강 하구', items: ['s_salmon', 's_trout2', 's_eel', 's_crab', 's_sturgeon'] },
+    { name: '먼 바다', items: ['s_mackerel', 's_squidling', 's_tuna', 's_swordfish', 's_marlin'] },
+    { name: '심해', items: ['s_angler', 's_lanternfish', 's_squid', 's_oarfish', 's_dragonfish'] },
   ],
   hunt: [
-    { name: '초원', items: ['h_rabbitmeat', 'h_rabbithide', 'h_pheasant'] },
-    { name: '사슴 숲', items: ['h_venison', 'h_deerhide', 'h_antler'] },
-    { name: '산악 지대', items: ['h_boar', 'h_bearhide', 'h_claw'] },
-    { name: '설원', items: ['h_wolfhide', 'h_tusk', 'h_fang'] },
-    { name: '신수의 숲', items: ['h_griffin', 'h_unicorn', 'h_kirin'] },
+    { name: '초원', items: ['h_rabbitmeat', 'h_quail', 'h_rabbithide', 'h_fox', 'h_pheasant'] },
+    { name: '사슴 숲', items: ['h_venison', 'h_squirrel', 'h_deerhide', 'h_elkhorn', 'h_antler'] },
+    { name: '산악 지대', items: ['h_boar', 'h_bearmeat', 'h_bearhide', 'h_eagle', 'h_claw'] },
+    { name: '설원', items: ['h_wolfhide', 'h_reindeer', 'h_tusk', 'h_owlwhite', 'h_fang'] },
+    { name: '신수의 숲', items: ['h_griffin', 'h_phoenixegg', 'h_unicorn', 'h_qilinhorn', 'h_kirin'] },
   ],
 };
-// Skill-wide high tiers: [epic, legend, myth, primordial].
+// Skill-wide high tiers (any spot): 3 epic, 2 legend, 2 myth, 1 primordial per skill.
 export const SKILL_RARES = {
-  mining: ['m_fossil', 'm_dragonstone', 'm_timecrystal', 'm_prim'],
-  wood: ['w_ring', 'w_entheart', 'w_rainbow', 'w_prim'],
-  forage: ['f_goldacorn', 'f_phoenix', 'f_oldginseng', 'f_prim'],
-  fish: ['s_chest', 's_mermaid', 's_kraken', 's_prim'],
-  hunt: ['h_white', 'h_goldantler', 'h_gumiho', 'h_prim'],
-  combat: ['c_core', 'c_seal', 'c_tear', 'c_prim'],
-  alchemy: ['a_salt', 'a_essence', 'a_homunculus', 'a_prim'],
+  mining: ['m_fossil', 'm_geode', 'm_relic', 'm_dragonstone', 'm_titanheart', 'm_timecrystal', 'm_voidcore', 'm_prim'],
+  wood: ['w_ring', 'w_beehive', 'w_carving', 'w_entheart', 'w_crown', 'w_rainbow', 'w_heartwood', 'w_prim'],
+  forage: ['f_goldacorn', 'f_silverfern', 'f_bloodroot', 'f_phoenix', 'f_lifeflower', 'f_oldginseng', 'f_moonherb', 'f_prim'],
+  fish: ['s_chest', 's_pearl', 's_bottle', 's_mermaid', 's_seadragon', 's_kraken', 's_leviathan', 's_prim'],
+  hunt: ['h_white', 'h_trophy', 'h_blackfur', 'h_goldantler', 'h_thunderbird', 'h_gumiho', 'h_fenrir', 'h_prim'],
+  combat: ['c_core', 'c_banner', 'c_medal', 'c_seal', 'c_dragonblood', 'c_tear', 'c_godsword', 'c_prim'],
+  alchemy: ['a_salt', 'a_mercury', 'a_retort', 'a_essence', 'a_panacea', 'a_homunculus', 'a_aether', 'a_prim'],
 };
-export const SEASON_FISH = ['s_spring', 's_summer', 's_autumn', 's_winter'];
+export const SEASON_FISH = ['s_spring', 's_summer', 's_autumn', 's_winter', 's_spring2', 's_summer2', 's_autumn2', 's_winter2'];
+// Each boss leaves its own trophy (always on the first kill, 15% after).
+export const BOSS_TROPHY = { kingslime: 'c_t_treant', frogking: 'c_t_frog', yetiking: 'c_t_yeti', knight: 'c_t_knight', eye: 'c_t_eye' };
 export const SEASON_NAME = ['봄', '여름', '가을', '겨울'];
 
 export const RECIPES = [
@@ -266,28 +381,38 @@ export const RECIPES = [
   { id: 'x_str', lv: 100, xp: 80, in: { h_antler: 2, m_amethyst: 2, f_pine: 3 }, max: 50 },
   { id: 'x_life', lv: 150, xp: 110, in: { f_mandrake: 3, s_salmon: 5, h_bearhide: 2 }, max: 50 },
   { id: 'x_cat', lv: 200, xp: 140, in: { f_firefly: 3, s_goldcarp: 1, m_sapphire: 1 } },
+  { id: 'p_haste', lv: 80, xp: 60, in: { s_perch: 2, h_squirrel: 2, w_honey: 1 } },
+  { id: 'p_focus', lv: 120, xp: 90, in: { m_garnet: 1, f_raspberry: 3, h_elkhorn: 1 } },
+  { id: 'p_wisdom', lv: 170, xp: 120, in: { f_lotus: 2, w_mistletoe: 2, s_crab: 2 } },
+  { id: 't_gather', lv: 220, xp: 150, in: { w_burl: 3, m_topaz: 1, f_reed: 4 } },
+  { id: 't_fever', lv: 260, xp: 170, in: { h_eagle: 2, s_trout2: 3, m_crystalsand: 4 } },
+  { id: 'x_agi', lv: 300, xp: 200, in: { h_reindeer: 2, w_starwood: 2, s_squidling: 3 }, max: 50 },
+  { id: 'x_sta', lv: 350, xp: 230, in: { f_edelweiss: 2, m_darksteel: 3, h_owlwhite: 1 }, max: 50 },
+  { id: 'x_luck', lv: 400, xp: 260, in: { s_lanternfish: 1, f_cloudberry: 3, m_emerald: 1 }, max: 50 },
+  { id: 'x_crit', lv: 450, xp: 290, in: { h_phoenixegg: 1, w_dryad: 2, m_moonstone: 1 }, max: 50 },
+  { id: 'x_master', lv: 600, xp: 360, in: { f_starpetal: 3, w_lightwood: 3, s_oarfish: 1 }, max: 50 },
   { id: 'x_secret', lv: 1, xp: 300, in: { a_salt: 1, f_ginseng: 2, w_spirit: 2 }, max: 20, secret: true },
 ];
 
 export const MONSTERS = {
-  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#7ae05a' }, hp: 1, atk: 1 },
-  shroom: { name: '버섯돌이', sprite: 'shroom', pal: { r: '#e8553d' }, hp: 1.2, atk: 0.9 },
+  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#5a8a3a' }, hp: 1, atk: 1 },
+  shroom: { name: '포자 괴물', sprite: 'shroom', pal: { r: '#8a3a2a' }, hp: 1.2, atk: 0.9 },
   kingslime: { name: '숲의 수호자 트렌트', sprite: 'treant', pal: {}, hp: 1, atk: 1, unique: true },
-  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#9a5ad8' }, hp: 1, atk: 1.1 },
-  pshroom: { name: '독버섯', sprite: 'shroom', pal: { r: '#a83ad8' }, hp: 1.3, atk: 0.9 },
-  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#6a3ab8' }, hp: 1, atk: 1, crown: true, scale: 3 },
-  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#6a8ab8' }, hp: 0.8, atk: 1.2, fly: true },
-  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#e8f0ff' }, hp: 1.4, atk: 1 },
-  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#bfe0ff' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#5a4a7a', c: '#7a6a9a' }, hp: 1, atk: 1.1 },
+  pshroom: { name: '독버섯 괴물', sprite: 'shroom', pal: { r: '#5a2a6a' }, hp: 1.3, atk: 0.9 },
+  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#4a2a6a', c: '#6a4a8a' }, hp: 1, atk: 1, crown: true, scale: 3 },
+  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#3a4a6a' }, hp: 0.8, atk: 1.2, fly: true },
+  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#b8c4d0' }, hp: 1.4, atk: 1 },
+  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#9aaabb' }, hp: 1, atk: 1, crown: true, scale: 3 },
   knight: { name: '그림자 기사', sprite: 'knight', pal: {}, hp: 1, atk: 1, unique: true },
   eye: { name: '심연의 눈', sprite: 'eye', pal: {}, hp: 1, atk: 1, unique: true, fly: true },
 };
 
 export const REGIONS = [
-  { name: '햇살 초원', from: 1, mobs: ['slime', 'shroom'], boss: 'kingslime', mats: ['c_jelly', 'c_spore', 'c_crown'], gimmick: null, theme: 'meadow' },
-  { name: '독안개 숲', from: 11, mobs: ['frog', 'pshroom'], boss: 'frogking', mats: ['c_slime', 'c_poisonspore', 'c_venom'], gimmick: 'poison', theme: 'swamp' },
-  { name: '얼음 동굴', from: 21, mobs: ['bat', 'yeti'], boss: 'yetiking', mats: ['c_batwing', 'c_yetifur', 'c_icecore'], gimmick: 'ice', theme: 'ice' },
-  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'knight', bosses: ['knight', 'eye', 'frogking', 'yetiking', 'kingslime'], mats: ['c_shadow', 'c_abyss', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
+  { name: '햇살 초원', from: 1, mobs: ['slime', 'shroom'], boss: 'kingslime', mats: ['c_jelly', 'c_slimecore', 'c_spore', 'c_capshard', 'c_crown'], gimmick: null, theme: 'meadow' },
+  { name: '독안개 숲', from: 11, mobs: ['frog', 'pshroom'], boss: 'frogking', mats: ['c_slime', 'c_toadwart', 'c_poisonspore', 'c_miasma', 'c_venom'], gimmick: 'poison', theme: 'swamp' },
+  { name: '얼음 동굴', from: 21, mobs: ['bat', 'yeti'], boss: 'yetiking', mats: ['c_batwing', 'c_frostfang', 'c_yetifur', 'c_icicle', 'c_icecore'], gimmick: 'ice', theme: 'ice' },
+  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'knight', bosses: ['knight', 'eye', 'frogking', 'yetiking', 'kingslime'], mats: ['c_shadow', 'c_shadowcloth', 'c_abyss', 'c_voidsand', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
 ];
 export const GIMMICK_TEXT = {
   poison: '독안개: 스태미나 소모 ×2.5 (채집 Lv 60 또는 해독 물약으로 무효)',
@@ -300,6 +425,17 @@ export const GEAR_NAMES = {
   charm: ['조약돌 부적', '은 부적', '수정 부적', '영웅의 부적', '전설의 부적', '신화의 부적', '태초의 부적'],
 };
 export const GEAR_TIER_MULT = [1, 1.3, 1.7, 2.3, 3.2, 4.5, 7];
+// Random gear affixes (one per piece); values scale with the piece's tier.
+export const AFFIXES = {
+  fierce: { name: '맹렬한', stat: 'atk', v: 0.05, text: '공격력' },
+  sturdy: { name: '단단한', stat: 'hp', v: 0.06, text: '최대 HP' },
+  swift: { name: '재빠른', stat: 'spd', v: 0.04, text: '공격 속도' },
+  sharp: { name: '날카로운', stat: 'crit', v: 0.02, text: '치명타 확률' },
+  keen: { name: '예리한', stat: 'critD', v: 0.08, text: '치명타 피해' },
+  lucky: { name: '행운의', stat: 'luck', v: 0.03, text: '행운 배율' },
+  vital: { name: '활력의', stat: 'sta', v: 0.06, text: '최대 스태미나' },
+  wise: { name: '현명한', stat: 'xp', v: 0.08, text: '캐릭터 경험치' },
+};
 
 export const PERKS = {
   w_atk: { tree: 'war', name: '불꽃의 칼날', desc: '공격력 +10%', base: 1, grow: 1.4 },

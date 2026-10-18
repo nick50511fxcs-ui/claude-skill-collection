@@ -79,7 +79,21 @@ function start(hotData = {}) {
       ui.toast('새 모험을 시작합니다');
     },
   };
+  hooks.flush = () => {
+    if (game.events.length) { renderer.handle(game.events); ui.handle(game.events); game.events.length = 0; }
+  };
   const ui = new UI(game, renderer, hooks);
+  renderer.onNotice = (text, tier, kind) => {
+    if (text) ui.toast(text, tier);
+    if (kind === 'mini') ui.showTip('mini', '<b>기회!</b> 작업 장소에 빛나는 표시가 나타났어요. 설명대로 <b>화면을 클릭</b>하면 한 번에 여러 개를 얻고, 희귀 확률도 올라갑니다.');
+    hooks.flush();
+  };
+  // Clicks on the scene: chance events, the wisp, extra hits on the monster.
+  canvas.addEventListener('pointerdown', e => {
+    const r = canvas.getBoundingClientRect();
+    renderer.click(((e.clientX - r.left) / r.width) * 384, ((e.clientY - r.top) / r.height) * 216);
+    hooks.flush();
+  });
   function swap(g) {
     game = g;
     renderer.g = g;

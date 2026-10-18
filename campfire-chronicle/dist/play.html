@@ -8,7 +8,7 @@
 <meta name="description" content="한 명의 모험가를 키우는 방치형 픽셀 RPG">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Silkscreen&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700&family=Silkscreen&display=swap">
 <style>
 /* Layout: a 16:9 pixel stage with an Idleon-style navy panel layer and a
    dark command bar below. Single deliberate dark look (night campfire). */
@@ -32,8 +32,9 @@
   --xp: #f0c43a;
   --good: #7be07b;
   --bad: #ff6a6a;
-  --font: 'Jua', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-  --pixel: 'Silkscreen', 'Jua', monospace;
+  --font: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --title: 'Noto Serif KR', 'Nanum Myeongjo', serif;
+  --pixel: 'Silkscreen', 'Noto Sans KR', monospace;
 }
 html, body { height: 100%; }
 [hidden] { display: none !important; }
@@ -103,7 +104,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
   font-size: clamp(11px, 1.3vw, 15px); text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
   pointer-events: none; max-width: 52%;
 }
-#hudTL .reg { font-size: clamp(14px, 1.9vw, 22px); color: #fff; }
+#hudTL .reg { font-family: var(--title); font-weight: 700; font-size: clamp(14px, 1.9vw, 22px); color: #fff; }
 #hudTL .fl { color: var(--ember); }
 #hudTL .env { color: #dfe6ff; }
 #hudTL .recall { color: #ffe066; }
@@ -185,6 +186,34 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
 .skill-card.locked .sc-nm, .skill-card.locked .sc-lv { color: #8a8aa0; }
 .skill-card .sc-lock { grid-column: span 2; font-size: 11px; color: #ffb0b0; }
 
+/* ---------- Action strip: what to do now + combat skills ---------- */
+#actionBar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: #151826; border: 2px solid #2e3452; border-radius: 6px; padding: 6px 8px; }
+.dock { display: flex; gap: 6px; flex-wrap: wrap; }
+.dk { position: relative; width: 46px; height: 46px; display: grid; place-items: center; background: linear-gradient(#2c3150, #20243a); border: 2px solid #4a5280; border-radius: 6px; }
+.dk:hover:not(:disabled) { border-color: #9aa8e0; }
+.dk.on { border-color: var(--ember); box-shadow: inset 0 0 0 1px var(--ember); background: linear-gradient(#4a3420, #2a1e14); }
+.dk:disabled { opacity: 0.4; cursor: not-allowed; }
+.dk .lk { position: absolute; right: 2px; bottom: 0; font-size: 11px; }
+.dk-sep { width: 1px; background: #3a4064; margin: 4px 2px; }
+.fight-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.fever { display: flex; flex-direction: column; gap: 3px; width: 120px; font-size: 12px; color: #ffb0a0; }
+.fv-track { height: 8px; background: #2a1414; border: 1px solid #000; border-radius: 3px; overflow: hidden; }
+.fv-track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff8a3a, #ff3a5a); transition: width 0.2s; }
+.fever.on { color: #fff2a0; }
+.fever.on .fv-track i { width: 100% !important; background: linear-gradient(90deg, #ffe066, #ff8a3a, #ffe066); animation: fv 0.6s linear infinite; }
+@keyframes fv { 50% { filter: brightness(1.4); } }
+.cskills { display: flex; gap: 6px; align-items: center; }
+.cs { position: relative; width: 52px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: linear-gradient(#3a2430, #261824); border: 2px solid #8a4a5a; border-radius: 6px; overflow: hidden; }
+.cs:disabled { cursor: default; }
+.cs .nm { font-size: 11px; }
+.cs .key { position: absolute; left: 3px; top: 1px; font-family: var(--pixel); font-size: 9px; color: #ffb0c0; }
+.cs .cdv { position: absolute; inset: 0; background: rgba(8, 6, 14, 0.72); display: grid; place-items: center; font-size: 13px; color: #fff; }
+.cs.ready { border-color: #ff8aa8; box-shadow: 0 0 8px rgba(255, 120, 150, 0.35); }
+.autocast { font-size: 11px; padding: 2px 6px; }
+.minihint { transform: translate(-50%, -100%) !important; background: rgba(20, 16, 6, 0.85); border: 1px solid #ffd27a; color: #ffe8a0; border-radius: 3px; padding: 2px 8px; font-size: clamp(10px, 1.2vw, 13px); animation: hintpop 0.3s ease; }
+@keyframes hintpop { from { opacity: 0; transform: translate(-50%, -70%) !important; } }
+#scene { cursor: pointer; }
+
 /* ---------- Command bar ---------- */
 #bar {
   display: grid; grid-template-columns: auto minmax(180px, 1fr) auto; gap: 14px; align-items: center;
@@ -192,7 +221,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 .who { display: flex; align-items: center; gap: 10px; }
-#portrait { width: 42px; height: 54px; background: #2a2f48; border: 2px solid #5a6494; border-radius: 4px; padding: 3px; box-sizing: content-box; }
+#portrait { width: 36px; height: 54px; background: #2a2f48; border: 2px solid #5a6494; border-radius: 4px; padding: 3px; box-sizing: content-box; }
 .who-nm { font-size: 17px; }
 .who-sub { color: var(--ink-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
 .bars { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -224,7 +253,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
   box-shadow: 0 0 0 3px var(--panel-ink), 0 10px 30px rgba(0, 0, 0, 0.6); z-index: 5;
 }
 .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px 6px; border-bottom: 2px solid #4a5aa8; }
-.panel-head h2 { margin: 0; font-size: 20px; font-weight: 400; color: #fff; }
+.panel-head h2 { margin: 0; font-family: var(--title); font-size: 20px; font-weight: 700; color: #fff; }
 .panel-head .x { width: 34px; height: 34px; background: #2a1a2a; border: 2px solid #c88aa8; border-radius: 4px; color: #ffc0d8; }
 .panel-body { overflow-y: auto; padding: 8px 12px 14px; display: flex; flex-direction: column; gap: 10px; scrollbar-color: #6a7ac8 transparent; }
 .psec { background: rgba(10, 14, 40, 0.45); border: 1px solid #4a5aa8; border-radius: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -249,7 +278,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
 .chip.on { background: linear-gradient(#ff9a3a, #c8601a); border-color: #ffd8a0; color: #fff; }
 
 .char-top { display: flex; gap: 14px; align-items: center; }
-.char-pic { width: 56px; height: 72px; background: #3a4278; border: 2px solid #9aa8e0; border-radius: 4px; padding: 6px; box-sizing: content-box; }
+.char-pic { width: 48px; height: 72px; background: #3a4278; border: 2px solid #9aa8e0; border-radius: 4px; padding: 6px; box-sizing: content-box; }
 .char-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .char-nm { font-size: 20px; }
 .char-nm .lv { color: var(--ember); font-size: 15px; }
@@ -282,6 +311,8 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); 
 }
 .skill-card canvas { grid-row: span 2; align-self: center; }
 .skill-card.sel { border-color: var(--ember); background: #5a4a3a; }
+.skill-card .sc-go { grid-column: span 2; margin-top: 4px; font-size: 11px; color: #ffd27a; }
+.skill-card:hover:not(.locked) { border-color: #ffd27a; }
 .sc-nm { font-size: 14px; }
 .sc-lv { font-size: 13px; color: var(--ember); font-variant-numeric: tabular-nums; }
 .sc-bar { grid-column: span 2; height: 6px; background: #1a1a22; border: 1px solid #000; border-radius: 2px; margin-top: 4px; overflow: hidden; }
@@ -342,7 +373,7 @@ textarea { width: 100%; box-sizing: border-box; background: #0c0e22; color: #dfe
   background: var(--panel); border: 3px solid var(--panel-edge); box-shadow: 0 0 0 3px var(--panel-ink), 0 20px 50px rgba(0, 0, 0, 0.7);
   border-radius: 6px; padding: 16px 20px;
 }
-.modal-box h2 { margin: 0 0 6px; font-weight: 400; font-size: 24px; color: var(--ember); }
+.modal-box h2 { margin: 0 0 6px; font-family: var(--title); font-weight: 700; font-size: 24px; color: var(--ember); }
 .modal-box h4 { margin: 12px 0 4px; font-weight: 400; color: #cfe0ff; }
 .modal-box .lead { margin: 0 0 8px; color: #dfe6ff; }
 .modal-box p { margin: 4px 0; line-height: 1.5; }
@@ -380,6 +411,13 @@ textarea { width: 100%; box-sizing: border-box; background: #0c0e22; color: #dfe
     <div id="panel" hidden>
       <div class="panel-head"><h2 id="panelTitle"></h2><button type="button" class="x" id="panelClose" aria-label="닫기">✕</button></div>
       <div class="panel-body" id="panelBody"></div>
+    </div>
+  </div>
+  <div id="actionBar">
+    <div class="dock" id="skillDock" role="toolbar" aria-label="할 일 고르기"></div>
+    <div class="fight-tools">
+      <div class="fever" id="fever"><span id="feverTxt">열정</span><div class="fv-track"><i id="feverFill"></i></div></div>
+      <div class="cskills" id="combatSkills"></div>
     </div>
   </div>
   <div id="bar"></div>
@@ -420,13 +458,13 @@ __m.data = (() => {
 // regions, rebirth perks and memory cards. Player-facing text is Korean.
 
 const TIERS = [
-  { key: 'common', name: '일반', color: '#d6d6d6', codex: 0.002 },
-  { key: 'uncommon', name: '고급', color: '#7be07b', codex: 0.004 },
-  { key: 'rare', name: '희귀', color: '#5ab4ff', codex: 0.01 },
-  { key: 'epic', name: '영웅', color: '#c27bff', codex: 0.02 },
-  { key: 'legend', name: '전설', color: '#ffbe4d', codex: 0.04 },
-  { key: 'myth', name: '신화', color: '#ff5f87', codex: 0.08 },
-  { key: 'prim', name: '태초', color: '#8ffcff', codex: 0.2 },
+  { key: 'common', name: '일반', color: '#d6d6d6', codex: 0.0012 },
+  { key: 'uncommon', name: '고급', color: '#7be07b', codex: 0.0025 },
+  { key: 'rare', name: '희귀', color: '#5ab4ff', codex: 0.006 },
+  { key: 'epic', name: '영웅', color: '#c27bff', codex: 0.012 },
+  { key: 'legend', name: '전설', color: '#ffbe4d', codex: 0.025 },
+  { key: 'myth', name: '신화', color: '#ff5f87', codex: 0.05 },
+  { key: 'prim', name: '태초', color: '#8ffcff', codex: 0.15 },
 ];
 
 // Base chance per action / kill. Tiers 2+ are multiplied by the luck multiplier.
@@ -619,6 +657,119 @@ it('a_essence', '엘릭서 원액', 4, 'potion', '#ff9aff', 'alchemy');
 it('a_homunculus', '호문쿨루스 플라스크', 5, 'potion', '#9aff9a', 'alchemy');
 it('a_prim', '현자의 돌', 6, 'stone', '#ff2a3a', 'alchemy', { effect: '물약 효과 ×2 (중복마다 +0.1, 최대 10회), 연금 실패 없음' });
 
+// ---- Expansion: two more items per spot, more rares per tier, trophies, seasonal fish, alchemy
+it('m_clay', '점토 덩어리', 0, 'ore', '#b08a6a', 'mining');
+it('m_flint', '부싯돌', 1, 'gem', '#8a8a9a', 'mining');
+it('m_lead', '납 광석', 0, 'ore', '#7a8090', 'mining');
+it('m_garnet', '석류석', 1, 'gem', '#b0304a', 'mining');
+it('m_crystalsand', '수정 모래', 0, 'drop', '#cfe6ff', 'mining');
+it('m_topaz', '토파즈', 1, 'gem', '#ffc04a', 'mining');
+it('m_darksteel', '암흑철 광석', 0, 'ore', '#4a4a6a', 'mining');
+it('m_emerald', '에메랄드', 1, 'gem', '#3ad07a', 'mining');
+it('m_stardust', '별가루', 0, 'drop', '#fff0c0', 'mining');
+it('m_moonstone', '월장석', 1, 'gem', '#c8d8ff', 'mining');
+it('m_geode', '정동석', 3, 'orb', '#a87aff', 'mining');
+it('m_relic', '드워프의 유물', 3, 'charm', '#c8a060', 'mining');
+it('m_titanheart', '거인의 심장석', 4, 'orb', '#ff8a5a', 'mining');
+it('m_voidcore', '공허의 핵석', 5, 'orb', '#5a3a9a', 'mining');
+
+it('w_twig', '잔가지', 0, 'log', '#b08a5a', 'wood');
+it('w_moss', '이끼 덩굴', 1, 'leaf', '#6a9a4a', 'wood');
+it('w_bark', '자작나무 껍질', 0, 'hide', '#efe9d8', 'wood');
+it('w_honey', '야생 벌꿀', 1, 'drop', '#ffb030', 'wood');
+it('w_burl', '옹이 목재', 0, 'log', '#8a5a3a', 'wood');
+it('w_mistletoe', '겨우살이', 1, 'leaf', '#5ad08a', 'wood');
+it('w_starwood', '별나무 가지', 0, 'log', '#8a8aff', 'wood');
+it('w_dryad', '드라이어드의 눈물', 1, 'drop', '#9affd8', 'wood');
+it('w_lightwood', '빛나무 판재', 0, 'log', '#ffeaa0', 'wood');
+it('w_seedpod', '세계수 씨앗꼬투리', 1, 'seed', '#b8ff7a', 'wood');
+it('w_beehive', '황금 벌집', 3, 'chest', '#ffc040', 'wood');
+it('w_carving', '고대 목각상', 3, 'charm', '#a8784a', 'wood');
+it('w_crown', '숲의 왕관', 4, 'charm', '#6bd04a', 'wood');
+it('w_heartwood', '영원의 심재', 5, 'log', '#ffd8a0', 'wood');
+
+it('f_clover', '세잎클로버', 0, 'clover', '#5ab45a', 'forage');
+it('f_wildrose', '들장미', 1, 'flower', '#ff7a9a', 'forage');
+it('f_fern', '고사리', 0, 'leaf', '#4a9a5a', 'forage');
+it('f_raspberry', '산딸기', 1, 'seed', '#e83a5a', 'forage');
+it('f_reed', '갈대', 0, 'leaf', '#a8a06a', 'forage');
+it('f_lotus', '연꽃', 1, 'flower', '#ffa8d8', 'forage');
+it('f_edelweiss', '에델바이스', 0, 'flower', '#f8f8ff', 'forage');
+it('f_cloudberry', '운무 열매', 1, 'seed', '#ffd08a', 'forage');
+it('f_starpetal', '별꽃잎', 0, 'flower', '#fff6a0', 'forage');
+it('f_dreamleaf', '꿈결 잎', 1, 'leaf', '#d8a8ff', 'forage');
+it('f_silverfern', '은빛 고사리', 3, 'leaf', '#e0e8f0', 'forage');
+it('f_bloodroot', '혈근초', 3, 'root', '#c83a4a', 'forage');
+it('f_lifeflower', '생명의 꽃', 4, 'flower', '#7affb0', 'forage');
+it('f_moonherb', '월하 신초', 5, 'leaf', '#c8d0ff', 'forage');
+
+it('s_loach', '미꾸라지', 0, 'fish', '#9a8a6a', 'fish', { w: 0.1 });
+it('s_shrimp', '민물새우', 1, 'fish', '#ffa88a', 'fish', { w: 0.02 });
+it('s_perch', '농어', 0, 'fish', '#8aa060', 'fish', { w: 2 });
+it('s_turtle', '자라', 1, 'shell', '#6a8a4a', 'fish', { w: 3 });
+it('s_trout2', '산천어', 0, 'fish', '#c8a8a8', 'fish', { w: 1 });
+it('s_crab', '참게', 1, 'shell', '#c86a3a', 'fish', { w: 0.5 });
+it('s_squidling', '오징어', 0, 'tentacle', '#ffb0a0', 'fish', { w: 0.6 });
+it('s_swordfish', '황새치', 1, 'fish', '#5a7ab8', 'fish', { w: 120 });
+it('s_lanternfish', '초롱아귀', 0, 'fish', '#2a8a9a', 'fish', { w: 8 });
+it('s_oarfish', '산갈치', 1, 'fish', '#d8e0ff', 'fish', { w: 200 });
+it('s_spring2', '봄 도다리', 2, 'fish', '#d8c09a', 'fish', { w: 1.2, season: 0 });
+it('s_summer2', '여름 전갱이', 2, 'fish', '#9ad0e0', 'fish', { w: 0.5, season: 1 });
+it('s_autumn2', '가을 전어', 2, 'fish', '#c8d0e0', 'fish', { w: 0.3, season: 2 });
+it('s_winter2', '겨울 방어', 2, 'fish', '#5a7ab8', 'fish', { w: 8, season: 3 });
+it('s_pearl', '흑진주', 3, 'orb', '#4a4a5a', 'fish');
+it('s_bottle', '유리병 편지', 3, 'potion', '#a8e0d0', 'fish');
+it('s_seadragon', '해룡의 수염', 4, 'feather', '#7affe0', 'fish');
+it('s_leviathan', '리바이어선의 비늘', 5, 'scale', '#3a5aff', 'fish');
+
+it('h_quail', '메추라기 알', 0, 'seed', '#e8dcc8', 'hunt');
+it('h_fox', '여우 꼬리', 1, 'feather', '#ff8a3a', 'hunt');
+it('h_squirrel', '다람쥐 털', 0, 'hide', '#a8784a', 'hunt');
+it('h_elkhorn', '엘크 뿔', 1, 'horn', '#d8c8a0', 'hunt');
+it('h_bearmeat', '곰 고기', 0, 'meat', '#8a3a2a', 'hunt');
+it('h_eagle', '독수리 깃털', 1, 'feather', '#7a5a3a', 'hunt');
+it('h_reindeer', '순록 가죽', 0, 'hide', '#c8a888', 'hunt');
+it('h_owlwhite', '흰올빼미 깃털', 1, 'feather', '#f0f0ff', 'hunt');
+it('h_phoenixegg', '화조의 알', 0, 'seed', '#ff8a5a', 'hunt');
+it('h_qilinhorn', '기린의 뿔', 1, 'horn', '#7affb8', 'hunt');
+it('h_trophy', '거대 곰 박제', 3, 'chest', '#6a4a32', 'hunt');
+it('h_blackfur', '흑표 가죽', 3, 'hide', '#2a2a32', 'hunt');
+it('h_thunderbird', '천둥새 깃털', 4, 'feather', '#ffe066', 'hunt');
+it('h_fenrir', '펜리르의 송곳니', 5, 'horn', '#c8d8ff', 'hunt');
+
+it('c_slimecore', '슬라임 핵', 0, 'orb', '#7ae05a', 'combat');
+it('c_capshard', '버섯 갓 조각', 1, 'mushroom', '#e8553d', 'combat');
+it('c_toadwart', '두꺼비 혹', 0, 'jelly', '#7a5aa8', 'combat');
+it('c_miasma', '독기 결정', 1, 'gem', '#9a3ad8', 'combat');
+it('c_frostfang', '서리 송곳니', 0, 'horn', '#d8f0ff', 'combat');
+it('c_icicle', '영원한 고드름', 1, 'gem', '#bfe8ff', 'combat');
+it('c_shadowcloth', '그림자 천', 0, 'hide', '#3a2a5a', 'combat');
+it('c_voidsand', '공허의 모래', 1, 'drop', '#6a4aa8', 'combat');
+it('c_t_treant', '트렌트의 옹이 심장', 3, 'orb', '#7a5432', 'combat', { trophy: true });
+it('c_t_frog', '독두꺼비 대왕의 왕관', 3, 'charm', '#a66bff', 'combat', { trophy: true });
+it('c_t_yeti', '설인 왕의 뿔', 3, 'horn', '#e8f0ff', 'combat', { trophy: true });
+it('c_t_knight', '그림자 기사의 투구', 3, 'armor', '#4a4060', 'combat', { trophy: true });
+it('c_t_eye', '심연의 눈동자', 3, 'orb', '#c83aff', 'combat', { trophy: true });
+it('c_banner', '전장의 깃발', 3, 'feather', '#c8433b', 'combat');
+it('c_medal', '용사의 훈장', 3, 'charm', '#ffd34d', 'combat');
+it('c_dragonblood', '용의 피', 4, 'drop', '#ff2a3a', 'combat');
+it('c_godsword', '신검의 파편', 5, 'sword', '#e8f0ff', 'combat');
+
+it('p_haste', '신속의 물약', 1, 'potion', '#7affe8', 'alchemy', { potion: 'haste', desc: '이번 전투 동안 공격 속도 +25%' });
+it('p_focus', '집중의 물약', 1, 'potion', '#ff9a3a', 'alchemy', { potion: 'focus', desc: '이번 전투 동안 치명타 확률 +10%' });
+it('p_wisdom', '지혜의 물약', 1, 'potion', '#9a8aff', 'alchemy', { potion: 'wisdom', desc: '이번 전투 동안 캐릭터 경험치 +30%' });
+it('t_gather', '장인의 강장제', 2, 'potion', '#c8a060', 'alchemy', { use: true, desc: '사용 시 30분 동안 생활 속도 ×1.3' });
+it('t_fever', '열정의 비약', 2, 'potion', '#ff5a3a', 'alchemy', { use: true, desc: '사용 시 열정 게이지 즉시 가득' });
+it('x_agi', '민첩의 영약', 2, 'elixir', '#7affe8', 'alchemy', { elixir: 'agi', desc: '영구 공격 속도 +1% (최대 50회)' });
+it('x_sta', '지구력의 영약', 2, 'elixir', '#4a9aff', 'alchemy', { elixir: 'sta', desc: '영구 최대 스태미나 +2% (최대 50회)' });
+it('x_luck', '행운의 영약', 2, 'elixir', '#ffd34d', 'alchemy', { elixir: 'luck', desc: '영구 행운 배율 +0.01 (최대 50회)' });
+it('x_crit', '예리함의 영약', 2, 'elixir', '#ff6a3a', 'alchemy', { elixir: 'crit', desc: '영구 치명타 피해 +2% (최대 50회)' });
+it('x_master', '대가의 영약', 2, 'elixir', '#c8a060', 'alchemy', { elixir: 'lifexp', desc: '영구 생활 경험치 +2% (최대 50회)' });
+it('a_mercury', '살아있는 수은', 3, 'drop', '#c8c8d8', 'alchemy');
+it('a_retort', '고대 증류기', 3, 'potion', '#a87a4a', 'alchemy');
+it('a_panacea', '만병통치약', 4, 'potion', '#ffffff', 'alchemy');
+it('a_aether', '에테르 결정', 5, 'orb', '#bff8ff', 'alchemy');
+
 const ITEMS = I;
 
 // Spots unlock at these levels; each gives common / uncommon / rare items.
@@ -626,52 +777,54 @@ const SPOT_LV = [1, 50, 150, 300, 500];
 const SPOT_XP = [8, 14, 24, 40, 65];
 const SPOTS = {
   mining: [
-    { name: '얕은 갱도', items: ['m_copper', 'm_tin', 'm_quartz'] },
-    { name: '철광 언덕', items: ['m_iron', 'm_coal', 'm_amethyst'] },
-    { name: '수정 동굴', items: ['m_silver', 'm_gold', 'm_sapphire'] },
-    { name: '심연 광맥', items: ['m_mithril', 'm_obsidian', 'm_ruby'] },
-    { name: '별똥 분화구', items: ['m_adamant', 'm_meteor', 'm_stardia'] },
+    { name: '얕은 갱도', items: ['m_copper', 'm_clay', 'm_tin', 'm_flint', 'm_quartz'] },
+    { name: '철광 언덕', items: ['m_iron', 'm_lead', 'm_coal', 'm_garnet', 'm_amethyst'] },
+    { name: '수정 동굴', items: ['m_silver', 'm_crystalsand', 'm_gold', 'm_topaz', 'm_sapphire'] },
+    { name: '심연 광맥', items: ['m_mithril', 'm_darksteel', 'm_obsidian', 'm_emerald', 'm_ruby'] },
+    { name: '별똥 분화구', items: ['m_adamant', 'm_stardust', 'm_meteor', 'm_moonstone', 'm_stardia'] },
   ],
   wood: [
-    { name: '참나무 숲', items: ['w_oak', 'w_resin', 'w_acorn'] },
-    { name: '자작나무 길', items: ['w_birch', 'w_maple', 'w_pinecone'] },
-    { name: '고목의 숲', items: ['w_elder', 'w_amber', 'w_owl'] },
-    { name: '마법의 숲', items: ['w_mana', 'w_spirit', 'w_fairy'] },
-    { name: '세계수 뿌리', items: ['w_world', 'w_goldsap', 'w_glowleaf'] },
+    { name: '참나무 숲', items: ['w_oak', 'w_twig', 'w_resin', 'w_moss', 'w_acorn'] },
+    { name: '자작나무 길', items: ['w_birch', 'w_bark', 'w_maple', 'w_honey', 'w_pinecone'] },
+    { name: '고목의 숲', items: ['w_elder', 'w_burl', 'w_amber', 'w_mistletoe', 'w_owl'] },
+    { name: '마법의 숲', items: ['w_mana', 'w_starwood', 'w_spirit', 'w_dryad', 'w_fairy'] },
+    { name: '세계수 뿌리', items: ['w_world', 'w_lightwood', 'w_goldsap', 'w_seedpod', 'w_glowleaf'] },
   ],
   forage: [
-    { name: '들판', items: ['f_mugwort', 'f_dandelion', 'f_mushroom'] },
-    { name: '숲길', items: ['f_mint', 'f_berry', 'f_pine'] },
-    { name: '안개 늪', items: ['f_antidote', 'f_mandrake', 'f_firefly'] },
-    { name: '고산 지대', items: ['f_snowlotus', 'f_poppy', 'f_ginseng'] },
-    { name: '요정 정원', items: ['f_moonflower', 'f_dew', 'f_fairyshroom'] },
+    { name: '들판', items: ['f_mugwort', 'f_clover', 'f_dandelion', 'f_wildrose', 'f_mushroom'] },
+    { name: '숲길', items: ['f_mint', 'f_fern', 'f_berry', 'f_raspberry', 'f_pine'] },
+    { name: '안개 늪', items: ['f_antidote', 'f_reed', 'f_mandrake', 'f_lotus', 'f_firefly'] },
+    { name: '고산 지대', items: ['f_snowlotus', 'f_edelweiss', 'f_poppy', 'f_cloudberry', 'f_ginseng'] },
+    { name: '요정 정원', items: ['f_moonflower', 'f_starpetal', 'f_dew', 'f_dreamleaf', 'f_fairyshroom'] },
   ],
   fish: [
-    { name: '개울', items: ['s_minnow', 's_crucian', 's_trout'] },
-    { name: '호수', items: ['s_carp', 's_catfish', 's_goldcarp'] },
-    { name: '강 하구', items: ['s_salmon', 's_eel', 's_sturgeon'] },
-    { name: '먼 바다', items: ['s_mackerel', 's_tuna', 's_marlin'] },
-    { name: '심해', items: ['s_angler', 's_squid', 's_dragonfish'] },
+    { name: '개울', items: ['s_minnow', 's_loach', 's_crucian', 's_shrimp', 's_trout'] },
+    { name: '호수', items: ['s_carp', 's_perch', 's_catfish', 's_turtle', 's_goldcarp'] },
+    { name: '강 하구', items: ['s_salmon', 's_trout2', 's_eel', 's_crab', 's_sturgeon'] },
+    { name: '먼 바다', items: ['s_mackerel', 's_squidling', 's_tuna', 's_swordfish', 's_marlin'] },
+    { name: '심해', items: ['s_angler', 's_lanternfish', 's_squid', 's_oarfish', 's_dragonfish'] },
   ],
   hunt: [
-    { name: '초원', items: ['h_rabbitmeat', 'h_rabbithide', 'h_pheasant'] },
-    { name: '사슴 숲', items: ['h_venison', 'h_deerhide', 'h_antler'] },
-    { name: '산악 지대', items: ['h_boar', 'h_bearhide', 'h_claw'] },
-    { name: '설원', items: ['h_wolfhide', 'h_tusk', 'h_fang'] },
-    { name: '신수의 숲', items: ['h_griffin', 'h_unicorn', 'h_kirin'] },
+    { name: '초원', items: ['h_rabbitmeat', 'h_quail', 'h_rabbithide', 'h_fox', 'h_pheasant'] },
+    { name: '사슴 숲', items: ['h_venison', 'h_squirrel', 'h_deerhide', 'h_elkhorn', 'h_antler'] },
+    { name: '산악 지대', items: ['h_boar', 'h_bearmeat', 'h_bearhide', 'h_eagle', 'h_claw'] },
+    { name: '설원', items: ['h_wolfhide', 'h_reindeer', 'h_tusk', 'h_owlwhite', 'h_fang'] },
+    { name: '신수의 숲', items: ['h_griffin', 'h_phoenixegg', 'h_unicorn', 'h_qilinhorn', 'h_kirin'] },
   ],
 };
-// Skill-wide high tiers: [epic, legend, myth, primordial].
+// Skill-wide high tiers (any spot): 3 epic, 2 legend, 2 myth, 1 primordial per skill.
 const SKILL_RARES = {
-  mining: ['m_fossil', 'm_dragonstone', 'm_timecrystal', 'm_prim'],
-  wood: ['w_ring', 'w_entheart', 'w_rainbow', 'w_prim'],
-  forage: ['f_goldacorn', 'f_phoenix', 'f_oldginseng', 'f_prim'],
-  fish: ['s_chest', 's_mermaid', 's_kraken', 's_prim'],
-  hunt: ['h_white', 'h_goldantler', 'h_gumiho', 'h_prim'],
-  combat: ['c_core', 'c_seal', 'c_tear', 'c_prim'],
-  alchemy: ['a_salt', 'a_essence', 'a_homunculus', 'a_prim'],
+  mining: ['m_fossil', 'm_geode', 'm_relic', 'm_dragonstone', 'm_titanheart', 'm_timecrystal', 'm_voidcore', 'm_prim'],
+  wood: ['w_ring', 'w_beehive', 'w_carving', 'w_entheart', 'w_crown', 'w_rainbow', 'w_heartwood', 'w_prim'],
+  forage: ['f_goldacorn', 'f_silverfern', 'f_bloodroot', 'f_phoenix', 'f_lifeflower', 'f_oldginseng', 'f_moonherb', 'f_prim'],
+  fish: ['s_chest', 's_pearl', 's_bottle', 's_mermaid', 's_seadragon', 's_kraken', 's_leviathan', 's_prim'],
+  hunt: ['h_white', 'h_trophy', 'h_blackfur', 'h_goldantler', 'h_thunderbird', 'h_gumiho', 'h_fenrir', 'h_prim'],
+  combat: ['c_core', 'c_banner', 'c_medal', 'c_seal', 'c_dragonblood', 'c_tear', 'c_godsword', 'c_prim'],
+  alchemy: ['a_salt', 'a_mercury', 'a_retort', 'a_essence', 'a_panacea', 'a_homunculus', 'a_aether', 'a_prim'],
 };
-const SEASON_FISH = ['s_spring', 's_summer', 's_autumn', 's_winter'];
+const SEASON_FISH = ['s_spring', 's_summer', 's_autumn', 's_winter', 's_spring2', 's_summer2', 's_autumn2', 's_winter2'];
+// Each boss leaves its own trophy (always on the first kill, 15% after).
+const BOSS_TROPHY = { kingslime: 'c_t_treant', frogking: 'c_t_frog', yetiking: 'c_t_yeti', knight: 'c_t_knight', eye: 'c_t_eye' };
 const SEASON_NAME = ['봄', '여름', '가을', '겨울'];
 
 const RECIPES = [
@@ -684,28 +837,38 @@ const RECIPES = [
   { id: 'x_str', lv: 100, xp: 80, in: { h_antler: 2, m_amethyst: 2, f_pine: 3 }, max: 50 },
   { id: 'x_life', lv: 150, xp: 110, in: { f_mandrake: 3, s_salmon: 5, h_bearhide: 2 }, max: 50 },
   { id: 'x_cat', lv: 200, xp: 140, in: { f_firefly: 3, s_goldcarp: 1, m_sapphire: 1 } },
+  { id: 'p_haste', lv: 80, xp: 60, in: { s_perch: 2, h_squirrel: 2, w_honey: 1 } },
+  { id: 'p_focus', lv: 120, xp: 90, in: { m_garnet: 1, f_raspberry: 3, h_elkhorn: 1 } },
+  { id: 'p_wisdom', lv: 170, xp: 120, in: { f_lotus: 2, w_mistletoe: 2, s_crab: 2 } },
+  { id: 't_gather', lv: 220, xp: 150, in: { w_burl: 3, m_topaz: 1, f_reed: 4 } },
+  { id: 't_fever', lv: 260, xp: 170, in: { h_eagle: 2, s_trout2: 3, m_crystalsand: 4 } },
+  { id: 'x_agi', lv: 300, xp: 200, in: { h_reindeer: 2, w_starwood: 2, s_squidling: 3 }, max: 50 },
+  { id: 'x_sta', lv: 350, xp: 230, in: { f_edelweiss: 2, m_darksteel: 3, h_owlwhite: 1 }, max: 50 },
+  { id: 'x_luck', lv: 400, xp: 260, in: { s_lanternfish: 1, f_cloudberry: 3, m_emerald: 1 }, max: 50 },
+  { id: 'x_crit', lv: 450, xp: 290, in: { h_phoenixegg: 1, w_dryad: 2, m_moonstone: 1 }, max: 50 },
+  { id: 'x_master', lv: 600, xp: 360, in: { f_starpetal: 3, w_lightwood: 3, s_oarfish: 1 }, max: 50 },
   { id: 'x_secret', lv: 1, xp: 300, in: { a_salt: 1, f_ginseng: 2, w_spirit: 2 }, max: 20, secret: true },
 ];
 
 const MONSTERS = {
-  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#7ae05a' }, hp: 1, atk: 1 },
-  shroom: { name: '버섯돌이', sprite: 'shroom', pal: { r: '#e8553d' }, hp: 1.2, atk: 0.9 },
+  slime: { name: '슬라임', sprite: 'slime', pal: { a: '#5a8a3a' }, hp: 1, atk: 1 },
+  shroom: { name: '포자 괴물', sprite: 'shroom', pal: { r: '#8a3a2a' }, hp: 1.2, atk: 0.9 },
   kingslime: { name: '숲의 수호자 트렌트', sprite: 'treant', pal: {}, hp: 1, atk: 1, unique: true },
-  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#9a5ad8' }, hp: 1, atk: 1.1 },
-  pshroom: { name: '독버섯', sprite: 'shroom', pal: { r: '#a83ad8' }, hp: 1.3, atk: 0.9 },
-  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#6a3ab8' }, hp: 1, atk: 1, crown: true, scale: 3 },
-  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#6a8ab8' }, hp: 0.8, atk: 1.2, fly: true },
-  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#e8f0ff' }, hp: 1.4, atk: 1 },
-  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#bfe0ff' }, hp: 1, atk: 1, crown: true, scale: 2 },
+  frog: { name: '독두꺼비', sprite: 'frog', pal: { a: '#5a4a7a', c: '#7a6a9a' }, hp: 1, atk: 1.1 },
+  pshroom: { name: '독버섯 괴물', sprite: 'shroom', pal: { r: '#5a2a6a' }, hp: 1.3, atk: 0.9 },
+  frogking: { name: '독두꺼비 대왕', sprite: 'frog', pal: { a: '#4a2a6a', c: '#6a4a8a' }, hp: 1, atk: 1, crown: true, scale: 3 },
+  bat: { name: '얼음 박쥐', sprite: 'bat', pal: { a: '#3a4a6a' }, hp: 0.8, atk: 1.2, fly: true },
+  yeti: { name: '설인', sprite: 'yeti', pal: { a: '#b8c4d0' }, hp: 1.4, atk: 1 },
+  yetiking: { name: '설인 왕', sprite: 'yeti', pal: { a: '#9aaabb' }, hp: 1, atk: 1, crown: true, scale: 3 },
   knight: { name: '그림자 기사', sprite: 'knight', pal: {}, hp: 1, atk: 1, unique: true },
   eye: { name: '심연의 눈', sprite: 'eye', pal: {}, hp: 1, atk: 1, unique: true, fly: true },
 };
 
 const REGIONS = [
-  { name: '햇살 초원', from: 1, mobs: ['slime', 'shroom'], boss: 'kingslime', mats: ['c_jelly', 'c_spore', 'c_crown'], gimmick: null, theme: 'meadow' },
-  { name: '독안개 숲', from: 11, mobs: ['frog', 'pshroom'], boss: 'frogking', mats: ['c_slime', 'c_poisonspore', 'c_venom'], gimmick: 'poison', theme: 'swamp' },
-  { name: '얼음 동굴', from: 21, mobs: ['bat', 'yeti'], boss: 'yetiking', mats: ['c_batwing', 'c_yetifur', 'c_icecore'], gimmick: 'ice', theme: 'ice' },
-  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'knight', bosses: ['knight', 'eye', 'frogking', 'yetiking', 'kingslime'], mats: ['c_shadow', 'c_abyss', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
+  { name: '햇살 초원', from: 1, mobs: ['slime', 'shroom'], boss: 'kingslime', mats: ['c_jelly', 'c_slimecore', 'c_spore', 'c_capshard', 'c_crown'], gimmick: null, theme: 'meadow' },
+  { name: '독안개 숲', from: 11, mobs: ['frog', 'pshroom'], boss: 'frogking', mats: ['c_slime', 'c_toadwart', 'c_poisonspore', 'c_miasma', 'c_venom'], gimmick: 'poison', theme: 'swamp' },
+  { name: '얼음 동굴', from: 21, mobs: ['bat', 'yeti'], boss: 'yetiking', mats: ['c_batwing', 'c_frostfang', 'c_yetifur', 'c_icicle', 'c_icecore'], gimmick: 'ice', theme: 'ice' },
+  { name: '무한의 탑', from: 31, mobs: ['slime', 'shroom', 'frog', 'bat', 'yeti'], boss: 'knight', bosses: ['knight', 'eye', 'frogking', 'yetiking', 'kingslime'], mats: ['c_shadow', 'c_shadowcloth', 'c_abyss', 'c_voidsand', 'c_voideye'], gimmick: 'mixed', theme: 'tower' },
 ];
 const GIMMICK_TEXT = {
   poison: '독안개: 스태미나 소모 ×2.5 (채집 Lv 60 또는 해독 물약으로 무효)',
@@ -718,6 +881,17 @@ const GEAR_NAMES = {
   charm: ['조약돌 부적', '은 부적', '수정 부적', '영웅의 부적', '전설의 부적', '신화의 부적', '태초의 부적'],
 };
 const GEAR_TIER_MULT = [1, 1.3, 1.7, 2.3, 3.2, 4.5, 7];
+// Random gear affixes (one per piece); values scale with the piece's tier.
+const AFFIXES = {
+  fierce: { name: '맹렬한', stat: 'atk', v: 0.05, text: '공격력' },
+  sturdy: { name: '단단한', stat: 'hp', v: 0.06, text: '최대 HP' },
+  swift: { name: '재빠른', stat: 'spd', v: 0.04, text: '공격 속도' },
+  sharp: { name: '날카로운', stat: 'crit', v: 0.02, text: '치명타 확률' },
+  keen: { name: '예리한', stat: 'critD', v: 0.08, text: '치명타 피해' },
+  lucky: { name: '행운의', stat: 'luck', v: 0.03, text: '행운 배율' },
+  vital: { name: '활력의', stat: 'sta', v: 0.06, text: '최대 스태미나' },
+  wise: { name: '현명한', stat: 'xp', v: 0.08, text: '캐릭터 경험치' },
+};
 
 const PERKS = {
   w_atk: { tree: 'war', name: '불꽃의 칼날', desc: '공격력 +10%', base: 1, grow: 1.4 },
@@ -779,13 +953,13 @@ const LINES = {
   alchemy: ['색이 변하고 있어…!', '이번엔 안 터지겠지', '킁킁, 냄새가 수상한데'],
 };
 
-return { TIERS, TIER_P, LUCK_CAP, SKILLS, LIFE_SKILLS, GATHER_SKILLS, TOOL_TIERS, AWAKENINGS, MASTER_BONUS, MASTER_TITLE, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES, MONSTERS, REGIONS, GIMMICK_TEXT, GEAR_NAMES, GEAR_TIER_MULT, PERKS, PERK_TREES, MEMORIES, UNLOCKS, BOSS_EVERY, ELITE_EVERY, STAT_NAMES, PRESETS, LINES };
+return { TIERS, TIER_P, LUCK_CAP, SKILLS, LIFE_SKILLS, GATHER_SKILLS, TOOL_TIERS, AWAKENINGS, MASTER_BONUS, MASTER_TITLE, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, BOSS_TROPHY, SEASON_NAME, RECIPES, MONSTERS, REGIONS, GIMMICK_TEXT, GEAR_NAMES, GEAR_TIER_MULT, AFFIXES, PERKS, PERK_TREES, MEMORIES, UNLOCKS, BOSS_EVERY, ELITE_EVERY, STAT_NAMES, PRESETS, LINES };
 })();
 
 __m.engine = (() => {
 // Pure game logic. No DOM access, so the same code runs in the browser and in
 // the Node balance simulator (sim/simulate.mjs).
-const { TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, RECIPES, MONSTERS, REGIONS, GEAR_NAMES, GEAR_TIER_MULT, PERKS, MEMORIES, PRESETS, AWAKENINGS, TOOL_TIERS, MASTER_BONUS, UNLOCKS, BOSS_EVERY, ELITE_EVERY } = __m.data;
+const { TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH, RECIPES, MONSTERS, REGIONS, GEAR_NAMES, GEAR_TIER_MULT, PERKS, MEMORIES, PRESETS, AWAKENINGS, TOOL_TIERS, MASTER_BONUS, UNLOCKS, BOSS_EVERY, ELITE_EVERY, AFFIXES, BOSS_TROPHY } = __m.data;
 const { makeRng, hash32 } = __m.rng;
 
 const VERSION = 1;
@@ -795,6 +969,9 @@ const CLONE_SPEED = 0.6;
 const KILLS_PER_FLOOR = 10;
 const MON_INTERVAL = 1.8;
 const REBIRTH_XP = 0.05;
+const FEVER_SEC = 30;
+const SKILL_CD = { strike: 8, heal: 30, rage: 45 };
+const AUTOCAST_LV = 100;
 const RECALL_MULT = 5;
 const RECALL_UNTIL = 0.95;
 const RECALL_FLOOR = 0.2;
@@ -827,7 +1004,8 @@ function gearScore(g) {
   if (g.slot === 'charm') { const c = charmValue(g); return c.luck * 10 + c.crit * 10; }
   return gearValue(g);
 }
-const gearName = g => `${GEAR_NAMES[g.slot][g.tier]}${g.enh ? ' +' + g.enh : ''}`;
+const gearName = g => `${g.affix ? AFFIXES[g.affix].name + ' ' : ''}${GEAR_NAMES[g.slot][g.tier]}${g.enh ? ' +' + g.enh : ''}`;
+const affixValue = g => (g && g.affix ? AFFIXES[g.affix].v * (1 + 0.5 * g.tier) : 0);
 const enhanceCost = g => Math.ceil(10 * Math.pow(1.13, g.f - 1) * Math.pow(1.5, g.enh));
 
 // What happens at a given skill level (used for logs and the "next milestone" list).
@@ -874,8 +1052,9 @@ function newState(seed = (Math.random() * 4294967296) >>> 0) {
     spots: { mining: 0, wood: 0, forage: 0, fish: 0, hunt: 0 },
     recipe: 'p_str', secret: false,
     skills, items: {}, codex: {}, records: {},
-    potAuto: { str: true, hp: true, sta: true, antidote: true, warm: true, luck: true },
-    pot: {}, catUntil: 0, elixirs: { atk: 0, hp: 0, all: 0 },
+    potAuto: { str: true, hp: true, sta: true, antidote: true, warm: true, luck: true, haste: true, focus: true, wisdom: true },
+    pot: {}, catUntil: 0, gatherUntil: 0, elixirs: { atk: 0, hp: 0, all: 0, agi: 0, sta: 0, luck: 0, crit: 0, lifexp: 0 },
+    act: { cd: { strike: 0, heal: 0, rage: 0 }, rageUntil: 0, fever: 0, feverUntil: 0, autoCast: false, alchGreat: 0 },
     rb: { count: 0, ash: 0, totalAsh: 0, perks: {}, memory: null, choices: null, bestFloor: 1, bestLv: 1 },
     stats: { kills: 0, deaths: 0, bosses: 0, actions: 0, gold: 0 },
     hall: [], log: [], firstKills: {},
@@ -902,6 +1081,7 @@ function migrate(raw) {
   s.stats = { ...base.stats, ...(raw.stats || {}) };
   s.potAuto = { ...base.potAuto, ...(raw.potAuto || {}) };
   s.elixirs = { ...base.elixirs, ...(raw.elixirs || {}) };
+  s.act = { ...base.act, ...(raw.act || {}), cd: { ...base.act.cd, ...((raw.act && raw.act.cd) || {}) } };
   s.tut = { ...base.tut, ...(raw.tut || {}), tips: { ...((raw.tut && raw.tut.tips) || {}) } };
   s.v = VERSION;
   return s;
@@ -981,9 +1161,11 @@ class Game {
     const wAtk = g.weapon ? gearValue(g.weapon) : 0;
     const aHp = g.armor ? gearValue(g.armor) : 0;
     const ch = g.charm ? charmValue(g.charm) : { luck: 0, crit: 0 };
+    const aff = { atk: 0, hp: 0, spd: 0, crit: 0, critD: 0, luck: 0, sta: 0, xp: 0 };
+    for (const sl of ['weapon', 'armor', 'charm']) if (g[sl] && g[sl].affix) aff[AFFIXES[g[sl].affix].stat] += affixValue(g[sl]);
 
     let atk = (4 + st.str * 2 + wAtk) * (1 + pb('mining')) * (1 + pb('combat')) * (1 + codex)
-      * (1 + 0.1 * this.P('w_atk')) * (1 + 0.02 * s.elixirs.atk) * allMul;
+      * (1 + 0.1 * this.P('w_atk')) * (1 + 0.02 * s.elixirs.atk) * allMul * (1 + aff.atk);
     if (pot.str) atk *= 1 + 0.25 * potPow;
     atk *= this.prim('m_prim', 1.5, 0.1) || 1;
     if (master('mining')) atk *= 1.25;
@@ -992,22 +1174,23 @@ class Game {
     if (mem === 'warrior') atk *= 1.15;
 
     let hp = (40 + st.vit * 8 + c.lv * 4 + aHp) * (1 + pb('forage')) * (1 + pb('combat')) * (1 + codex)
-      * (1 + 0.1 * this.P('w_hp')) * (1 + 0.02 * s.elixirs.hp) * allMul;
+      * (1 + 0.1 * this.P('w_hp')) * (1 + 0.02 * s.elixirs.hp) * allMul * (1 + aff.hp);
     if (pot.hp) hp *= 1 + 0.25 * potPow;
     if (master('forage')) hp *= 1.25;
     if (master('combat')) hp *= 1.25;
 
-    let sta = 100 * (1 + st.vit * 0.005) * (1 + pb('wood'));
+    let sta = 100 * (1 + st.vit * 0.005) * (1 + pb('wood')) * (1 + 0.02 * s.elixirs.sta) * (1 + aff.sta);
     if (pot.sta) sta *= 1 + 0.4 * potPow;
 
     const luckCap = LUCK_CAP + this.prim('f_prim', 0.5, 0.1) + (master('fish') ? 0.5 : 0);
     let luck = 1 + st.luk * 0.002 + sk.fish.lv * 0.0005 + Math.floor(sk.fish.lv / 10) * 0.005
-      + 0.05 * this.P('a_luck') + ch.luck + (mem === 'lucky' ? 0.5 : 0) + (pot.luck ? 0.3 * potPow : 0);
+      + 0.05 * this.P('a_luck') + ch.luck + (mem === 'lucky' ? 0.5 : 0) + (pot.luck ? 0.3 * potPow : 0)
+      + 0.01 * s.elixirs.luck + aff.luck;
     luck = Math.min(luckCap, luck);
 
-    const critC = Math.min(0.75, 0.05 + st.luk * 0.003 + ch.crit);
-    const critD = (1.5 + pb('hunt') + this.prim('h_prim', 1, 0.2)) * (master('hunt') ? 1.5 : 1);
-    const interval = Math.max(0.25, 1.4 / (1 + st.agi * 0.008));
+    const critC = Math.min(0.75, 0.05 + st.luk * 0.003 + ch.crit + aff.crit + (pot.focus ? 0.1 * potPow : 0));
+    const critD = (1.5 + pb('hunt') + this.prim('h_prim', 1, 0.2)) * (master('hunt') ? 1.5 : 1) * (1 + 0.02 * s.elixirs.crit) * (1 + aff.critD);
+    const interval = Math.max(0.2, 1.4 / (1 + st.agi * 0.008) / (1 + 0.01 * s.elixirs.agi) / (1 + aff.spd) / (pot.haste ? 1 + 0.25 * potPow : 1));
     const dodge = Math.min(0.6, st.agi * 0.002 + (mem === 'coward' ? 0.3 : 0));
     const nightXp = env.night ? this.prim('s_prim', 1.3, 0.05) || 1 : 1;
 
@@ -1015,8 +1198,8 @@ class Game {
       atk, hp, sta, luck, luckCap, critC, critD, interval, dodge, potPow, codex,
       res: { poison: Math.min(1, sk.forage.lv / 60), ice: Math.min(1, sk.wood.lv / 80) },
       lifeSpeed: (1 + 0.03 * this.P('a_speed')) * (this.prim('w_prim', 1.25, 0.05) || 1) * (master('wood') ? 1.15 : 1),
-      lifeXp: (1 + 0.05 * this.P('a_xp')) * nightXp,
-      charXp: (1 + 0.15 * this.P('w_xp')) * this.rebirthXp() * nightXp,
+      lifeXp: (1 + 0.05 * this.P('a_xp')) * (1 + 0.02 * s.elixirs.lifexp) * nightXp,
+      charXp: (1 + 0.15 * this.P('w_xp')) * this.rebirthXp() * nightXp * (1 + aff.xp) * (pot.wisdom ? 1 + 0.3 * potPow : 1),
       gold: (1 + 0.2 * this.P('r_gold')) * (mem === 'rich' ? 3 : 1),
       campDur: 60 * (mem === 'sleepy' ? 1.5 : 1),
     };
@@ -1025,7 +1208,8 @@ class Game {
 
   skillSpeed(k) {
     const sk = this.s.skills[k];
-    return this.d.lifeSpeed * (1 + 0.1 * toolTier(sk.lv)) * (k === 'forage' && this.env.weather === 'rain' ? 1.2 : 1);
+    return this.d.lifeSpeed * (1 + 0.1 * toolTier(sk.lv)) * (k === 'forage' && this.env.weather === 'rain' ? 1.2 : 1)
+      * (this.s.gatherUntil > this.s.time ? 1.3 : 1) * (this.fever() ? 2 : 1);
   }
   skillXpMult(k) {
     const mem = this.s.rb.memory;
@@ -1034,7 +1218,7 @@ class Game {
   rareMult(k) {
     const sk = this.s.skills[k];
     return this.d.luck * (sk.lv >= 750 ? 1.5 : 1) * (this.s.catUntil > this.s.time && k !== 'combat' ? 1.5 : 1)
-      * (k === 'fish' && this.env.night ? 1.3 : 1);
+      * (k === 'fish' && this.env.night ? 1.3 : 1) * (this.burstMult || 1);
   }
 
   // ---------- Main loop ----------
@@ -1108,7 +1292,7 @@ class Game {
     s.pot = {};
     this.calc();
     const gm = this.gimmick(c.floor);
-    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_antidote', 'p_warm']) {
+    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_haste', 'p_focus', 'p_wisdom', 'p_antidote', 'p_warm']) {
       const type = ITEMS[id].potion;
       if (!s.potAuto[type] || !(s.items[id] > 0)) continue;
       if (type === 'antidote' && (gm !== 'poison' || this.d.res.poison >= 1)) continue;
@@ -1187,10 +1371,10 @@ class Game {
     const spot = Math.min(s.spots[k], spotsUnlocked(sk.lv) - 1);
     const tier = this.rollTier(k, this.rareMult(k));
     let id;
-    if (tier >= 3) id = SKILL_RARES[k][tier - 3];
+    if (tier >= 3) id = this.pick(SKILL_RARES[k], tier);
     else {
-      id = SPOTS[k][spot].items[tier];
-      if (k === 'fish' && tier === 2 && this.rng() < 0.3) id = SEASON_FISH[this.env.season];
+      id = this.pick(SPOTS[k][spot].items, tier);
+      if (k === 'fish' && tier === 2 && this.rng() < 0.3) id = this.pick(SEASON_FISH.filter(f => ITEMS[f].season === this.env.season), 2);
     }
     const dbl = sk.lv >= 500 ? 0.1 : sk.lv >= 250 ? 0.05 : 0;
     const n = dbl && tier < 3 && this.rng() < dbl ? 2 : 1;
@@ -1201,6 +1385,12 @@ class Game {
     this.gain(id, n, k);
     this.skillXp(k, SPOT_XP[spot] * this.skillXpMult(k));
     this.emit({ t: 'act', k, slot, id, tier, n, w });
+  }
+
+  // Random item of a tier from a list.
+  pick(list, tier) {
+    const pool = list.filter(id => ITEMS[id].tier === tier);
+    return pool.at(Math.floor(this.rng() * pool.length)) || list.at(0);
   }
 
   gauss() {
@@ -1229,7 +1419,8 @@ class Game {
     let kind = 'ok', n = 1;
     if (roll < failP) { kind = 'fail'; n = 0; }
     else if (roll < failP + 0.001) { kind = 'miracle'; n = 10; }
-    else if (roll < failP + 0.051) { kind = 'great'; n = 2; }
+    else if (roll < failP + 0.051 || s.act.alchGreat > 0) { kind = 'great'; n = 2; }
+    if (s.act.alchGreat > 0) s.act.alchGreat--;
     if (n) {
       const it = ITEMS[r.id];
       if (r.max) n = Math.min(n, r.max - this.crafted(r));
@@ -1247,7 +1438,7 @@ class Game {
       this.emit({ t: 'secret' });
     }
     const t = this.rollTier('alchemy', this.rareMult('alchemy'));
-    if (t >= 3) this.gain(SKILL_RARES.alchemy[t - 3], 1, 'alchemy');
+    if (t >= 3) this.gain(this.pick(SKILL_RARES.alchemy, t), 1, 'alchemy');
     sk.n++;
     s.stats.actions++;
     this.skillXp('alchemy', r.xp * (kind === 'fail' ? 1.5 : 1) * this.skillXpMult('alchemy'));
@@ -1297,11 +1488,93 @@ class Game {
 
   useItem(id) {
     const s = this.s;
-    if (id !== 'x_cat' || !(s.items[id] > 0)) return false;
+    if (!(s.items[id] > 0)) return false;
+    if (id === 'x_cat') { s.catUntil = Math.max(s.time, s.catUntil) + 3600; this.log('행운의 촉매 사용: 1시간 동안 생활 희귀 확률 ×1.5', 2); }
+    else if (id === 't_gather') { s.gatherUntil = Math.max(s.time, s.gatherUntil) + 1800; this.log('장인의 강장제 사용: 30분 동안 생활 속도 ×1.3', 2); }
+    else if (id === 't_fever') this.addFever(100);
+    else return false;
     s.items[id]--;
-    s.catUntil = Math.max(s.time, s.catUntil) + 3600;
-    this.log('행운의 촉매 사용: 1시간 동안 생활 희귀 확률 ×1.5', 2);
     return true;
+  }
+
+  // ---------- Active play (all optional; idle play never needs it) ----------
+  fever() { return this.s.act.feverUntil > this.s.time; }
+  addFever(x) {
+    const a = this.s.act;
+    if (this.fever()) return;
+    a.fever = Math.min(100, a.fever + x);
+    if (a.fever >= 100) {
+      a.fever = 0;
+      a.feverUntil = this.s.time + FEVER_SEC;
+      this.emit({ t: 'fever' });
+      this.log('열정 폭발! 30초 동안 모든 속도 ×2', 3);
+    }
+  }
+  rage() { return this.s.act.rageUntil > this.s.time; }
+  cdLeft(id) { return Math.max(0, this.s.act.cd[id] - this.s.time); }
+  castSkill(id) {
+    const s = this.s, c = s.char, d = this.d, a = s.act;
+    if (s.mode !== 'fight' || this.cdLeft(id) > 0) return false;
+    if (id === 'strike') {
+      if (!this.mon || this.mon.approach > 0) return false;
+      const crit = this.rng() < d.critC;
+      this.damage(d.atk * 5 * (crit ? d.critD : 1), crit, 'strike');
+    } else if (id === 'heal') {
+      c.hp = Math.min(d.hp, c.hp + d.hp * 0.4);
+      c.sta = Math.min(d.sta, c.sta + d.sta * 0.3);
+      this.emit({ t: 'heal' });
+    } else if (id === 'rage') {
+      a.rageUntil = s.time + 10;
+      this.emit({ t: 'rage' });
+    } else return false;
+    a.cd[id] = s.time + SKILL_CD[id];
+    this.addFever(8);
+    return true;
+  }
+  // Clicking the monster: a quick extra hit (rate-limited).
+  tap() {
+    const s = this.s;
+    if (s.mode !== 'fight' || !this.mon || this.mon.approach > 0) return false;
+    if (s.time - (this.lastTap || -1) < 0.1) return false;
+    this.lastTap = s.time;
+    const crit = this.rng() < this.d.critC;
+    this.damage(this.d.atk * 0.25 * (crit ? this.d.critD : 1), crit, 'tap');
+    this.addFever(0.6);
+    return true;
+  }
+  damage(dmg, crit, src) {
+    const m = this.mon;
+    if (!m) return;
+    m.hp -= dmg;
+    this.emit({ t: 'hit', who: 'mon', dmg, crit, src });
+    if (m.hp <= 0) this.kill();
+  }
+  autoCastTick() {
+    const s = this.s, c = s.char;
+    if (!s.act.autoCast || s.skills.combat.lv < AUTOCAST_LV || s.mode !== 'fight') return;
+    if (this.cdLeft('strike') === 0) this.castSkill('strike');
+    if (this.cdLeft('heal') === 0 && c.hp < this.d.hp * 0.45) this.castSkill('heal');
+    if (this.cdLeft('rage') === 0 && this.mon && (this.mon.boss || this.mon.elite)) this.castSkill('rage');
+  }
+  // Mini-game success: n instant actions of the skill with boosted rare odds.
+  lifeBurst(k, n, rareBoost) {
+    if (k === 'alchemy') { this.s.act.alchGreat += n; this.addFever(20); return; }
+    this.burstMult = rareBoost;
+    for (let i = 0; i < n; i++) this.gatherAction(k, 0);
+    this.burstMult = 1;
+    this.addFever(20);
+  }
+  // Wandering wisp (random event): rewards scale with progress.
+  claimWisp() {
+    const s = this.s, c = s.char, r = this.rng();
+    let text;
+    if (r < 0.3) { const g = 40 * Math.pow(1.13, c.maxFloor - 1); c.gold += g; text = `골드 +${Math.round(g)}`; }
+    else if (r < 0.55) { this.charXp(charXpNeed(c.lv) * 0.6); text = '경험치 대량 획득'; }
+    else if (r < 0.75) { const ids = ['p_str', 'p_hp', 'p_sta', 'p_luck']; const id = ids[Math.floor(this.rng() * ids.length)]; this.gain(id, 2, 'alchemy'); text = `${ITEMS[id].name} ×2`; }
+    else if (r < 0.9) { this.addFever(60); text = '열정 +60'; }
+    else { s.catUntil = Math.max(s.time, s.catUntil) + 900; text = '15분 동안 생활 희귀 확률 ×1.5'; }
+    this.log(`떠돌이 요정의 선물: ${text}`, 3);
+    return text;
   }
 
   // ---------- Combat ----------
@@ -1353,7 +1626,9 @@ class Game {
     if (!this.mon) this.spawn();
     const m = this.mon;
     if (m.approach > 0) { m.approach -= dt; return; }
-    const iv = d.interval / (gm === 'ice' && !s.pot.warm ? 1 - 0.4 * (1 - d.res.ice) : 1);
+    this.autoCastTick();
+    if (!this.mon || s.mode !== 'fight') return;
+    const iv = d.interval / (gm === 'ice' && !s.pot.warm ? 1 - 0.4 * (1 - d.res.ice) : 1) / (this.rage() ? 2 : 1) / (this.fever() ? 1.5 : 1);
     this.heroTimer -= dt;
     this.monTimer -= dt;
     while (this.mon && s.mode === 'fight' && (this.heroTimer <= 0 || this.monTimer <= 0)) {
@@ -1366,11 +1641,9 @@ class Game {
     const s = this.s, c = s.char, d = this.d, m = this.mon;
     let dmg = d.atk * (0.9 + 0.2 * this.rng());
     if (s.rb.memory === 'berserk' && c.hp < d.hp * 0.5) dmg *= 1.6;
-    const crit = this.rng() < d.critC;
+    const crit = this.rng() < d.critC + (this.rage() ? 0.25 : 0);
     if (crit) dmg *= d.critD;
-    m.hp -= dmg;
-    this.emit({ t: 'hit', who: 'mon', dmg, crit });
-    if (m.hp <= 0) this.kill();
+    this.damage(dmg, crit, 'auto');
   }
 
   monHit() {
@@ -1403,10 +1676,11 @@ class Game {
     const reg = this.region(m.f);
     if (m.variant || m.boss || this.rng() < 0.4) {
       const t = this.rollTier('combat', d.luck * (m.variant ? 2 : 1));
-      this.gain(t >= 3 ? SKILL_RARES.combat[t - 3] : reg.mats[t], 1, 'combat');
+      this.gain(this.pick(t >= 3 ? SKILL_RARES.combat : reg.mats, t), 1, 'combat');
     }
     const sure = m.boss || m.elite || m.variant === 'giant' || m.variant === 'ancient';
     const first = (m.boss || m.elite) && !s.firstKills[m.f];
+    if (m.boss && BOSS_TROPHY[m.key] && (first || this.rng() < 0.15)) this.gain(BOSS_TROPHY[m.key], 1, 'combat');
     if (first) {
       s.firstKills[m.f] = 1;
       this.dropGear(m, m.boss ? 3 : 2);
@@ -1458,7 +1732,8 @@ class Game {
     const s = this.s, c = s.char;
     const slot = ['weapon', 'armor', 'charm'][Math.floor(this.rng() * 3)];
     const tier = this.rollGearTier(this.d.luck, Math.max(minTier, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0));
-    const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0 };
+    const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0, affix: null };
+    if (this.rng() < 0.3 + 0.1 * tier) { const keys = Object.keys(AFFIXES); g.affix = keys[Math.floor(this.rng() * keys.length)]; }
     const cur = c.gear[slot];
     if (tier >= 2) this.log(`장비 획득: [${TIERS[tier].name}] ${gearName(g)} (${m.f}층)`, tier);
     // Auto-equip is opt-in; by default every drop goes to the bag for the player to equip.
@@ -1666,7 +1941,7 @@ class Game {
   }
 }
 
-return { VERSION, ACTION_TIME, ALCH_TIME, CLONE_SPEED, KILLS_PER_FLOOR, MON_INTERVAL, REBIRTH_XP, RECALL_MULT, RECALL_UNTIL, RECALL_FLOOR, xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, perkCost, pity, ashFor, monHp, monAtk, GEAR_GROWTH, gearValue, charmValue, gearScore, gearName, enhanceCost, milestoneAt, nextMilestones, BAG_MAX, sellPrice, newState, isUnlocked, migrate, Game };
+return { VERSION, ACTION_TIME, ALCH_TIME, CLONE_SPEED, KILLS_PER_FLOOR, MON_INTERVAL, REBIRTH_XP, FEVER_SEC, SKILL_CD, AUTOCAST_LV, RECALL_MULT, RECALL_UNTIL, RECALL_FLOOR, xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, perkCost, pity, ashFor, monHp, monAtk, GEAR_GROWTH, gearValue, charmValue, gearScore, gearName, affixValue, enhanceCost, milestoneAt, nextMilestones, BAG_MAX, sellPrice, newState, isUnlocked, migrate, Game };
 })();
 
 __m.sprites = (() => {
@@ -1775,87 +2050,101 @@ function drawRotated(ctx, img, x, y, px, py, angle, flip = false) {
 }
 
 // ---------------- Characters ----------------
+// Hooded adventurer, 16x24 (head about a third of the height).
 const HERO = [
-  '....ooooo.....',
-  '..oohhhhhoo...',
-  '.ohhhhhhhhho..',
-  'ohhhhhhhhhhho.',
-  'ohhhhssssssho.',
-  'ohhhssssesseso',
-  'ohhhssssesseso',
-  'ohhhsssrssssro',
-  '.ohhhssssssso.',
-  '..ohhhoooooo..',
-  '..ohhttttttoo.',
-  '.ohhttttttttо.'.replace('о', 'o'),
-  '.ohhtbbbbbbto.',
-  '.ohhtttttttto.',
-  '..ohhppppppo..',
-  '...oppo.oppo..',
-  '...offo.offo..',
-  '...oooo.oooo..',
+  '......oooo......',
+  '.....ohhhho.....',
+  '....ohhhhhho....',
+  '...ohhhhhhhho...',
+  '...ohhHHosssso..',
+  '..ohhHosssesso..',
+  '..ohhHosssSsso..',
+  '..ohhhoSssssso..',
+  '..ohhhhorrrrro..',
+  '.ohcchhoaaaaao..',
+  '.ohcchoaaAaaaao.',
+  '.ohcchoaaAaaaao.',
+  '.ohcchobbkbbbbo.',
+  '.ohchhoaaAaaao..',
+  '.ohchhoaaaAaao..',
+  '..ohhhopppppo...',
+  '..ohhoppppppo...',
+  '...oopppoppo....',
+  '....oppo.oppo...',
+  '....oppo.oppo...',
+  '....oppo.oppo...',
+  '...offfo.offfo..',
+  '...offfo.offfo..',
+  '...ooooo.ooooo..',
 ];
+const HERO_LEG = 17;
 const HERO_STEP = [
-  '..ohhppppppo..',
-  '..oppo...oppo.',
-  '..offo...offo.',
-  '..oooo...oooo.',
+  '...oopppoppo....',
+  '...oppo...oppo..',
+  '..oppo.....oppo.',
+  '..oppo.....oppo.',
+  '.offfo....offfo.',
+  '.offfo....offfo.',
+  '.ooooo....ooooo.',
 ];
+const HERO_CROUCH_AT = 15;
 const HERO_CROUCH = [
-  '..ohhppppppo..',
-  '.oppppoopppo..',
-  '.ooooo.ooooo..',
+  '..ohhhopppppo...',
+  '.oppppppoppppo..',
+  '.offfo...offfo..',
+  '.ooooo...ooooo..',
 ];
 const HERO_PAL = {
-  h: '#3f9a5c', s: '#ffd8b0', t: '#efe9d8', b: '#7a4a2a', p: '#4a4a72', f: '#5a3a24',
+  o: '#16121c', h: '#3a4a5a', H: '#2a3644', c: '#4e6274', s: '#d8a888', S: '#b08068', e: '#16121c',
+  r: '#7a2a2a', a: '#7a5236', A: '#5a3a24', b: '#3a2618', k: '#c8a050', p: '#3a3440', f: '#2a1e18',
 };
 const CLONE_PAL = {
-  h: '#6aa8ff', s: '#cfe6ff', t: '#e8f2ff', b: '#4a6ab8', p: '#4a5aa8', f: '#3a4a8a',
+  o: '#1a2440', h: '#4a6aa8', H: '#3a5a90', c: '#6a8ac8', s: '#bcd4f0', S: '#94b0d8', e: '#1a2440',
+  r: '#3a5aa8', a: '#5a7ab8', A: '#4a6aa8', b: '#2a3a68', k: '#a8c8ff', p: '#3a4a80', f: '#2a3460',
 };
 
 const MON = {
   slime: [
-    '....oooooo....',
-    '..ooccaaaaoo..',
-    '.ocwcaaaaaaao.',
-    '.ocaaaaaaaaao.',
-    'oaaaaeaaaeaaao',
-    'oaaaaeaaaeaaao',
-    'oaaaaaaaaaaabo',
-    'oaaaaaammaaabo',
-    'obaaaaaaaaabbo',
-    '.obbbbbbbbbbo.',
-    '..oooooooooo..',
+    '......oooo......',
+    '....ooaaaaoo....',
+    '...oacaaaaaaao..',
+    '..oacaaaaaaaaao.',
+    '.oaaayyaaaayyaao',
+    '.oaaaeyaaaaeyaao',
+    '.oaaaaaaaaaaaaao',
+    '.oaawmwmwmwmaaao',
+    '.oaaaaaaaaaaaabo',
+    'oaabaaaaaaaabbbo',
+    'obbbbbbbbbbbbbbo',
+    '.oooooooooooooo.',
   ],
   shroom: [
-    '.....oooo.....',
-    '...oorrrroo...',
-    '..orrwwrrrro..',
-    '.orrwwrrrwwro.',
-    '.orrrrrrrwwrro',
-    'orwwrrrrrrrrro',
-    'orrrrrrwwrrrro',
-    'oooooooooooooo',
-    '...osssssso...',
-    '...oseSsseo...',
-    '...ossssssо...'.replace('о', 'o'),
-    '...osssmmso...',
-    '...ossssssо...'.replace('о', 'o'),
-    '...oSSooSSo...',
-    '...oooooooo...',
+    '.....oooooo.....',
+    '...oorrrrrroo...',
+    '..orrrrrrrrrro..',
+    '.orrwwrrrrrwwrro',
+    'orrrrrrrwwrrrrro',
+    'oooooooooooooooo',
+    '...ossssssso....',
+    '...oyesssyeo....',
+    '...ossmmmsso....',
+    '...owmwmwmwo....',
+    '...ossssssso....',
+    '..oSSooooSSo....',
+    '..oooo...oooo...',
   ],
   frog: [
-    '..oo....oo....',
-    '.oweo..oweo...',
-    '.oaaooooaao...',
-    'oaaaaaaaaaaoo.',
-    'oaaaaaaaaaaaao',
-    'oammmmmmmmaaao',
-    'oacccccccaaaao',
-    'oaccccccccaaao',
-    '.oaccccccaaao.',
-    'oaaoo....ooaao',
-    'ooooo....ooooo',
+    '...oo......oo...',
+    '..oyeo....oyeo..',
+    '..oaaoooooooaao.',
+    '.oaaaaaaaaaaaaao',
+    'oaacaaaacaaaacao',
+    'oammmmmmmmmmmaao',
+    'oallllllllllaaao',
+    'oalllllllllaaaco',
+    '.oallllllllaaao.',
+    'oaao.oaaao.oaaao',
+    'oooo.ooooo.oooo.',
   ],
   bat: [
     'oo............oo',
@@ -1972,12 +2261,12 @@ const MON_BASE_PAL = {
   treant: { a: '#7a5432', y: '#ffe066', m: '#2a1a10' },
   knight: { a: '#4a4060', r: '#ff3a5a', y: '#ff5aff' },
   eye: { r: '#c83aff', m: '#ff6a8a', a: '#6a3a8a', w: '#f4eef8' },
-  slime: { a: '#7ae05a' },
-  shroom: { r: '#e8553d', s: '#f6e6cc', S: '#d8c0a0' },
-  frog: { a: '#9a5ad8' },
-  bat: { a: '#6a8ab8', r: '#ff4a6a' },
-  bat2: { a: '#6a8ab8', r: '#ff4a6a' },
-  yeti: { a: '#e8f0ff', f: '#9ab0d8', c: '#ffffff' },
+  slime: { a: '#5a8a3a', y: '#e8d040', e: '#16121c', w: '#e8e0c8', m: '#3a1a1a' },
+  shroom: { r: '#8a3a2a', w: '#d8c8a8', s: '#c8b89a', S: '#9a8a6a', y: '#e8d040', e: '#16121c', m: '#3a1a1a' },
+  frog: { a: '#5a4a7a', c: '#7a6a9a', l: '#a8a078', y: '#e8d040', e: '#16121c', m: '#2a1a24' },
+  bat: { a: '#3a4a6a', r: '#e83a4a' },
+  bat2: { a: '#3a4a6a', r: '#e83a4a' },
+  yeti: { a: '#b8c4d0', f: '#5a6a80', c: '#dce4ec', e: '#e8d040' },
 };
 
 const CROWN = [
@@ -2795,13 +3084,13 @@ function drawText(ctx, str, x, y, color, scale = 1, outline = OUTLINE) {
   }
 }
 
-return { OUTLINE, sprite, silhouette, drawRotated, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW, ICONS, icon, textWidth, drawText, shade };
+return { OUTLINE, sprite, silhouette, drawRotated, HERO, HERO_LEG, HERO_STEP, HERO_CROUCH_AT, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW, ICONS, icon, textWidth, drawText, shade };
 })();
 
 __m.render = (() => {
 // Canvas renderer: parallax backgrounds, the battle scene, the campfire scene with
 // animated life-skill stations, clone insets, floaters and rare-drop effects.
-const { sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW } = __m.sprites;
+const { sprite, drawRotated, drawText, icon, shade, OUTLINE, silhouette, HERO_LEG, HERO_CROUCH_AT, HERO, HERO_STEP, HERO_CROUCH, HERO_PAL, CLONE_PAL, MON, MON_BASE_PAL, CROWN, ANIMALS, TOOLS, TOOL_PIVOT, TOOL_FOR, WOOD_PAL, BOW } = __m.sprites;
 const { ITEMS, TIERS, MONSTERS, TOOL_TIERS, REGIONS, SPOTS } = __m.data;
 const { toolTier, spotsUnlocked } = __m.engine;
 
@@ -2833,21 +3122,21 @@ function mixHex(a, b, t) {
 }
 
 const THEMES = {
-  meadow: { far: '#7a9ad8', mid: '#5aa85a', mid2: '#3f8a4a', top: '#6ad04a', topD: '#3f9a3a', dirt: '#a8743a', dirtD: '#7a4e24' },
-  swamp: { far: '#6a5a8a', mid: '#4a5a4a', mid2: '#384838', top: '#6a8a4a', topD: '#4a6a3a', dirt: '#5a4a3a', dirtD: '#3a2e24' },
-  ice: { far: '#5a7ab8', mid: '#8ab8e8', mid2: '#6a98d0', top: '#d8f0ff', topD: '#a8d0f0', dirt: '#5a78a8', dirtD: '#3a5888' },
-  tower: { far: '#3a2a5a', mid: '#4a3a6a', mid2: '#2e2448', top: '#8a6ac8', topD: '#5a4a8a', dirt: '#3a2a4a', dirtD: '#24182e' },
-  camp: { far: '#7a8ac8', mid: '#4a8a5a', mid2: '#3a6a4a', top: '#5ac04a', topD: '#3a8a3a', dirt: '#9a6a3a', dirtD: '#6a4424' },
+  meadow: { far: '#5a6a8a', mid: '#46704c', mid2: '#34583c', top: '#5a8a42', topD: '#3e6a32', dirt: '#6a4e34', dirtD: '#4a3424' },
+  swamp: { far: '#4a4560', mid: '#3a4a40', mid2: '#2c3a30', top: '#4e6a3e', topD: '#3a5230', dirt: '#463a30', dirtD: '#2e261e' },
+  ice: { far: '#465a80', mid: '#7090b0', mid2: '#56789c', top: '#c8dcea', topD: '#98b8d0', dirt: '#4a6080', dirtD: '#344660' },
+  tower: { far: '#2e2440', mid: '#3a3050', mid2: '#26203a', top: '#6a5a90', topD: '#4a3e6a', dirt: '#2e2438', dirtD: '#1e1626' },
+  camp: { far: '#5a6a8a', mid: '#46704c', mid2: '#34583c', top: '#5a8a42', topD: '#3e6a32', dirt: '#6a4e34', dirtD: '#4a3424' },
 };
 
 function skyColors(hour, theme) {
   if (theme === 'ice') return ['#1a2a4a', '#3a5a8a'];
   if (theme === 'tower') return ['#120a24', '#3a2458'];
   let top, bot;
-  if (hour >= 20 || hour < 5) { top = '#141a3a'; bot = '#2e3468'; }
-  else if (hour < 7) { top = '#5a6ab8'; bot = '#f6a37a'; }
-  else if (hour < 17) { top = '#5ab4ff'; bot = '#c8ecff'; }
-  else { top = '#6a5a9a'; bot = '#ff9a6a'; }
+  if (hour >= 20 || hour < 5) { top = '#0e1226'; bot = '#262a48'; }
+  else if (hour < 7) { top = '#46507a'; bot = '#c8907a'; }
+  else if (hour < 17) { top = '#4a76a8'; bot = '#a8c0d4'; }
+  else { top = '#4a4268'; bot = '#c07a5e'; }
   if (theme === 'swamp') { top = mixHex(top, '#4a3a6a', 0.45); bot = mixHex(bot, '#8a9a7a', 0.45); }
   return [top, bot];
 }
@@ -2878,6 +3167,11 @@ class Renderer {
     this.lastMode = null;
     this.modeFade = 0;
     this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.mini = null;
+    this.nextMini = 10;
+    this.wisp = null;
+    this.nextWisp = 90 + Math.random() * 120;
+    this.onNotice = () => {};
     this.makeOverlay();
   }
 
@@ -2889,6 +3183,7 @@ class Renderer {
       <div class="banner" id="banner" hidden></div>
       <div class="bossbar" id="bossBar" hidden><div class="bb-name" id="bossName"></div><div class="bb-track"><i id="bossFill"></i></div></div>
       <div class="bosswarn" id="bossWarn" hidden></div>
+      <div class="minihint" id="miniHint" hidden></div>
       <div class="blackout" id="blackout" hidden></div>`;
     this.el = {
       name: this.ov.querySelector('#nameTag'), title: this.ov.querySelector('#titleBadge'),
@@ -2896,6 +3191,7 @@ class Renderer {
       banner: this.ov.querySelector('#banner'), blackout: this.ov.querySelector('#blackout'),
       bossBar: this.ov.querySelector('#bossBar'), bossName: this.ov.querySelector('#bossName'),
       bossFill: this.ov.querySelector('#bossFill'), bossWarn: this.ov.querySelector('#bossWarn'),
+      miniHint: this.ov.querySelector('#miniHint'),
     };
   }
 
@@ -2920,9 +3216,12 @@ class Renderer {
       switch (e.t) {
         case 'hit':
           if (e.who === 'mon') {
-            this.heroAnim.swing = 0.22;
+            if (e.src !== 'tap') this.heroAnim.swing = 0.22;
             this.monAnim.hurt = 0.15;
-            this.floater(fmtShort(e.dmg) + (e.crit ? '!' : ''), MX + rnd(-8, 8), 136 + rnd(-6, 4), e.crit ? '#ff6ad5' : '#fff2a8', e.crit ? 2 : 1);
+            const big = e.src === 'strike';
+            this.floater(fmtShort(e.dmg) + (e.crit || big ? '!' : ''), MX + rnd(-8, 8), 136 + rnd(-6, 4), big ? '#ff9a3a' : e.src === 'tap' ? '#bfe6ff' : e.crit ? '#ff6ad5' : '#fff2a8', big || e.crit ? 2 : 1);
+            if (big && !this.reduced) { this.shake = Math.max(this.shake, 0.3); this.burst(MX, 150, '#ffb84a', 14); }
+            if (e.src === 'tap' && !this.reduced) this.burst(MX + rnd(-6, 6), 160 + rnd(-10, 6), '#bfe6ff', 3);
             if (e.crit && !this.reduced) this.shake = Math.max(this.shake, 0.12);
           } else {
             this.heroAnim.hurt = 0.2;
@@ -2932,6 +3231,9 @@ class Renderer {
           }
           break;
         case 'miss': this.floater('MISS', HX, 130, '#a8d8ff', 1); this.monAnim.atk = 0.28; this.heroAnim.dodge = 0.3; break;
+        case 'heal': this.ring(HX, 168, '#7affa0'); this.floater('+', HX, 128, '#7affa0', 2); break;
+        case 'rage': this.ring(HX, 168, '#ff5a3a'); this.say('간다!!', 1500); break;
+        case 'fever': this.flash = 0.25; this.flashColor = '#ffb84a'; this.say('열정 폭발! 모든 속도 ×2!', 2500); break;
         case 'spawn':
           if (e.mon.boss || e.mon.elite) this.bossIntro(e.mon);
           break;
@@ -3268,31 +3570,31 @@ class Renderer {
   drawHero(ctx, x, y, opts = {}) {
     const pal = opts.pal || HERO_PAL;
     const body = sprite('hero', HERO, pal);
-    const bob = opts.walk ? Math.round(Math.abs(Math.sin(this.t * 10))) : Math.round(Math.sin(this.t * 3) * 0.5 + 0.5);
-    const crouch = opts.crouch ? 2 : 0;
-    const flash = opts.hurt;
+    const w = body.width, x0 = x - 8;
+    const bob = opts.walk ? Math.round(Math.abs(Math.sin(this.t * 10))) : Math.round(Math.sin(this.t * 2.5) * 0.5 + 0.5);
+    const crouch = opts.crouch ? body.height - (HERO_CROUCH_AT + HERO_CROUCH.length) : 0;
     const top = y - body.height - bob + crouch;
     if (opts.shadow !== false) {
       ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.fillRect(x - 6, y - 1, 13, 2);
+      ctx.fillRect(x - 7, y - 1, 15, 2);
     }
     if (opts.crouch) {
-      ctx.drawImage(body, 0, 0, body.width, 14, x - 7, top, body.width, 14);
-      ctx.drawImage(sprite('heroc', HERO_CROUCH, pal), x - 7, top + 14);
+      ctx.drawImage(body, 0, 0, w, HERO_CROUCH_AT, x0, top, w, HERO_CROUCH_AT);
+      ctx.drawImage(sprite('heroc', HERO_CROUCH, pal), x0, top + HERO_CROUCH_AT);
     } else if (opts.walk && Math.sin(this.t * 10) > 0) {
-      ctx.drawImage(body, 0, 0, body.width, 14, x - 7, top, body.width, 14);
-      ctx.drawImage(sprite('heros', HERO_STEP, pal), x - 7, top + 14);
-    } else ctx.drawImage(body, x - 7, top);
-    if (flash > 0) {
+      ctx.drawImage(body, 0, 0, w, HERO_LEG, x0, top, w, HERO_LEG);
+      ctx.drawImage(sprite('heros', HERO_STEP, pal), x0, top + HERO_LEG);
+    } else ctx.drawImage(body, x0, top);
+    if (opts.hurt > 0) {
       ctx.globalAlpha = 0.65;
-      ctx.drawImage(silhouette(body, '#ff4a4a'), x - 7, top);
+      ctx.drawImage(silhouette(body, '#ff4a4a'), x0, top);
       ctx.globalAlpha = 1;
     }
     if (opts.soot) {
       ctx.fillStyle = 'rgba(40,30,30,0.75)';
-      ctx.fillRect(x - 3, top + 4, 8, 5);
+      ctx.fillRect(x, top + 5, 6, 4);
     }
-    return { hx: x + 4, hy: top + 12 };
+    return { hx: x + 5, hy: top + 13 };
   }
 
   drawTool(ctx, kind, hand, angle, color, flip = false) {
@@ -3316,7 +3618,8 @@ class Renderer {
     const region = this.g.region(mon.f);
     if (region.theme === 'tower' && !mon.variant) { pal.a = shade(pal.a || '#888', -0.45); if (pal.r) pal.r = shade(pal.r, -0.45); }
     const img = sprite('mon:' + key, MON[key], pal);
-    const scale = mon.boss ? M.scale || 2 : mon.variant === 'giant' || mon.variant === 'ancient' ? 2 : 1;
+    // Monsters stand eye to eye with the 24px hero; bosses and giants tower over him.
+    const scale = mon.boss ? M.scale || 2 : mon.variant === 'giant' || mon.variant === 'ancient' ? 3 : 2;
     const w = img.width * scale, h = img.height * scale;
     const fly = M.fly ? 26 + Math.sin(this.t * 3) * 4 : 0;
     const squash = key === 'slime' ? Math.sin(this.t * 6) * 0.08 : 0;
@@ -3455,6 +3758,102 @@ class Renderer {
     }
   }
 
+  // ---------- Active play: chance events at the station, the wisp, clicks ----------
+  click(x, y) {
+    const g = this.g;
+    if (this.wisp) {
+      const w = this.wisp;
+      if (Math.hypot(x - w.x, y - w.y) < 16) {
+        const text = g.claimWisp();
+        this.burst(w.x, w.y, '#fff6b0', 16);
+        this.ring(w.x, w.y, '#ffe066');
+        this.onNotice(`떠돌이 요정을 잡았다! ${text}`, 4);
+        this.wisp = null;
+        return;
+      }
+    }
+    if (this.mini && this.mini.click(x, y)) return;
+    if (g.s.mode === 'fight' && g.mon && Math.abs(x - MX) < 30 && y > GROUND - 70 && y < GROUND + 6) g.tap();
+  }
+
+  miniDone(text, good) {
+    this.el.miniHint.hidden = true;
+    this.mini = null;
+    this.nextMini = 18 + Math.random() * 17;
+    if (text) this.floater(good ? '+' : '-', 157, 120, good ? '#ffe066' : '#a8a8b8', 2);
+    if (text) this.onNotice(text, good ? 3 : 0);
+  }
+  hint(text, x, y) {
+    const h = this.el.miniHint;
+    h.textContent = text;
+    h.hidden = false;
+    this.place(h, x, y);
+  }
+  spawnMini(k) {
+    const g = this.g, self = this, nx = 181;
+    const ok = (n, boost, text) => { g.lifeBurst(k, n, boost); self.burst(nx, GROUND - 14, '#ffe066', 16); self.miniDone(text, true); };
+    let m;
+    if (k === 'mining') {
+      const tx = nx + rnd(-7, 7), ty = GROUND - 9 + rnd(-4, 2);
+      m = { life: 3.5, hint: '빛나는 약점을 클릭!', hx: nx, hy: GROUND - 34,
+        draw(ctx, t) { ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 12); ctx.fillStyle = '#fff6b0'; circle(ctx, tx, ty, 4); ctx.globalAlpha = 1; ctx.fillStyle = '#ffffff'; ctx.fillRect(tx - 3, ty, 7, 1); ctx.fillRect(tx, ty - 3, 1, 7); ctx.strokeStyle = '#ffe066'; ctx.beginPath(); ctx.arc(tx + 0.5, ty + 0.5, 9 - (t % 0.6) * 8, 0, 6.3); ctx.stroke(); },
+        click(x, y) { if (Math.hypot(x - tx, y - ty) < 11) { ok(5, 3, '약점 적중! 광석 ×5, 희귀 확률 ×3'); return true; } return false; } };
+    } else if (k === 'wood') {
+      m = { life: 4.5, hint: '표시가 초록 칸에 올 때 클릭!', hx: 200, hy: 92, pos: 0,
+        draw(ctx, t) { this.pos = 0.5 + 0.5 * Math.sin(t * 4.2); ctx.fillStyle = OUTLINE; ctx.fillRect(159, 99, 82, 8); ctx.fillStyle = '#3a2a2a'; ctx.fillRect(160, 100, 80, 6); ctx.fillStyle = '#5ab45a'; ctx.fillRect(160 + 80 * 0.32, 100, 80 * 0.36, 6); ctx.fillStyle = '#ffe066'; ctx.fillRect(160 + 80 * 0.42, 100, 80 * 0.16, 6); ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(160 + 80 * this.pos) - 1, 97, 3, 12); },
+        click() { const d = Math.abs(this.pos - 0.5); if (d < 0.08) ok(6, 3, '완벽한 일격! 원목 ×6, 희귀 확률 ×3'); else if (d < 0.18) ok(3, 1.5, '좋은 일격! 원목 ×3'); else self.miniDone('빗나갔다… 다음 기회에!', false); return true; } };
+    } else if (k === 'fish') {
+      const bite = 1 + Math.random() * 2.5;
+      m = { life: bite + 1.4, hint: '찌가 크게 흔들리면 클릭!', hx: 209, hy: GROUND - 20,
+        draw(ctx, t) { if (t > bite) { if (Math.sin(t * 30) > 0) drawText(ctx, '!', 209, GROUND - 26, '#ff5a5a', 3); this.hintNow = '지금!'; } },
+        click() { const r = self.mini.t - bite; if (r < 0) self.miniDone('너무 일렀다! 물고기가 도망갔다', false); else if (r < 0.45) ok(6, 3, '완벽한 챔질! 물고기 ×6, 희귀 확률 ×3'); else ok(3, 1.5, '챔질 성공! 물고기 ×3'); return true; } };
+    } else if (k === 'forage') {
+      const spots = [0, 1, 2].map(() => ({ x: 60 + Math.random() * 280, y: 120 + Math.random() * 50, hit: false }));
+      m = { life: 6, hint: '반짝이는 약초 3개를 클릭!', hx: 200, hy: 112, found: 0,
+        draw(ctx, t) { for (const p of spots) if (!p.hit) { ctx.globalAlpha = 0.4 + 0.4 * Math.sin(t * 8 + p.x); ctx.fillStyle = '#d8ff8a'; circle(ctx, p.x, p.y, 5); ctx.globalAlpha = 1; sparkle(ctx, p.x, p.y, t * 3, p.x, '#ffffff'); ctx.fillStyle = '#7ad85a'; ctx.fillRect(p.x - 1, p.y - 1, 3, 3); } },
+        click(x, y) { const p = spots.find(q => !q.hit && Math.hypot(x - q.x, y - q.y) < 11); if (!p) return false; p.hit = true; g.lifeBurst('forage', 2, 2); self.burst(p.x, p.y, '#d8ff8a', 8); this.found++; if (this.found === 3) self.miniDone('약초를 모두 찾았다! 채집물 ×6', true); return true; } };
+    } else if (k === 'hunt') {
+      m = { life: 3.2, hint: '달리는 사냥감을 클릭!', hx: 200, hy: 120, x: 400,
+        draw(ctx, t) { this.x = 400 - t * 95; const img = sprite('an:deer', ANIMALS.deer, { a: '#ffd34d', y: '#fff6b0', r: '#ff9aa8' }); ctx.globalAlpha = 0.3; ctx.fillStyle = '#ffe066'; circle(ctx, this.x, GROUND - 7, 10); ctx.globalAlpha = 1; ctx.drawImage(img, Math.round(this.x - 7), GROUND - 13 + Math.round(Math.abs(Math.sin(t * 14)) * -2)); },
+        click(x, y) { if (Math.abs(x - this.x) < 13 && y > GROUND - 26) { ok(5, 3, '명중! 사냥감 ×5, 희귀 확률 ×3'); return true; } return false; } };
+    } else if (k === 'alchemy') {
+      m = { life: 5, hint: '거품이 가장 높을 때 클릭!', hx: 183, hy: GROUND - 44, v: 0,
+        draw(ctx, t) { this.v = (Math.sin(t * 2.4 - Math.PI / 2) + 1) / 2; ctx.fillStyle = OUTLINE; ctx.fillRect(205, GROUND - 46, 6, 40); ctx.fillStyle = '#2a2a3a'; ctx.fillRect(206, GROUND - 45, 4, 38); ctx.fillStyle = this.v > 0.85 ? '#ffe066' : '#7affe8'; const h = Math.round(38 * this.v); ctx.fillRect(206, GROUND - 7 - h, 4, h); ctx.fillStyle = '#ffe066'; ctx.fillRect(204, GROUND - 40, 8, 1); },
+        click() { if (this.v > 0.85) ok(3, 1, '완벽한 젓기! 다음 3번 대성공 확정'); else self.miniDone('타이밍이 아쉬워요', false); return true; } };
+    }
+    if (m) { m.t = 0; this.mini = m; this.mini.k = k; this.hint(m.hint, m.hx, m.hy); this.onNotice(null, 0, 'mini'); }
+  }
+  updateActive(ctx, dt, camp) {
+    const g = this.g;
+    // Chance events only at the main station, and only while someone is watching (live).
+    if (camp) {
+      const k = g.s.slots[0].k;
+      if (this.mini && this.mini.k !== k) { this.el.miniHint.hidden = true; this.mini = null; }
+      if (!this.mini) { this.nextMini -= dt; if (this.nextMini <= 0) this.spawnMini(k); }
+      if (this.mini) {
+        this.mini.t += dt;
+        this.mini.draw(ctx, this.mini.t);
+        if (this.mini && this.mini.hintNow) this.hint(this.mini.hintNow, this.mini.hx, this.mini.hy);
+        if (this.mini && this.mini.t > this.mini.life) this.miniDone(null, false);
+      }
+    } else if (this.mini) { this.el.miniHint.hidden = true; this.mini = null; this.nextMini = 8; }
+    // Wandering wisp: crosses the sky every few minutes; click it for a gift.
+    this.nextWisp -= dt;
+    if (!this.wisp && this.nextWisp <= 0) { this.wisp = { t: 0, x: -10, y: 70 }; this.nextWisp = 150 + Math.random() * 180; }
+    if (this.wisp) {
+      const w = this.wisp;
+      w.t += dt;
+      w.x = -10 + w.t * 32;
+      w.y = 70 + Math.sin(w.t * 1.7) * 24;
+      ctx.globalAlpha = 0.3; ctx.fillStyle = '#fff6b0'; circle(ctx, w.x, w.y, 9); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(w.x) - 1, Math.round(w.y) - 1, 3, 3);
+      const flap = Math.sin(this.t * 25) > 0 ? 2 : 1;
+      ctx.fillStyle = '#bff8ff'; ctx.fillRect(Math.round(w.x) - 4, Math.round(w.y) - flap - 1, 3, flap); ctx.fillRect(Math.round(w.x) + 2, Math.round(w.y) - flap - 1, 3, flap);
+      if (!this.reduced && Math.random() < 0.5) this.parts.push({ x: w.x, y: w.y, vx: -6, vy: 4, g: 0, life: 0.8, t: 0, color: '#fff6b0', size: 1 });
+      if (w.x > W + 12) this.wisp = null;
+    }
+  }
+
   // ---------- Frame ----------
   frame(dtReal) {
     const dt = dtReal * this.timeScale;
@@ -3480,6 +3879,7 @@ class Renderer {
     if (camp) this.drawCamp(ctx, env);
     else this.drawFight(ctx, mon, walking);
 
+    this.updateActive(ctx, dtReal, camp);
     this.drawPops(ctx, dt);
     this.drawParts(ctx, dt);
     this.drawFloaters(ctx, dt);
@@ -3569,6 +3969,12 @@ class Renderer {
     const hx = Math.round(HX + lunge + dodge + knock);
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ellipse(ctx, HX + 1, GROUND + 1, 10, 2);
+    if (g.rage() || g.fever()) {
+      ctx.globalAlpha = 0.22 + 0.1 * Math.sin(this.t * 10);
+      ctx.fillStyle = g.rage() ? '#ff3a3a' : '#ffb84a';
+      ellipse(ctx, hx, GROUND - 12, 13, 16);
+      ctx.globalAlpha = 1;
+    }
     const hand = this.drawHero(ctx, hx, GROUND, { walk: walking, hurt: this.heroAnim.hurt, shadow: false });
     const ang = sw > 0 ? lerp(1.9, -0.9, sw / 0.22) : 0.5 + Math.sin(this.t * 3) * 0.05;
     const wt = c.gear.weapon ? c.gear.weapon.tier : 0;
@@ -3580,11 +3986,11 @@ class Renderer {
     // Hero HP bar over the head
     const hb = 22, hf = Math.max(0, Math.min(1, c.hp / d.hp));
     ctx.fillStyle = OUTLINE;
-    ctx.fillRect(HX - hb / 2 - 1, GROUND - 27, hb + 2, 4);
+    ctx.fillRect(HX - hb / 2 - 1, GROUND - 33, hb + 2, 4);
     ctx.fillStyle = '#1a3a1a';
-    ctx.fillRect(HX - hb / 2, GROUND - 26, hb, 2);
-    ctx.fillStyle = hf > 0.3 ? '#5ae05a' : '#ff5a5a';
-    ctx.fillRect(HX - hb / 2, GROUND - 26, Math.round(hb * hf), 2);
+    ctx.fillRect(HX - hb / 2, GROUND - 32, hb, 2);
+    ctx.fillStyle = hf > 0.3 ? '#6ac05a' : '#d84a4a';
+    ctx.fillRect(HX - hb / 2, GROUND - 32, Math.round(hb * hf), 2);
 
     const nameEl = this.el.mon;
     if (mon) {
@@ -4320,14 +4726,16 @@ const skillIcon = (k, size = 32) => iconCanvas(...SKILL_ICON[k], size);
 const TUT = [
   { text: () => '처음이신가요? 짧은 안내로 모닥불 연대기를 시작해 볼게요.', start: true },
   { target: '#bar .bars', text: () => '모험가는 <b>혼자서 싸웁니다</b>. 빨간 바는 HP, 파란 바는 스태미나예요. 스태미나가 바닥나면 모닥불로 돌아가 쉬어요.' },
-  { target: '#hudTR', text: () => '오른쪽 위 <b>QUEST</b>에 지금의 목표가 나와요. <b>5층마다 정예 몬스터, 10층마다 보스</b>가 길을 막습니다.' },
-  { target: '#b-mode', text: () => '이 버튼을 누르면 전투를 멈추고 <b>야영지에서 생활 스킬만</b> 합니다. 눌러 보세요!', until: g => g.s.focus },
-  { target: '#stage', text: () => '모닥불 옆에서 <b>광질</b> 중이에요. 곡괭이질마다 광석이 나오고, 아주 드물게 엄청난 것이 나옵니다.' },
-  { target: '#b-life', text: () => '<b>「생활」</b>을 눌러 스킬 목록을 열어 보세요.', until: (g, ui) => ui.panel === 'life' },
-  { target: '.skill-grid', text: () => '자물쇠가 걸린 스킬은 <b>앞 스킬의 레벨</b>을 올리면 열려요. 광질 Lv 10 → 벌목 Lv 10 → 채집 Lv 15 → 낚시 Lv 15 → 사냥 Lv 20 → 연금술.' },
-  { text: g => `광질을 <b>Lv 10</b>까지 올려 보세요. 지금 <b>Lv ${g.s.skills.mining.lv}</b>, 장소가 오를수록 더 화려한 광맥이 나옵니다.`, until: g => g.s.skills.mining.lv >= 10 },
-  { target: '#b-life', text: () => '<b>벌목</b>이 열렸어요! 「생활」에서 벌목 카드를 고르고 <b>「야영에 배치」</b>를 누르세요.', until: g => g.s.slots[0].k === 'wood' },
-  { target: '#b-mode', text: () => '잘했어요! 버튼을 다시 눌러 <b>전투로 돌아가세요</b>. 생활 레벨은 윤회해도 남아서 전투력을 영원히 올려 줍니다.', until: g => !g.s.focus },
+  { target: '#combatSkills', text: () => '하지만 <b>직접 싸울 수도</b> 있어요! <b>「강타」</b>를 눌러 보세요 (키보드 1·2·3). 몬스터를 <b>클릭</b>해도 추가 공격이 들어갑니다.', until: g => g.s.act.cd.strike > 0 },
+  { target: '#fever', text: () => '직접 할수록 <b>열정</b>이 차요. 가득 차면 <b>30초 동안 모든 속도 ×2</b>! 가끔 하늘을 나는 <b>요정</b>을 클릭하면 선물을 줍니다.' },
+  { target: '#skillDock', text: () => '여기서 <b>지금 할 일</b>을 바로 고릅니다. <b>곡괭이(광질)</b>를 눌러 보세요!', until: g => g.s.mode === 'camp' && g.s.slots[0].k === 'mining' },
+  { target: '#stage', text: () => '광산에 왔어요. 가끔 <b>빛나는 약점</b> 같은 기회가 나타나요. 놓치지 말고 <b>클릭</b>하면 한 번에 여러 개를 캡니다!' },
+  { target: '#b-life', text: () => '<b>「생활」</b>에서 모든 스킬의 레벨과 다음 보상을 볼 수 있어요. 눌러 보세요.', until: (g, ui) => ui.panel === 'life' },
+  { target: '.skill-grid', text: () => '잠긴 스킬은 <b>앞 스킬의 레벨</b>을 올리면 열려요. 광질 Lv 10 → 벌목 Lv 10 → 채집 Lv 15 → 낚시 Lv 15 → 사냥 Lv 20 → 연금술. 카드를 누르면 바로 그 일을 하러 갑니다.' },
+  { text: g => `광질을 <b>Lv 10</b>까지 올려 보세요. 지금 <b>Lv ${g.s.skills.mining.lv}</b>. 빛나는 약점을 클릭하면 훨씬 빨라요!`, until: g => g.s.skills.mining.lv >= 10 },
+  { target: '#skillDock', text: () => '<b>벌목</b>이 열렸어요! 아래에서 <b>도끼</b>를 눌러 숲으로 가 보세요.', until: g => g.s.mode === 'camp' && g.s.slots[0].k === 'wood' },
+  { target: '#dk-combat', text: () => '<b>칼</b>을 누르면 다시 전투로 돌아가요. 생활 레벨은 윤회해도 남아서 전투력을 영원히 올려 줍니다.', until: g => !g.s.focus },
+  { target: '#b-char', text: () => '몬스터가 떨어뜨린 장비는 <b>「캐릭터」</b>에서 직접 착용해요. 5층마다 정예, 10층마다 보스가 길을 막습니다.' },
   { target: '#b-rebirth', text: () => '<b>21층</b>에 도달하면 윤회가 열려요. 윤회해도 생활 레벨과 도감은 그대로입니다. 이제 마음껏 모험하세요!', last: true },
 ];
 
@@ -4346,6 +4754,103 @@ class UI {
     this.buildBar();
     this.buildPanel();
     this.buildTutor();
+    this.buildActions();
+  }
+
+  // ---------- Action strip: what to do now, combat skills, fever ----------
+  buildActions() {
+    const dock = $('#skillDock');
+    const add = (k, tpl, col, label) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'dk';
+      b.id = 'dk-' + k;
+      b.title = label;
+      b.setAttribute('aria-label', label);
+      b.appendChild(iconCanvas(tpl, col, 30));
+      b.insertAdjacentHTML('beforeend', '<span class="lk" hidden>🔒</span>');
+      b.addEventListener('click', () => this.goSkill(k));
+      dock.appendChild(b);
+    };
+    add('combat', 'sword', '#e8eef8', '전투로');
+    dock.insertAdjacentHTML('beforeend', '<span class="dk-sep"></span>');
+    for (const k of ['mining', 'wood', 'forage', 'fish', 'hunt', 'alchemy']) add(k, ...SKILL_ICON[k], SKILLS[k].name);
+    const cs = $('#combatSkills');
+    const skills = [['strike', '강타', 'sword', '#ff9a3a', '1'], ['heal', '회복', 'potion', '#4aff7a', '2'], ['rage', '광폭', 'star', '#ff5a3a', '3']];
+    for (const [id, name, tpl, col, key] of skills) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cs';
+      b.id = 'cs-' + id;
+      b.title = { strike: '공격력 ×5 일격 (8초)', heal: 'HP 40%·스태미나 30% 회복 (30초)', rage: '10초 동안 공격 속도 ×2, 치명 +25% (45초)' }[id];
+      b.appendChild(iconCanvas(tpl, col, 22));
+      b.insertAdjacentHTML('beforeend', `<span class="nm">${name}</span><span class="key">${key}</span><span class="cdv" hidden></span>`);
+      b.addEventListener('click', () => this.cast(id));
+      cs.appendChild(b);
+    }
+    const auto = document.createElement('button');
+    auto.type = 'button';
+    auto.id = 'autoCast';
+    auto.className = 'pbtn chip autocast';
+    auto.addEventListener('click', () => {
+      const g = this.g;
+      if (g.s.skills.combat.lv < 100) { this.toast('자동 시전은 전투 숙련 Lv 100에 열립니다'); return; }
+      g.s.act.autoCast = !g.s.act.autoCast;
+      this.updateActions();
+    });
+    cs.appendChild(auto);
+    document.addEventListener('keydown', e => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      const id = { 1: 'strike', 2: 'heal', 3: 'rage' }[e.key];
+      if (id) this.cast(id);
+    });
+  }
+  cast(id) {
+    const g = this.g;
+    if (g.s.mode !== 'fight') { this.toast('전투 중에만 쓸 수 있어요. 칼 아이콘으로 전투로 돌아가세요'); return; }
+    if (!g.castSkill(id)) return;
+    this.hooks.flush();
+    this.updateActions();
+  }
+  goSkill(k) {
+    const g = this.g, s = g.s;
+    if (k === 'combat') {
+      s.focus = false;
+      this.toast(s.mode === 'camp' ? '쉬는 대로 전투로 돌아갑니다' : '전투 중입니다');
+    } else {
+      if (!g.unlocked(k)) { const u = UNLOCKS[k]; this.toast(`🔒 ${SKILLS[u.skill].name} Lv.${u.lv}이 되면 열립니다`); return; }
+      g.setSlotSkill(0, k);
+      s.focus = true;
+      if (s.mode === 'fight') g.enterCamp('focus');
+      this.close();
+      this.toast(`${SKILLS[k].name} · ${this.campPlace()}`, 1);
+    }
+    this.updateActions();
+    this.updateBar();
+  }
+  updateActions() {
+    const g = this.g, s = g.s;
+    for (const k of ['combat', 'mining', 'wood', 'forage', 'fish', 'hunt', 'alchemy']) {
+      const b = $('#dk-' + k);
+      const open = g.unlocked(k);
+      b.disabled = !open;
+      b.querySelector('.lk').hidden = open;
+      b.classList.toggle('on', k === 'combat' ? s.mode === 'fight' && !s.focus : s.mode === 'camp' && s.slots[0].k === k);
+    }
+    for (const id of ['strike', 'heal', 'rage']) {
+      const b = $('#cs-' + id), left = g.cdLeft(id), cdv = b.querySelector('.cdv');
+      cdv.hidden = left <= 0 && s.mode === 'fight';
+      cdv.textContent = s.mode !== 'fight' ? '—' : Math.ceil(left) + 's';
+      b.classList.toggle('ready', left <= 0 && s.mode === 'fight');
+    }
+    const auto = $('#autoCast');
+    auto.textContent = s.skills.combat.lv < 100 ? '자동 시전 🔒' : s.act.autoCast ? '자동 시전 켜짐' : '자동 시전 꺼짐';
+    auto.classList.toggle('on', !!s.act.autoCast && s.skills.combat.lv >= 100);
+    const fv = $('#fever');
+    const on = g.fever();
+    fv.classList.toggle('on', on);
+    $('#feverTxt').textContent = on ? `열정 폭발! ${Math.ceil(s.act.feverUntil - s.time)}초` : `열정 ${Math.floor(s.act.fever)}%`;
+    $('#feverFill').style.width = on ? '100%' : s.act.fever + '%';
   }
 
   // ---------- Tutorial & tips ----------
@@ -4445,7 +4950,7 @@ class UI {
     const bar = $('#bar');
     bar.innerHTML = `
       <div class="who">
-        <canvas id="portrait" class="px" width="14" height="18"></canvas>
+        <canvas id="portrait" class="px" width="16" height="24"></canvas>
         <div class="who-txt"><div class="who-nm">모험가</div><div class="who-sub" id="whoSub"></div></div>
       </div>
       <div class="bars">
@@ -4512,7 +5017,7 @@ class UI {
     const need = charXpNeed(c.lv);
     set('xp', c.xp, need, `${fmt(c.xp)} / ${fmt(need)} (${((c.xp / need) * 100).toFixed(1)}%)`);
     const mb = $('#b-mode .lbl');
-    mb.textContent = s.focus ? '생활집중' : '순환';
+    mb.textContent = s.focus ? '집중' : '순환';
     $('#b-mode').classList.toggle('on', s.focus);
     $('#b-char .dot').hidden = !((c.pts > 0 && !c.auto) || g.upgrades() > 0);
     const ls = this.hooks.lastSave();
@@ -4521,6 +5026,7 @@ class UI {
     $('#b-life .dot').hidden = !s.slots.some(x => x.blocked);
     for (const id of ['char', 'life', 'bag', 'codex', 'rebirth', 'log', 'menu']) $('#b-' + id).classList.toggle('active', this.panel === id);
     this.updateHud();
+    this.updateActions();
     this.tutTick();
   }
 
@@ -4688,7 +5194,7 @@ class UI {
     const g = this.g, s = g.s, c = s.char, d = g.d;
     const top = this.html(body, '', 'char-top');
     const pic = document.createElement('canvas');
-    pic.width = 14; pic.height = 18;
+    pic.width = 16; pic.height = 24;
     pic.className = 'px char-pic';
     pic.getContext('2d').drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
     top.appendChild(pic);
@@ -4770,6 +5276,9 @@ class UI {
     });
     if (s.slots.length < 3) this.html(sl, `<p class="hint">분신 슬롯은 윤회 특성 「분신술」로 늘어납니다 (${s.slots.length - 1}/2)</p>`);
 
+    const pick = this.html(body, '', 'chips');
+    this.html(pick, '<small class="hint">상세 보기:</small>');
+    for (const k of Object.keys(SKILLS)) pick.appendChild(this.btn(SKILLS[k].short, () => { this.sel.skill = k; }, { cls: 'chip' + (this.sel.skill === k ? ' on' : ''), fid: 'dv' + k }));
     const grid = this.html(body, '', 'skill-grid');
     for (const k of Object.keys(SKILLS)) {
       const sk = s.skills[k];
@@ -4780,11 +5289,13 @@ class UI {
       card.dataset.fid = 'sk' + k;
       card.appendChild(open ? skillIcon(k, 30) : iconCanvas(SKILL_ICON[k][0], '#3a3a48', 30));
       const need = xpNeed(sk.lv);
+      card.title = open && k !== 'combat' ? '누르면 바로 이 일을 하러 갑니다' : '';
       card.insertAdjacentHTML('beforeend', open ? `<div class="sc-nm">${SKILLS[k].name}</div><div class="sc-lv">Lv.${sk.lv}</div>
         <div class="sc-bar"><i style="width:${(sk.xp / need) * 100}%"></i></div>
         <div class="sc-tool">${k === 'combat' ? '처치로 성장' : TOOL_TIERS[toolTier(sk.lv)].name + ' 도구'}</div>` : `<div class="sc-nm">🔒 ${SKILLS[k].name}</div><div class="sc-lv">잠김</div>
         <div class="sc-lock">${SKILLS[u.skill].name} Lv.${u.lv} 필요 (지금 ${s.skills[u.skill].lv})</div>`);
-      card.addEventListener('click', () => { this.sel.skill = k; this.renderPanel(); });
+      card.addEventListener('click', () => { this.sel.skill = k; if (k === 'combat' || !open) this.renderPanel(); else this.goSkill(k); });
+      if (open && k !== 'combat') card.insertAdjacentHTML('beforeend', '<span class="sc-go">▶ 하러 가기</span>');
       grid.appendChild(card);
     }
     this.skillDetail(body, this.sel.skill);
@@ -4836,7 +5347,7 @@ class UI {
     const ul = this.html(rr, '', 'rares');
     SKILL_RARES[k].forEach((id, i) => {
       const it = ITEMS[id], known = s.codex[id];
-      const r = this.html(ul, `<div><b style="color:${TIERS[it.tier].color}">${known ? esc(it.name) : '???'}</b><small>${TIERS[it.tier].name} · ${['0.3%', '0.02%', '0.002%', '0.0001%'][i]}${it.effect && known ? ' · ' + esc(it.effect) : ''}${known ? ` · 보유 ${s.items[id] || 0}` : ''}</small></div>`, 'rare-row');
+      const r = this.html(ul, `<div><b style="color:${TIERS[it.tier].color}">${known ? esc(it.name) : '???'}</b><small>${TIERS[it.tier].name} · ${{ 3: '0.3%', 4: '0.02%', 5: '0.002%', 6: '0.0001%' }[it.tier]}${it.effect && known ? ' · ' + esc(it.effect) : ''}${known ? ` · 보유 ${s.items[id] || 0}` : ''}</small></div>`, 'rare-row');
       r.prepend(known ? itemIcon(id, 26) : iconCanvas(it.icon, '#2a2a34', 26));
     });
   }
@@ -4861,7 +5372,7 @@ class UI {
     }
     const pa = this.section(body, '물약 자동 사용 (전투 시작 시 1개씩)');
     const chips = this.html(pa, '', 'chips');
-    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_antidote', 'p_warm']) {
+    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_haste', 'p_focus', 'p_wisdom', 'p_antidote', 'p_warm']) {
       const type = ITEMS[id].potion;
       chips.appendChild(this.btn(`${ITEMS[id].name} ${s.potAuto[type] ? 'ON' : 'OFF'} · ${s.items[id] || 0}`, () => { s.potAuto[type] = !s.potAuto[type]; }, { cls: 'chip' + (s.potAuto[type] ? ' on' : ''), fid: 'pa' + id }));
     }
@@ -4903,7 +5414,7 @@ class UI {
     this.html(box, `<b style="color:${TIERS[it.tier].color}">${esc(it.name)}</b>
       <small>${TIERS[it.tier].name} · ${src} · 보유 ${fmt(s.items[id] || 0)}${s.records[id] ? ` · 최고 ${s.records[id]}kg` : ''}</small>
       <small>${esc(it.effect || it.desc || '도감 보너스 +' + pct(TIERS[it.tier].codex))}</small>`, 'ii-txt');
-    if (id === 'x_cat') box.appendChild(this.btn('사용', () => this.g.useItem('x_cat'), { fid: 'use' }));
+    if (id === 'x_cat' || it.use) box.appendChild(this.btn('사용', () => this.g.useItem(id), { fid: 'use' }));
   }
 
   // ----- Codex
@@ -5189,7 +5700,21 @@ function start(hotData = {}) {
       ui.toast('새 모험을 시작합니다');
     },
   };
+  hooks.flush = () => {
+    if (game.events.length) { renderer.handle(game.events); ui.handle(game.events); game.events.length = 0; }
+  };
   const ui = new UI(game, renderer, hooks);
+  renderer.onNotice = (text, tier, kind) => {
+    if (text) ui.toast(text, tier);
+    if (kind === 'mini') ui.showTip('mini', '<b>기회!</b> 작업 장소에 빛나는 표시가 나타났어요. 설명대로 <b>화면을 클릭</b>하면 한 번에 여러 개를 얻고, 희귀 확률도 올라갑니다.');
+    hooks.flush();
+  };
+  // Clicks on the scene: chance events, the wisp, extra hits on the monster.
+  canvas.addEventListener('pointerdown', e => {
+    const r = canvas.getBoundingClientRect();
+    renderer.click(((e.clientX - r.left) / r.width) * 384, ((e.clientY - r.top) / r.height) * 216);
+    hooks.flush();
+  });
   function swap(g) {
     game = g;
     renderer.g = g;

@@ -38,14 +38,16 @@ const skillIcon = (k, size = 32) => iconCanvas(...SKILL_ICON[k], size);
 const TUT = [
   { text: () => '처음이신가요? 짧은 안내로 모닥불 연대기를 시작해 볼게요.', start: true },
   { target: '#bar .bars', text: () => '모험가는 <b>혼자서 싸웁니다</b>. 빨간 바는 HP, 파란 바는 스태미나예요. 스태미나가 바닥나면 모닥불로 돌아가 쉬어요.' },
-  { target: '#hudTR', text: () => '오른쪽 위 <b>QUEST</b>에 지금의 목표가 나와요. <b>5층마다 정예 몬스터, 10층마다 보스</b>가 길을 막습니다.' },
-  { target: '#b-mode', text: () => '이 버튼을 누르면 전투를 멈추고 <b>야영지에서 생활 스킬만</b> 합니다. 눌러 보세요!', until: g => g.s.focus },
-  { target: '#stage', text: () => '모닥불 옆에서 <b>광질</b> 중이에요. 곡괭이질마다 광석이 나오고, 아주 드물게 엄청난 것이 나옵니다.' },
-  { target: '#b-life', text: () => '<b>「생활」</b>을 눌러 스킬 목록을 열어 보세요.', until: (g, ui) => ui.panel === 'life' },
-  { target: '.skill-grid', text: () => '자물쇠가 걸린 스킬은 <b>앞 스킬의 레벨</b>을 올리면 열려요. 광질 Lv 10 → 벌목 Lv 10 → 채집 Lv 15 → 낚시 Lv 15 → 사냥 Lv 20 → 연금술.' },
-  { text: g => `광질을 <b>Lv 10</b>까지 올려 보세요. 지금 <b>Lv ${g.s.skills.mining.lv}</b>, 장소가 오를수록 더 화려한 광맥이 나옵니다.`, until: g => g.s.skills.mining.lv >= 10 },
-  { target: '#b-life', text: () => '<b>벌목</b>이 열렸어요! 「생활」에서 벌목 카드를 고르고 <b>「야영에 배치」</b>를 누르세요.', until: g => g.s.slots[0].k === 'wood' },
-  { target: '#b-mode', text: () => '잘했어요! 버튼을 다시 눌러 <b>전투로 돌아가세요</b>. 생활 레벨은 윤회해도 남아서 전투력을 영원히 올려 줍니다.', until: g => !g.s.focus },
+  { target: '#combatSkills', text: () => '하지만 <b>직접 싸울 수도</b> 있어요! <b>「강타」</b>를 눌러 보세요 (키보드 1·2·3). 몬스터를 <b>클릭</b>해도 추가 공격이 들어갑니다.', until: g => g.s.act.cd.strike > 0 },
+  { target: '#fever', text: () => '직접 할수록 <b>열정</b>이 차요. 가득 차면 <b>30초 동안 모든 속도 ×2</b>! 가끔 하늘을 나는 <b>요정</b>을 클릭하면 선물을 줍니다.' },
+  { target: '#skillDock', text: () => '여기서 <b>지금 할 일</b>을 바로 고릅니다. <b>곡괭이(광질)</b>를 눌러 보세요!', until: g => g.s.mode === 'camp' && g.s.slots[0].k === 'mining' },
+  { target: '#stage', text: () => '광산에 왔어요. 가끔 <b>빛나는 약점</b> 같은 기회가 나타나요. 놓치지 말고 <b>클릭</b>하면 한 번에 여러 개를 캡니다!' },
+  { target: '#b-life', text: () => '<b>「생활」</b>에서 모든 스킬의 레벨과 다음 보상을 볼 수 있어요. 눌러 보세요.', until: (g, ui) => ui.panel === 'life' },
+  { target: '.skill-grid', text: () => '잠긴 스킬은 <b>앞 스킬의 레벨</b>을 올리면 열려요. 광질 Lv 10 → 벌목 Lv 10 → 채집 Lv 15 → 낚시 Lv 15 → 사냥 Lv 20 → 연금술. 카드를 누르면 바로 그 일을 하러 갑니다.' },
+  { text: g => `광질을 <b>Lv 10</b>까지 올려 보세요. 지금 <b>Lv ${g.s.skills.mining.lv}</b>. 빛나는 약점을 클릭하면 훨씬 빨라요!`, until: g => g.s.skills.mining.lv >= 10 },
+  { target: '#skillDock', text: () => '<b>벌목</b>이 열렸어요! 아래에서 <b>도끼</b>를 눌러 숲으로 가 보세요.', until: g => g.s.mode === 'camp' && g.s.slots[0].k === 'wood' },
+  { target: '#dk-combat', text: () => '<b>칼</b>을 누르면 다시 전투로 돌아가요. 생활 레벨은 윤회해도 남아서 전투력을 영원히 올려 줍니다.', until: g => !g.s.focus },
+  { target: '#b-char', text: () => '몬스터가 떨어뜨린 장비는 <b>「캐릭터」</b>에서 직접 착용해요. 5층마다 정예, 10층마다 보스가 길을 막습니다.' },
   { target: '#b-rebirth', text: () => '<b>21층</b>에 도달하면 윤회가 열려요. 윤회해도 생활 레벨과 도감은 그대로입니다. 이제 마음껏 모험하세요!', last: true },
 ];
 
@@ -64,6 +66,103 @@ export class UI {
     this.buildBar();
     this.buildPanel();
     this.buildTutor();
+    this.buildActions();
+  }
+
+  // ---------- Action strip: what to do now, combat skills, fever ----------
+  buildActions() {
+    const dock = $('#skillDock');
+    const add = (k, tpl, col, label) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'dk';
+      b.id = 'dk-' + k;
+      b.title = label;
+      b.setAttribute('aria-label', label);
+      b.appendChild(iconCanvas(tpl, col, 30));
+      b.insertAdjacentHTML('beforeend', '<span class="lk" hidden>🔒</span>');
+      b.addEventListener('click', () => this.goSkill(k));
+      dock.appendChild(b);
+    };
+    add('combat', 'sword', '#e8eef8', '전투로');
+    dock.insertAdjacentHTML('beforeend', '<span class="dk-sep"></span>');
+    for (const k of ['mining', 'wood', 'forage', 'fish', 'hunt', 'alchemy']) add(k, ...SKILL_ICON[k], SKILLS[k].name);
+    const cs = $('#combatSkills');
+    const skills = [['strike', '강타', 'sword', '#ff9a3a', '1'], ['heal', '회복', 'potion', '#4aff7a', '2'], ['rage', '광폭', 'star', '#ff5a3a', '3']];
+    for (const [id, name, tpl, col, key] of skills) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cs';
+      b.id = 'cs-' + id;
+      b.title = { strike: '공격력 ×5 일격 (8초)', heal: 'HP 40%·스태미나 30% 회복 (30초)', rage: '10초 동안 공격 속도 ×2, 치명 +25% (45초)' }[id];
+      b.appendChild(iconCanvas(tpl, col, 22));
+      b.insertAdjacentHTML('beforeend', `<span class="nm">${name}</span><span class="key">${key}</span><span class="cdv" hidden></span>`);
+      b.addEventListener('click', () => this.cast(id));
+      cs.appendChild(b);
+    }
+    const auto = document.createElement('button');
+    auto.type = 'button';
+    auto.id = 'autoCast';
+    auto.className = 'pbtn chip autocast';
+    auto.addEventListener('click', () => {
+      const g = this.g;
+      if (g.s.skills.combat.lv < 100) { this.toast('자동 시전은 전투 숙련 Lv 100에 열립니다'); return; }
+      g.s.act.autoCast = !g.s.act.autoCast;
+      this.updateActions();
+    });
+    cs.appendChild(auto);
+    document.addEventListener('keydown', e => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      const id = { 1: 'strike', 2: 'heal', 3: 'rage' }[e.key];
+      if (id) this.cast(id);
+    });
+  }
+  cast(id) {
+    const g = this.g;
+    if (g.s.mode !== 'fight') { this.toast('전투 중에만 쓸 수 있어요. 칼 아이콘으로 전투로 돌아가세요'); return; }
+    if (!g.castSkill(id)) return;
+    this.hooks.flush();
+    this.updateActions();
+  }
+  goSkill(k) {
+    const g = this.g, s = g.s;
+    if (k === 'combat') {
+      s.focus = false;
+      this.toast(s.mode === 'camp' ? '쉬는 대로 전투로 돌아갑니다' : '전투 중입니다');
+    } else {
+      if (!g.unlocked(k)) { const u = UNLOCKS[k]; this.toast(`🔒 ${SKILLS[u.skill].name} Lv.${u.lv}이 되면 열립니다`); return; }
+      g.setSlotSkill(0, k);
+      s.focus = true;
+      if (s.mode === 'fight') g.enterCamp('focus');
+      this.close();
+      this.toast(`${SKILLS[k].name} · ${this.campPlace()}`, 1);
+    }
+    this.updateActions();
+    this.updateBar();
+  }
+  updateActions() {
+    const g = this.g, s = g.s;
+    for (const k of ['combat', 'mining', 'wood', 'forage', 'fish', 'hunt', 'alchemy']) {
+      const b = $('#dk-' + k);
+      const open = g.unlocked(k);
+      b.disabled = !open;
+      b.querySelector('.lk').hidden = open;
+      b.classList.toggle('on', k === 'combat' ? s.mode === 'fight' && !s.focus : s.mode === 'camp' && s.slots[0].k === k);
+    }
+    for (const id of ['strike', 'heal', 'rage']) {
+      const b = $('#cs-' + id), left = g.cdLeft(id), cdv = b.querySelector('.cdv');
+      cdv.hidden = left <= 0 && s.mode === 'fight';
+      cdv.textContent = s.mode !== 'fight' ? '—' : Math.ceil(left) + 's';
+      b.classList.toggle('ready', left <= 0 && s.mode === 'fight');
+    }
+    const auto = $('#autoCast');
+    auto.textContent = s.skills.combat.lv < 100 ? '자동 시전 🔒' : s.act.autoCast ? '자동 시전 켜짐' : '자동 시전 꺼짐';
+    auto.classList.toggle('on', !!s.act.autoCast && s.skills.combat.lv >= 100);
+    const fv = $('#fever');
+    const on = g.fever();
+    fv.classList.toggle('on', on);
+    $('#feverTxt').textContent = on ? `열정 폭발! ${Math.ceil(s.act.feverUntil - s.time)}초` : `열정 ${Math.floor(s.act.fever)}%`;
+    $('#feverFill').style.width = on ? '100%' : s.act.fever + '%';
   }
 
   // ---------- Tutorial & tips ----------
@@ -163,7 +262,7 @@ export class UI {
     const bar = $('#bar');
     bar.innerHTML = `
       <div class="who">
-        <canvas id="portrait" class="px" width="14" height="18"></canvas>
+        <canvas id="portrait" class="px" width="16" height="24"></canvas>
         <div class="who-txt"><div class="who-nm">모험가</div><div class="who-sub" id="whoSub"></div></div>
       </div>
       <div class="bars">
@@ -230,7 +329,7 @@ export class UI {
     const need = charXpNeed(c.lv);
     set('xp', c.xp, need, `${fmt(c.xp)} / ${fmt(need)} (${((c.xp / need) * 100).toFixed(1)}%)`);
     const mb = $('#b-mode .lbl');
-    mb.textContent = s.focus ? '생활집중' : '순환';
+    mb.textContent = s.focus ? '집중' : '순환';
     $('#b-mode').classList.toggle('on', s.focus);
     $('#b-char .dot').hidden = !((c.pts > 0 && !c.auto) || g.upgrades() > 0);
     const ls = this.hooks.lastSave();
@@ -239,6 +338,7 @@ export class UI {
     $('#b-life .dot').hidden = !s.slots.some(x => x.blocked);
     for (const id of ['char', 'life', 'bag', 'codex', 'rebirth', 'log', 'menu']) $('#b-' + id).classList.toggle('active', this.panel === id);
     this.updateHud();
+    this.updateActions();
     this.tutTick();
   }
 
@@ -406,7 +506,7 @@ export class UI {
     const g = this.g, s = g.s, c = s.char, d = g.d;
     const top = this.html(body, '', 'char-top');
     const pic = document.createElement('canvas');
-    pic.width = 14; pic.height = 18;
+    pic.width = 16; pic.height = 24;
     pic.className = 'px char-pic';
     pic.getContext('2d').drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
     top.appendChild(pic);
@@ -488,6 +588,9 @@ export class UI {
     });
     if (s.slots.length < 3) this.html(sl, `<p class="hint">분신 슬롯은 윤회 특성 「분신술」로 늘어납니다 (${s.slots.length - 1}/2)</p>`);
 
+    const pick = this.html(body, '', 'chips');
+    this.html(pick, '<small class="hint">상세 보기:</small>');
+    for (const k of Object.keys(SKILLS)) pick.appendChild(this.btn(SKILLS[k].short, () => { this.sel.skill = k; }, { cls: 'chip' + (this.sel.skill === k ? ' on' : ''), fid: 'dv' + k }));
     const grid = this.html(body, '', 'skill-grid');
     for (const k of Object.keys(SKILLS)) {
       const sk = s.skills[k];
@@ -498,11 +601,13 @@ export class UI {
       card.dataset.fid = 'sk' + k;
       card.appendChild(open ? skillIcon(k, 30) : iconCanvas(SKILL_ICON[k][0], '#3a3a48', 30));
       const need = xpNeed(sk.lv);
+      card.title = open && k !== 'combat' ? '누르면 바로 이 일을 하러 갑니다' : '';
       card.insertAdjacentHTML('beforeend', open ? `<div class="sc-nm">${SKILLS[k].name}</div><div class="sc-lv">Lv.${sk.lv}</div>
         <div class="sc-bar"><i style="width:${(sk.xp / need) * 100}%"></i></div>
         <div class="sc-tool">${k === 'combat' ? '처치로 성장' : TOOL_TIERS[toolTier(sk.lv)].name + ' 도구'}</div>` : `<div class="sc-nm">🔒 ${SKILLS[k].name}</div><div class="sc-lv">잠김</div>
         <div class="sc-lock">${SKILLS[u.skill].name} Lv.${u.lv} 필요 (지금 ${s.skills[u.skill].lv})</div>`);
-      card.addEventListener('click', () => { this.sel.skill = k; this.renderPanel(); });
+      card.addEventListener('click', () => { this.sel.skill = k; if (k === 'combat' || !open) this.renderPanel(); else this.goSkill(k); });
+      if (open && k !== 'combat') card.insertAdjacentHTML('beforeend', '<span class="sc-go">▶ 하러 가기</span>');
       grid.appendChild(card);
     }
     this.skillDetail(body, this.sel.skill);
@@ -554,7 +659,7 @@ export class UI {
     const ul = this.html(rr, '', 'rares');
     SKILL_RARES[k].forEach((id, i) => {
       const it = ITEMS[id], known = s.codex[id];
-      const r = this.html(ul, `<div><b style="color:${TIERS[it.tier].color}">${known ? esc(it.name) : '???'}</b><small>${TIERS[it.tier].name} · ${['0.3%', '0.02%', '0.002%', '0.0001%'][i]}${it.effect && known ? ' · ' + esc(it.effect) : ''}${known ? ` · 보유 ${s.items[id] || 0}` : ''}</small></div>`, 'rare-row');
+      const r = this.html(ul, `<div><b style="color:${TIERS[it.tier].color}">${known ? esc(it.name) : '???'}</b><small>${TIERS[it.tier].name} · ${{ 3: '0.3%', 4: '0.02%', 5: '0.002%', 6: '0.0001%' }[it.tier]}${it.effect && known ? ' · ' + esc(it.effect) : ''}${known ? ` · 보유 ${s.items[id] || 0}` : ''}</small></div>`, 'rare-row');
       r.prepend(known ? itemIcon(id, 26) : iconCanvas(it.icon, '#2a2a34', 26));
     });
   }
@@ -579,7 +684,7 @@ export class UI {
     }
     const pa = this.section(body, '물약 자동 사용 (전투 시작 시 1개씩)');
     const chips = this.html(pa, '', 'chips');
-    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_antidote', 'p_warm']) {
+    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_haste', 'p_focus', 'p_wisdom', 'p_antidote', 'p_warm']) {
       const type = ITEMS[id].potion;
       chips.appendChild(this.btn(`${ITEMS[id].name} ${s.potAuto[type] ? 'ON' : 'OFF'} · ${s.items[id] || 0}`, () => { s.potAuto[type] = !s.potAuto[type]; }, { cls: 'chip' + (s.potAuto[type] ? ' on' : ''), fid: 'pa' + id }));
     }
@@ -621,7 +726,7 @@ export class UI {
     this.html(box, `<b style="color:${TIERS[it.tier].color}">${esc(it.name)}</b>
       <small>${TIERS[it.tier].name} · ${src} · 보유 ${fmt(s.items[id] || 0)}${s.records[id] ? ` · 최고 ${s.records[id]}kg` : ''}</small>
       <small>${esc(it.effect || it.desc || '도감 보너스 +' + pct(TIERS[it.tier].codex))}</small>`, 'ii-txt');
-    if (id === 'x_cat') box.appendChild(this.btn('사용', () => this.g.useItem('x_cat'), { fid: 'use' }));
+    if (id === 'x_cat' || it.use) box.appendChild(this.btn('사용', () => this.g.useItem(id), { fid: 'use' }));
   }
 
   // ----- Codex

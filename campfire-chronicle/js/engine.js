@@ -3,7 +3,7 @@
 import {
   TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH,
   RECIPES, MONSTERS, REGIONS, GEAR_NAMES, GEAR_TIER_MULT, PERKS, MEMORIES, PRESETS, AWAKENINGS,
-  TOOL_TIERS, MASTER_BONUS, UNLOCKS, BOSS_EVERY, ELITE_EVERY,
+  TOOL_TIERS, MASTER_BONUS, UNLOCKS, BOSS_EVERY, ELITE_EVERY, AFFIXES, BOSS_TROPHY,
 } from './data.js';
 import { makeRng, hash32 } from './rng.js';
 
@@ -14,6 +14,9 @@ export const CLONE_SPEED = 0.6;
 export const KILLS_PER_FLOOR = 10;
 export const MON_INTERVAL = 1.8;
 export const REBIRTH_XP = 0.05;
+export const FEVER_SEC = 30;
+export const SKILL_CD = { strike: 8, heal: 30, rage: 45 };
+export const AUTOCAST_LV = 100;
 export const RECALL_MULT = 5;
 export const RECALL_UNTIL = 0.95;
 export const RECALL_FLOOR = 0.2;
@@ -46,7 +49,8 @@ export function gearScore(g) {
   if (g.slot === 'charm') { const c = charmValue(g); return c.luck * 10 + c.crit * 10; }
   return gearValue(g);
 }
-export const gearName = g => `${GEAR_NAMES[g.slot][g.tier]}${g.enh ? ' +' + g.enh : ''}`;
+export const gearName = g => `${g.affix ? AFFIXES[g.affix].name + ' ' : ''}${GEAR_NAMES[g.slot][g.tier]}${g.enh ? ' +' + g.enh : ''}`;
+export const affixValue = g => (g && g.affix ? AFFIXES[g.affix].v * (1 + 0.5 * g.tier) : 0);
 export const enhanceCost = g => Math.ceil(10 * Math.pow(1.13, g.f - 1) * Math.pow(1.5, g.enh));
 
 // What happens at a given skill level (used for logs and the "next milestone" list).
@@ -93,8 +97,9 @@ export function newState(seed = (Math.random() * 4294967296) >>> 0) {
     spots: { mining: 0, wood: 0, forage: 0, fish: 0, hunt: 0 },
     recipe: 'p_str', secret: false,
     skills, items: {}, codex: {}, records: {},
-    potAuto: { str: true, hp: true, sta: true, antidote: true, warm: true, luck: true },
-    pot: {}, catUntil: 0, elixirs: { atk: 0, hp: 0, all: 0 },
+    potAuto: { str: true, hp: true, sta: true, antidote: true, warm: true, luck: true, haste: true, focus: true, wisdom: true },
+    pot: {}, catUntil: 0, gatherUntil: 0, elixirs: { atk: 0, hp: 0, all: 0, agi: 0, sta: 0, luck: 0, crit: 0, lifexp: 0 },
+    act: { cd: { strike: 0, heal: 0, rage: 0 }, rageUntil: 0, fever: 0, feverUntil: 0, autoCast: false, alchGreat: 0 },
     rb: { count: 0, ash: 0, totalAsh: 0, perks: {}, memory: null, choices: null, bestFloor: 1, bestLv: 1 },
     stats: { kills: 0, deaths: 0, bosses: 0, actions: 0, gold: 0 },
     hall: [], log: [], firstKills: {},
@@ -121,6 +126,7 @@ export function migrate(raw) {
   s.stats = { ...base.stats, ...(raw.stats || {}) };
   s.potAuto = { ...base.potAuto, ...(raw.potAuto || {}) };
   s.elixirs = { ...base.elixirs, ...(raw.elixirs || {}) };
+  s.act = { ...base.act, ...(raw.act || {}), cd: { ...base.act.cd, ...((raw.act && raw.act.cd) || {}) } };
   s.tut = { ...base.tut, ...(raw.tut || {}), tips: { ...((raw.tut && raw.tut.tips) || {}) } };
   s.v = VERSION;
   return s;
@@ -200,9 +206,11 @@ export class Game {
     const wAtk = g.weapon ? gearValue(g.weapon) : 0;
     const aHp = g.armor ? gearValue(g.armor) : 0;
     const ch = g.charm ? charmValue(g.charm) : { luck: 0, crit: 0 };
+    const aff = { atk: 0, hp: 0, spd: 0, crit: 0, critD: 0, luck: 0, sta: 0, xp: 0 };
+    for (const sl of ['weapon', 'armor', 'charm']) if (g[sl] && g[sl].affix) aff[AFFIXES[g[sl].affix].stat] += affixValue(g[sl]);
 
     let atk = (4 + st.str * 2 + wAtk) * (1 + pb('mining')) * (1 + pb('combat')) * (1 + codex)
-      * (1 + 0.1 * this.P('w_atk')) * (1 + 0.02 * s.elixirs.atk) * allMul;
+      * (1 + 0.1 * this.P('w_atk')) * (1 + 0.02 * s.elixirs.atk) * allMul * (1 + aff.atk);
     if (pot.str) atk *= 1 + 0.25 * potPow;
     atk *= this.prim('m_prim', 1.5, 0.1) || 1;
     if (master('mining')) atk *= 1.25;
@@ -211,22 +219,23 @@ export class Game {
     if (mem === 'warrior') atk *= 1.15;
 
     let hp = (40 + st.vit * 8 + c.lv * 4 + aHp) * (1 + pb('forage')) * (1 + pb('combat')) * (1 + codex)
-      * (1 + 0.1 * this.P('w_hp')) * (1 + 0.02 * s.elixirs.hp) * allMul;
+      * (1 + 0.1 * this.P('w_hp')) * (1 + 0.02 * s.elixirs.hp) * allMul * (1 + aff.hp);
     if (pot.hp) hp *= 1 + 0.25 * potPow;
     if (master('forage')) hp *= 1.25;
     if (master('combat')) hp *= 1.25;
 
-    let sta = 100 * (1 + st.vit * 0.005) * (1 + pb('wood'));
+    let sta = 100 * (1 + st.vit * 0.005) * (1 + pb('wood')) * (1 + 0.02 * s.elixirs.sta) * (1 + aff.sta);
     if (pot.sta) sta *= 1 + 0.4 * potPow;
 
     const luckCap = LUCK_CAP + this.prim('f_prim', 0.5, 0.1) + (master('fish') ? 0.5 : 0);
     let luck = 1 + st.luk * 0.002 + sk.fish.lv * 0.0005 + Math.floor(sk.fish.lv / 10) * 0.005
-      + 0.05 * this.P('a_luck') + ch.luck + (mem === 'lucky' ? 0.5 : 0) + (pot.luck ? 0.3 * potPow : 0);
+      + 0.05 * this.P('a_luck') + ch.luck + (mem === 'lucky' ? 0.5 : 0) + (pot.luck ? 0.3 * potPow : 0)
+      + 0.01 * s.elixirs.luck + aff.luck;
     luck = Math.min(luckCap, luck);
 
-    const critC = Math.min(0.75, 0.05 + st.luk * 0.003 + ch.crit);
-    const critD = (1.5 + pb('hunt') + this.prim('h_prim', 1, 0.2)) * (master('hunt') ? 1.5 : 1);
-    const interval = Math.max(0.25, 1.4 / (1 + st.agi * 0.008));
+    const critC = Math.min(0.75, 0.05 + st.luk * 0.003 + ch.crit + aff.crit + (pot.focus ? 0.1 * potPow : 0));
+    const critD = (1.5 + pb('hunt') + this.prim('h_prim', 1, 0.2)) * (master('hunt') ? 1.5 : 1) * (1 + 0.02 * s.elixirs.crit) * (1 + aff.critD);
+    const interval = Math.max(0.2, 1.4 / (1 + st.agi * 0.008) / (1 + 0.01 * s.elixirs.agi) / (1 + aff.spd) / (pot.haste ? 1 + 0.25 * potPow : 1));
     const dodge = Math.min(0.6, st.agi * 0.002 + (mem === 'coward' ? 0.3 : 0));
     const nightXp = env.night ? this.prim('s_prim', 1.3, 0.05) || 1 : 1;
 
@@ -234,8 +243,8 @@ export class Game {
       atk, hp, sta, luck, luckCap, critC, critD, interval, dodge, potPow, codex,
       res: { poison: Math.min(1, sk.forage.lv / 60), ice: Math.min(1, sk.wood.lv / 80) },
       lifeSpeed: (1 + 0.03 * this.P('a_speed')) * (this.prim('w_prim', 1.25, 0.05) || 1) * (master('wood') ? 1.15 : 1),
-      lifeXp: (1 + 0.05 * this.P('a_xp')) * nightXp,
-      charXp: (1 + 0.15 * this.P('w_xp')) * this.rebirthXp() * nightXp,
+      lifeXp: (1 + 0.05 * this.P('a_xp')) * (1 + 0.02 * s.elixirs.lifexp) * nightXp,
+      charXp: (1 + 0.15 * this.P('w_xp')) * this.rebirthXp() * nightXp * (1 + aff.xp) * (pot.wisdom ? 1 + 0.3 * potPow : 1),
       gold: (1 + 0.2 * this.P('r_gold')) * (mem === 'rich' ? 3 : 1),
       campDur: 60 * (mem === 'sleepy' ? 1.5 : 1),
     };
@@ -244,7 +253,8 @@ export class Game {
 
   skillSpeed(k) {
     const sk = this.s.skills[k];
-    return this.d.lifeSpeed * (1 + 0.1 * toolTier(sk.lv)) * (k === 'forage' && this.env.weather === 'rain' ? 1.2 : 1);
+    return this.d.lifeSpeed * (1 + 0.1 * toolTier(sk.lv)) * (k === 'forage' && this.env.weather === 'rain' ? 1.2 : 1)
+      * (this.s.gatherUntil > this.s.time ? 1.3 : 1) * (this.fever() ? 2 : 1);
   }
   skillXpMult(k) {
     const mem = this.s.rb.memory;
@@ -253,7 +263,7 @@ export class Game {
   rareMult(k) {
     const sk = this.s.skills[k];
     return this.d.luck * (sk.lv >= 750 ? 1.5 : 1) * (this.s.catUntil > this.s.time && k !== 'combat' ? 1.5 : 1)
-      * (k === 'fish' && this.env.night ? 1.3 : 1);
+      * (k === 'fish' && this.env.night ? 1.3 : 1) * (this.burstMult || 1);
   }
 
   // ---------- Main loop ----------
@@ -327,7 +337,7 @@ export class Game {
     s.pot = {};
     this.calc();
     const gm = this.gimmick(c.floor);
-    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_antidote', 'p_warm']) {
+    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_haste', 'p_focus', 'p_wisdom', 'p_antidote', 'p_warm']) {
       const type = ITEMS[id].potion;
       if (!s.potAuto[type] || !(s.items[id] > 0)) continue;
       if (type === 'antidote' && (gm !== 'poison' || this.d.res.poison >= 1)) continue;
@@ -406,10 +416,10 @@ export class Game {
     const spot = Math.min(s.spots[k], spotsUnlocked(sk.lv) - 1);
     const tier = this.rollTier(k, this.rareMult(k));
     let id;
-    if (tier >= 3) id = SKILL_RARES[k][tier - 3];
+    if (tier >= 3) id = this.pick(SKILL_RARES[k], tier);
     else {
-      id = SPOTS[k][spot].items[tier];
-      if (k === 'fish' && tier === 2 && this.rng() < 0.3) id = SEASON_FISH[this.env.season];
+      id = this.pick(SPOTS[k][spot].items, tier);
+      if (k === 'fish' && tier === 2 && this.rng() < 0.3) id = this.pick(SEASON_FISH.filter(f => ITEMS[f].season === this.env.season), 2);
     }
     const dbl = sk.lv >= 500 ? 0.1 : sk.lv >= 250 ? 0.05 : 0;
     const n = dbl && tier < 3 && this.rng() < dbl ? 2 : 1;
@@ -420,6 +430,12 @@ export class Game {
     this.gain(id, n, k);
     this.skillXp(k, SPOT_XP[spot] * this.skillXpMult(k));
     this.emit({ t: 'act', k, slot, id, tier, n, w });
+  }
+
+  // Random item of a tier from a list.
+  pick(list, tier) {
+    const pool = list.filter(id => ITEMS[id].tier === tier);
+    return pool.at(Math.floor(this.rng() * pool.length)) || list.at(0);
   }
 
   gauss() {
@@ -448,7 +464,8 @@ export class Game {
     let kind = 'ok', n = 1;
     if (roll < failP) { kind = 'fail'; n = 0; }
     else if (roll < failP + 0.001) { kind = 'miracle'; n = 10; }
-    else if (roll < failP + 0.051) { kind = 'great'; n = 2; }
+    else if (roll < failP + 0.051 || s.act.alchGreat > 0) { kind = 'great'; n = 2; }
+    if (s.act.alchGreat > 0) s.act.alchGreat--;
     if (n) {
       const it = ITEMS[r.id];
       if (r.max) n = Math.min(n, r.max - this.crafted(r));
@@ -466,7 +483,7 @@ export class Game {
       this.emit({ t: 'secret' });
     }
     const t = this.rollTier('alchemy', this.rareMult('alchemy'));
-    if (t >= 3) this.gain(SKILL_RARES.alchemy[t - 3], 1, 'alchemy');
+    if (t >= 3) this.gain(this.pick(SKILL_RARES.alchemy, t), 1, 'alchemy');
     sk.n++;
     s.stats.actions++;
     this.skillXp('alchemy', r.xp * (kind === 'fail' ? 1.5 : 1) * this.skillXpMult('alchemy'));
@@ -516,11 +533,93 @@ export class Game {
 
   useItem(id) {
     const s = this.s;
-    if (id !== 'x_cat' || !(s.items[id] > 0)) return false;
+    if (!(s.items[id] > 0)) return false;
+    if (id === 'x_cat') { s.catUntil = Math.max(s.time, s.catUntil) + 3600; this.log('행운의 촉매 사용: 1시간 동안 생활 희귀 확률 ×1.5', 2); }
+    else if (id === 't_gather') { s.gatherUntil = Math.max(s.time, s.gatherUntil) + 1800; this.log('장인의 강장제 사용: 30분 동안 생활 속도 ×1.3', 2); }
+    else if (id === 't_fever') this.addFever(100);
+    else return false;
     s.items[id]--;
-    s.catUntil = Math.max(s.time, s.catUntil) + 3600;
-    this.log('행운의 촉매 사용: 1시간 동안 생활 희귀 확률 ×1.5', 2);
     return true;
+  }
+
+  // ---------- Active play (all optional; idle play never needs it) ----------
+  fever() { return this.s.act.feverUntil > this.s.time; }
+  addFever(x) {
+    const a = this.s.act;
+    if (this.fever()) return;
+    a.fever = Math.min(100, a.fever + x);
+    if (a.fever >= 100) {
+      a.fever = 0;
+      a.feverUntil = this.s.time + FEVER_SEC;
+      this.emit({ t: 'fever' });
+      this.log('열정 폭발! 30초 동안 모든 속도 ×2', 3);
+    }
+  }
+  rage() { return this.s.act.rageUntil > this.s.time; }
+  cdLeft(id) { return Math.max(0, this.s.act.cd[id] - this.s.time); }
+  castSkill(id) {
+    const s = this.s, c = s.char, d = this.d, a = s.act;
+    if (s.mode !== 'fight' || this.cdLeft(id) > 0) return false;
+    if (id === 'strike') {
+      if (!this.mon || this.mon.approach > 0) return false;
+      const crit = this.rng() < d.critC;
+      this.damage(d.atk * 5 * (crit ? d.critD : 1), crit, 'strike');
+    } else if (id === 'heal') {
+      c.hp = Math.min(d.hp, c.hp + d.hp * 0.4);
+      c.sta = Math.min(d.sta, c.sta + d.sta * 0.3);
+      this.emit({ t: 'heal' });
+    } else if (id === 'rage') {
+      a.rageUntil = s.time + 10;
+      this.emit({ t: 'rage' });
+    } else return false;
+    a.cd[id] = s.time + SKILL_CD[id];
+    this.addFever(8);
+    return true;
+  }
+  // Clicking the monster: a quick extra hit (rate-limited).
+  tap() {
+    const s = this.s;
+    if (s.mode !== 'fight' || !this.mon || this.mon.approach > 0) return false;
+    if (s.time - (this.lastTap || -1) < 0.1) return false;
+    this.lastTap = s.time;
+    const crit = this.rng() < this.d.critC;
+    this.damage(this.d.atk * 0.25 * (crit ? this.d.critD : 1), crit, 'tap');
+    this.addFever(0.6);
+    return true;
+  }
+  damage(dmg, crit, src) {
+    const m = this.mon;
+    if (!m) return;
+    m.hp -= dmg;
+    this.emit({ t: 'hit', who: 'mon', dmg, crit, src });
+    if (m.hp <= 0) this.kill();
+  }
+  autoCastTick() {
+    const s = this.s, c = s.char;
+    if (!s.act.autoCast || s.skills.combat.lv < AUTOCAST_LV || s.mode !== 'fight') return;
+    if (this.cdLeft('strike') === 0) this.castSkill('strike');
+    if (this.cdLeft('heal') === 0 && c.hp < this.d.hp * 0.45) this.castSkill('heal');
+    if (this.cdLeft('rage') === 0 && this.mon && (this.mon.boss || this.mon.elite)) this.castSkill('rage');
+  }
+  // Mini-game success: n instant actions of the skill with boosted rare odds.
+  lifeBurst(k, n, rareBoost) {
+    if (k === 'alchemy') { this.s.act.alchGreat += n; this.addFever(20); return; }
+    this.burstMult = rareBoost;
+    for (let i = 0; i < n; i++) this.gatherAction(k, 0);
+    this.burstMult = 1;
+    this.addFever(20);
+  }
+  // Wandering wisp (random event): rewards scale with progress.
+  claimWisp() {
+    const s = this.s, c = s.char, r = this.rng();
+    let text;
+    if (r < 0.3) { const g = 40 * Math.pow(1.13, c.maxFloor - 1); c.gold += g; text = `골드 +${Math.round(g)}`; }
+    else if (r < 0.55) { this.charXp(charXpNeed(c.lv) * 0.6); text = '경험치 대량 획득'; }
+    else if (r < 0.75) { const ids = ['p_str', 'p_hp', 'p_sta', 'p_luck']; const id = ids[Math.floor(this.rng() * ids.length)]; this.gain(id, 2, 'alchemy'); text = `${ITEMS[id].name} ×2`; }
+    else if (r < 0.9) { this.addFever(60); text = '열정 +60'; }
+    else { s.catUntil = Math.max(s.time, s.catUntil) + 900; text = '15분 동안 생활 희귀 확률 ×1.5'; }
+    this.log(`떠돌이 요정의 선물: ${text}`, 3);
+    return text;
   }
 
   // ---------- Combat ----------
@@ -572,7 +671,9 @@ export class Game {
     if (!this.mon) this.spawn();
     const m = this.mon;
     if (m.approach > 0) { m.approach -= dt; return; }
-    const iv = d.interval / (gm === 'ice' && !s.pot.warm ? 1 - 0.4 * (1 - d.res.ice) : 1);
+    this.autoCastTick();
+    if (!this.mon || s.mode !== 'fight') return;
+    const iv = d.interval / (gm === 'ice' && !s.pot.warm ? 1 - 0.4 * (1 - d.res.ice) : 1) / (this.rage() ? 2 : 1) / (this.fever() ? 1.5 : 1);
     this.heroTimer -= dt;
     this.monTimer -= dt;
     while (this.mon && s.mode === 'fight' && (this.heroTimer <= 0 || this.monTimer <= 0)) {
@@ -585,11 +686,9 @@ export class Game {
     const s = this.s, c = s.char, d = this.d, m = this.mon;
     let dmg = d.atk * (0.9 + 0.2 * this.rng());
     if (s.rb.memory === 'berserk' && c.hp < d.hp * 0.5) dmg *= 1.6;
-    const crit = this.rng() < d.critC;
+    const crit = this.rng() < d.critC + (this.rage() ? 0.25 : 0);
     if (crit) dmg *= d.critD;
-    m.hp -= dmg;
-    this.emit({ t: 'hit', who: 'mon', dmg, crit });
-    if (m.hp <= 0) this.kill();
+    this.damage(dmg, crit, 'auto');
   }
 
   monHit() {
@@ -622,10 +721,11 @@ export class Game {
     const reg = this.region(m.f);
     if (m.variant || m.boss || this.rng() < 0.4) {
       const t = this.rollTier('combat', d.luck * (m.variant ? 2 : 1));
-      this.gain(t >= 3 ? SKILL_RARES.combat[t - 3] : reg.mats[t], 1, 'combat');
+      this.gain(this.pick(t >= 3 ? SKILL_RARES.combat : reg.mats, t), 1, 'combat');
     }
     const sure = m.boss || m.elite || m.variant === 'giant' || m.variant === 'ancient';
     const first = (m.boss || m.elite) && !s.firstKills[m.f];
+    if (m.boss && BOSS_TROPHY[m.key] && (first || this.rng() < 0.15)) this.gain(BOSS_TROPHY[m.key], 1, 'combat');
     if (first) {
       s.firstKills[m.f] = 1;
       this.dropGear(m, m.boss ? 3 : 2);
@@ -677,7 +777,8 @@ export class Game {
     const s = this.s, c = s.char;
     const slot = ['weapon', 'armor', 'charm'][Math.floor(this.rng() * 3)];
     const tier = this.rollGearTier(this.d.luck, Math.max(minTier, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0));
-    const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0 };
+    const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0, affix: null };
+    if (this.rng() < 0.3 + 0.1 * tier) { const keys = Object.keys(AFFIXES); g.affix = keys[Math.floor(this.rng() * keys.length)]; }
     const cur = c.gear[slot];
     if (tier >= 2) this.log(`장비 획득: [${TIERS[tier].name}] ${gearName(g)} (${m.f}층)`, tier);
     // Auto-equip is opt-in; by default every drop goes to the bag for the player to equip.
