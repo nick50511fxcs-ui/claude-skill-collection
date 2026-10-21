@@ -69,7 +69,7 @@ def main(path, orders=None):
                 if any(str(v).strip() for v in row):
                     print(" | ".join(str(v) for v in row))
 
-        dump("계산상세", "A4:N60")
+        dump("계산상세", "A4:O200")
         dump("결과요약", "B4:H40")
         if os.environ.get("PDF_OUT"):
             doc.storeToURL(uno.systemPathToFileUrl(os.path.abspath(os.environ["PDF_OUT"])),

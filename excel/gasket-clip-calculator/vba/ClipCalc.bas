@@ -25,6 +25,7 @@ Private Const N_FIELDS As Long = 6
 Private kwExact(1 To N_FIELDS) As Variant
 Private kwContains(1 To N_FIELDS) As Variant
 Private kwExclude(1 To N_FIELDS) As Variant
+Private tMin As Variant, tMax As Variant, tCls As Variant, tData As Variant
 
 ' ============================================================ buttons
 
@@ -47,7 +48,7 @@ Public Sub ImportAndCalc()
         lr = LastUsedRow(ws)
         lc = LastUsedCol(ws)
         If lr > 0 Then
-            If FindHeaderRow(ws, lr, lc, cols, dn) > 0 Then Set src = ws: Exit For
+            If FindHeaderRow(ws, 1, lr, lc, cols, dn) > 0 Then Set src = ws: Exit For
             If src Is Nothing Then Set src = ws
         End If
     Next ws
@@ -101,6 +102,7 @@ Public Sub ResetAll()
     Application.ScreenUpdating = False
     ClearInputData
     SetSourceInfo ""
+    ThisWorkbook.Names("inputOrderNo").RefersToRange.Value = ""
     ClearDetail
     ClearSummary True
     Application.ScreenUpdating = True
@@ -134,9 +136,11 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
     Dim rowText As String, descText As String, otherText As String
     Dim orderText As String, lastOrder As String
     Dim qty As Variant, sizeV As Double, classV As Long, filters As Variant
+    Dim classText As String, note As String, noteV() As Variant, defaultOrder As String
 
     On Error GoTo Fail
     InitKeywords
+    LoadTable
     Set ws = shInput
     calcMode = Application.Calculation
     Application.ScreenUpdating = False
@@ -149,7 +153,7 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
         GoTo Done
     End If
 
-    headerRow = FindHeaderRow(ws, lastRow, lastCol, cols, dnMode)
+    headerRow = FindHeaderRow(ws, InputScanStart(), lastRow, lastCol, cols, dnMode)
     ApplyOverrides cols, headerRow, dnMode
     If headerRow = 0 Then
         msg = "수주 내역의 제목 행(수주번호 / 품명 / 수량 등)을 찾지 못했습니다." & vbCrLf & "설정 시트에서 '제목 행 번호'와 각 열을 직접 지정한 뒤 다시 실행하세요."
@@ -164,6 +168,10 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
     filters = FilterKeywords()
     ReDim outV(1 To lastRow, 1 To 6)
     ReDim srcRow(1 To lastRow, 1 To 1)
+    ReDim noteV(1 To lastRow, 1 To 1)
+    ' Order lists without an order number column use the number typed on the input sheet.
+    defaultOrder = Trim$(SafeText(Setting("inputOrderNo")))
+    If Len(defaultOrder) = 0 Then defaultOrder = "(수주번호 미입력)"
 
     For r = headerRow + 1 To lastRow
         rowText = ""
@@ -190,10 +198,12 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
         If sizeV = 0 And Len(descText) > 0 Then sizeV = ParseSizeText(descText, False, False)
         If sizeV = 0 Then sizeV = ParseSizeText(otherText, False, False)
 
-        classV = 0
-        If cols(F_CLASS) > 0 Then classV = ParseClassCell(data(r, cols(F_CLASS)))
-        If classV = 0 And Len(descText) > 0 Then classV = ParseClassText(descText)
-        If classV = 0 Then classV = ParseClassText(otherText)
+        ' Class: same order. 300/600LB style ratings list every class.
+        classText = ""
+        If cols(F_CLASS) > 0 Then classText = ParseClassCell(data(r, cols(F_CLASS)))
+        If Len(classText) = 0 And Len(descText) > 0 Then classText = ParseClassText(descText)
+        If Len(classText) = 0 Then classText = ParseClassText(otherText)
+        classV = PickClass(classText, sizeV, note)
 
         qty = ParseQty(data(r, cols(F_QTY)))
         ' A row with no quantity and no recognizable gasket spec is a note, not an item.
@@ -202,7 +212,7 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
         If cols(F_ORDER) > 0 Then
             If Len(orderText) = 0 Then orderText = lastOrder Else lastOrder = orderText
         End If
-        If Len(orderText) = 0 Then orderText = "(수주번호 없음)"
+        If Len(orderText) = 0 Then orderText = defaultOrder
 
         n = n + 1
         outV(n, 1) = n
@@ -212,6 +222,7 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
         If sizeV > 0 Then outV(n, 5) = sizeV
         If classV > 0 Then outV(n, 6) = classV
         srcRow(n, 1) = r
+        noteV(n, 1) = note
         AddUnique orders, orderText
 NextRow:
     Next r
@@ -221,7 +232,7 @@ NextRow:
         GoTo Done
     End If
 
-    WriteDetail n, outV, srcRow
+    WriteDetail n, outV, srcRow, noteV
     WriteSummary orders, DET_FIRST + n - 1
     DoCalc = n
 
@@ -257,7 +268,7 @@ End Function
 
 ' ============================================================ output sheets
 
-Private Sub WriteDetail(ByVal n As Long, outV() As Variant, srcRow() As Variant)
+Private Sub WriteDetail(ByVal n As Long, outV() As Variant, srcRow() As Variant, noteV() As Variant)
     Dim ws As Worksheet, lastR As Long, f As Long
     Set ws = shDetail
     ClearDetail
@@ -266,6 +277,7 @@ Private Sub WriteDetail(ByVal n As Long, outV() As Variant, srcRow() As Variant)
     ws.Range("B" & f & ":C" & lastR).NumberFormat = "@"
     ws.Range("A" & f & ":F" & lastR).Value = outV
     ws.Range("N" & f & ":N" & lastR).Value = srcRow
+    ws.Range("O" & f & ":O" & lastR).Value = noteV
 
     ' R1C1 with absolute columns: the same text is correct on every row.
     ws.Range("G" & f & ":G" & lastR).FormulaR1C1 = "=IF(RC5="""","""",IF(RC5<MIN(tblMin),""표에 없음"",IF(RC5<=INDEX(tblMax,MATCH(RC5,tblMin,1)),INDEX(tblLabel,MATCH(RC5,tblMin,1)),""표에 없음"")))"
@@ -276,12 +288,12 @@ Private Sub WriteDetail(ByVal n As Long, outV() As Variant, srcRow() As Variant)
     ws.Range("L" & f & ":L" & lastR).FormulaR1C1 = "=IF(RC11="""","""",RC11*RC10)"
     ws.Range("M" & f & ":M" & lastR).FormulaR1C1 = "=IF(RC12<>"""",""OK"",IF(NOT(ISNUMBER(RC4)),""수량 확인 필요"",IF(RC5="""",""Size 인식 실패"",IF(RC6="""",""Class 인식 실패"",IF(RC7=""표에 없음"",""기준표에 없는 Size"",IF(RC8=""N/A"",""N/A (기준 없음)"",IF(RC8=""표에 없음"",""기준표에 없는 Class"",""확인 필요"")))))))"
 
-    With ws.Range("A" & f & ":N" & lastR).Borders
+    With ws.Range("A" & f & ":O" & lastR).Borders
         .LineStyle = xlContinuous
         .Color = RGB(191, 191, 191)
         .Weight = xlThin
     End With
-    ws.Range("A4:N" & lastR).AutoFilter
+    ws.Range("A4:O" & lastR).AutoFilter
 End Sub
 
 Private Sub ClearDetail()
@@ -290,8 +302,8 @@ Private Sub ClearDetail()
     If ws.AutoFilterMode Then ws.AutoFilterMode = False
     lastR = LastUsedRow(ws)
     If lastR >= DET_FIRST Then
-        ws.Range("A" & DET_FIRST & ":N" & lastR).ClearContents
-        ws.Range("A" & DET_FIRST & ":N" & lastR).Borders.LineStyle = xlNone
+        ws.Range("A" & DET_FIRST & ":O" & lastR).ClearContents
+        ws.Range("A" & DET_FIRST & ":O" & lastR).Borders.LineStyle = xlNone
     End If
 End Sub
 
@@ -386,7 +398,7 @@ Private Sub ClearSummary(ByVal showPlaceholder As Boolean)
     If showPlaceholder Then
         ws.Range("C4").MergeArea.ClearContents
         ws.Range("F4").MergeArea.ClearContents
-        ws.Cells(SUM_FIRST, 2).Value = "아직 계산 전입니다. 사용설명서 시트의 [클립 계산 실행] 버튼을 눌러 주세요."
+        ws.Cells(SUM_FIRST, 2).Value = "아직 계산 전입니다. [② 붙여넣은 내역으로 계산] 버튼을 눌러 주세요."
         ws.Cells(SUM_FIRST, 2).Font.Color = RGB(128, 128, 128)
     End If
 End Sub
@@ -413,7 +425,7 @@ Private Sub InitKeywords()
     kwContains(F_ORDER) = Split("수주번호|수주NO|오더번호|주문번호|ORDERNO|SONO|PONO|JOBNO|수주|ORDER|오더", "|")
     kwExclude(F_ORDER) = Split("일자|일|DATE|날짜|금액|단가|수량|QTY|처|명|고객|CUSTOMER|ITEM", "|")
 
-    kwExact(F_DESC) = Split("품명|품목명|품목|규격|사양|자재명|제품명|품명및규격|품명/규격|DESCRIPTION|DESC|ITEMDESCRIPTION|SPEC|SPECIFICATION|ITEM|MATERIALDESCRIPTION", "|")
+    kwExact(F_DESC) = Split("규격|품명및규격|품명/규격|DESCRIPTION|ITEMDESCRIPTION|MATERIALDESCRIPTION|SPEC|SPECIFICATION|사양|품명|품목명|제품명|자재명|DESC|품목|ITEM", "|")
     kwContains(F_DESC) = Split("DESCRIPTION|품명|품목|규격|사양|자재|제품|SPEC|ITEM|DESC", "|")
     kwExclude(F_DESC) = Split("코드|CODE|NO|번호|수량|QTY|단위|UNIT|#", "|")
 
@@ -435,12 +447,12 @@ Private Sub InitKeywords()
 End Sub
 
 ' Returns the header row (0 when none) and fills cols() with the column of each field.
-Private Function FindHeaderRow(ByVal ws As Worksheet, ByVal lastRow As Long, ByVal lastCol As Long, cols() As Long, dnMode As Boolean) As Long
+Private Function FindHeaderRow(ByVal ws As Worksheet, ByVal firstRow As Long, ByVal lastRow As Long, ByVal lastCol As Long, cols() As Long, dnMode As Boolean) As Long
     Dim r As Long, maxR As Long
     If Not IsArray(kwExact(F_QTY)) Then InitKeywords
     maxR = lastRow
-    If maxR > HEADER_SCAN_ROWS Then maxR = HEADER_SCAN_ROWS
-    For r = 1 To maxR
+    If maxR > firstRow + HEADER_SCAN_ROWS Then maxR = firstRow + HEADER_SCAN_ROWS
+    For r = firstRow To maxR
         If MapHeader(ws, r, lastCol, cols) >= 2 Then
             If cols(F_QTY) > 0 Or cols(F_DESC) > 0 Or cols(F_SIZE) > 0 Then
                 FindHeaderRow = r
@@ -456,7 +468,13 @@ Private Function FindHeaderRow(ByVal ws As Worksheet, ByVal lastRow As Long, ByV
 End Function
 
 Private Function MapHeader(ByVal ws As Worksheet, ByVal r As Long, ByVal lastCol As Long, cols() As Long) As Long
-    Dim fieldOrder As Variant, f As Variant, c As Long, k As Long, pass As Long, h As String
+    Dim fieldOrder As Variant, f As Variant, kw As Variant, c As Long, k As Long, pass As Long
+    Dim hdr() As String
+    ReDim hdr(1 To lastCol)
+    For c = 1 To lastCol
+        hdr(c) = NormHeader(ws.Cells(r, c).Value)
+        If Len(hdr(c)) > 20 Then hdr(c) = ""
+    Next c
     For k = 1 To N_FIELDS
         cols(k) = 0
     Next k
@@ -464,17 +482,25 @@ Private Function MapHeader(ByVal ws As Worksheet, ByVal r As Long, ByVal lastCol
     For pass = 1 To 2
         For Each f In fieldOrder
             If cols(f) = 0 Then
-                For c = 1 To lastCol
-                    If Not ColumnTaken(cols, c) Then
-                        h = NormHeader(ws.Cells(r, c).Value)
-                        If Len(h) > 0 And Len(h) <= 20 Then
-                            If MatchField(h, CLng(f), pass = 1) Then
-                                cols(f) = c
-                                Exit For
+                If pass = 1 Then
+                    ' Exact names, in keyword priority order (spec before item code).
+                    For Each kw In kwExact(f)
+                        For c = 1 To lastCol
+                            If hdr(c) = kw Then
+                                If Not ColumnTaken(cols, c) Then cols(f) = c: Exit For
+                            End If
+                        Next c
+                        If cols(f) > 0 Then Exit For
+                    Next kw
+                Else
+                    For c = 1 To lastCol
+                        If Len(hdr(c)) > 0 Then
+                            If Not ColumnTaken(cols, c) Then
+                                If MatchContains(hdr(c), CLng(f)) Then cols(f) = c: Exit For
                             End If
                         End If
-                    End If
-                Next c
+                    Next c
+                End If
             End If
         Next f
     Next pass
@@ -490,18 +516,20 @@ Private Function ColumnTaken(cols() As Long, ByVal c As Long) As Boolean
     Next k
 End Function
 
-Private Function MatchField(ByVal h As String, ByVal f As Long, ByVal exactOnly As Boolean) As Boolean
+Private Function MatchContains(ByVal h As String, ByVal f As Long) As Boolean
     Dim k As Variant
-    For Each k In kwExact(f)
-        If h = k Then MatchField = True: Exit Function
-    Next k
-    If exactOnly Then Exit Function
     For Each k In kwExclude(f)
         If InStr(1, h, k, vbBinaryCompare) > 0 Then Exit Function
     Next k
     For Each k In kwContains(f)
-        If InStr(1, h, k, vbBinaryCompare) > 0 Then MatchField = True: Exit Function
+        If InStr(1, h, k, vbBinaryCompare) > 0 Then MatchContains = True: Exit Function
     Next k
+End Function
+
+' On the input sheet, skip the instruction rows above A5 while they are still there.
+Private Function InputScanStart() As Long
+    InputScanStart = 1
+    If Left$(SafeText(shInput.Range("A4").Value), 1) = "▼" Then InputScanStart = INPUT_FIRST_ROW
 End Function
 
 Private Function NormHeader(ByVal v As Variant) As String
@@ -778,28 +806,26 @@ Private Function DnToInch(ByVal dn As Double) As Double
     End Select
 End Function
 
-' Pressure class from free text, 0 when not found.
+' Pressure class(es) from free text, "" when not found. A multi-rated item such as
+' 150/300/600LB returns "150/300/600".
 ' Needs a marker: 150LB  150LBS  150#  CL150  CLASS 150  ANSI 150  RATING 150
-Private Function ParseClassText(ByVal s As String) As Long
-    Dim t As String, i As Long, j As Long, k As Long, v As Long, pre As String
+Private Function ParseClassText(ByVal s As String) As String
+    Dim t As String, i As Long, j As Long, k As Long, chain As String, ok As Boolean, pre As String
     t = NormText(s)
     i = 1
     Do While i <= Len(t)
         If NumberStartsAt(t, i) Then
-            j = ReadDigits(t, i)
-            If j - i <= 4 And CharAt(t, j) <> "/" And Not (CharAt(t, j) = "." And DigitAt(t, j + 1)) Then
-                v = CLng(Mid$(t, i, j - i))
-                If v >= 75 Then
-                    k = SkipSpaces(t, j)
-                    If CharAt(t, k) = "#" Or Mid$(t, k, 2) = "LB" Then
-                        ParseClassText = v
-                        Exit Function
-                    End If
-                    pre = Before(t, i)
-                    If EndsWith(pre, "CLASS") Or EndsWith(pre, "CL") Or EndsWith(pre, "RATING") Or EndsWith(pre, "ANSI") Then
-                        ParseClassText = v
-                        Exit Function
-                    End If
+            ReadClassChain t, i, chain, j, ok
+            If ok Then
+                k = SkipSpaces(t, j)
+                If CharAt(t, k) = "#" Or Mid$(t, k, 2) = "LB" Then
+                    ParseClassText = chain
+                    Exit Function
+                End If
+                pre = Before(t, i)
+                If EndsWith(pre, "CLASS") Or EndsWith(pre, "CL") Or EndsWith(pre, "RATING") Or EndsWith(pre, "ANSI") Then
+                    ParseClassText = chain
+                    Exit Function
                 End If
             End If
             i = j
@@ -809,21 +835,112 @@ Private Function ParseClassText(ByVal s As String) As Long
     Loop
 End Function
 
-Private Function ParseClassCell(ByVal v As Variant) As Long
-    Dim s As String
+' Reads 150 or 150/300/600 at position i. ok = every number looks like a class.
+Private Sub ReadClassChain(ByVal t As String, ByVal i As Long, chain As String, j As Long, ok As Boolean)
+    Dim k As Long, v As Long
+    chain = ""
+    ok = True
+    j = i
+    Do
+        k = ReadDigits(t, j)
+        v = 0
+        If k - j <= 4 Then v = CLng(Mid$(t, j, k - j))
+        If v < 75 Then ok = False
+        If Len(chain) > 0 Then chain = chain & "/"
+        chain = chain & CStr(v)
+        j = k
+        If CharAt(t, j) = "/" And DigitAt(t, j + 1) Then j = j + 1 Else Exit Do
+    Loop
+    If CharAt(t, j) = "." And DigitAt(t, j + 1) Then ok = False
+End Sub
+
+Private Function ParseClassCell(ByVal v As Variant) As String
+    Dim t As String, chain As String, j As Long, ok As Boolean
     If IsError(v) Or IsEmpty(v) Then Exit Function
     Select Case VarType(v)
         Case vbDouble, vbSingle, vbInteger, vbLong, vbCurrency, vbDecimal
-            If v >= 75 And v <= 9999 And v = Int(v) Then ParseClassCell = CLng(v)
+            If v >= 75 And v <= 9999 And v = Int(v) Then ParseClassCell = CStr(CLng(v))
         Case vbString
             ParseClassCell = ParseClassText(CStr(v))
-            If ParseClassCell = 0 Then
-                s = Trim$(CStr(v))
-                If Len(s) > 0 And Len(s) <= 4 And IsAllDigits(s) Then
-                    If CLng(s) >= 75 Then ParseClassCell = CLng(s)
+            If Len(ParseClassCell) = 0 Then
+                ' The whole cell is just the class: 150 or 300/600
+                t = Trim$(NormText(CStr(v)))
+                If NumberStartsAt(t, 1) Then
+                    ReadClassChain t, 1, chain, j, ok
+                    If ok And j > Len(t) Then ParseClassCell = chain
                 End If
             End If
     End Select
+End Function
+
+' One class for the calculation. With several (300/600LB) take the one the table
+' gives the most clips per gasket for, so clips are never under-counted; ties keep
+' the first listed. note explains the choice for the detail sheet.
+Private Function PickClass(ByVal classes As String, ByVal sizeV As Double, note As String) As Long
+    Dim parts As Variant, k As Long, best As Long, bestRate As Double, rate As Double
+    Dim nValid As Long, minRate As Double
+    note = ""
+    If Len(classes) = 0 Then Exit Function
+    parts = Split(classes, "/")
+    best = CLng(parts(0))
+    If UBound(parts) > 0 Then
+        bestRate = -1
+        minRate = 1E+30
+        For k = 0 To UBound(parts)
+            rate = ClipRate(sizeV, CLng(parts(k)))
+            If rate >= 0 Then
+                nValid = nValid + 1
+                If rate < minRate Then minRate = rate
+            End If
+            If rate > bestRate Then
+                bestRate = rate
+                best = CLng(parts(k))
+            End If
+        Next k
+        note = "복수 Class " & classes & "# → " & best & "# 적용"
+        If bestRate < 0 Then
+            note = note & " (기준표 해당 없음)"
+        ElseIf nValid = 1 Then
+            note = note & " (기준표에 있는 Class)"
+        ElseIf minRate = bestRate Then
+            note = note & " (클립 기준 동일)"
+        Else
+            note = note & " (클립이 더 많은 기준)"
+        End If
+    End If
+    PickClass = best
+End Function
+
+Private Sub LoadTable()
+    tMin = ThisWorkbook.Names("tblMin").RefersToRange.Value
+    tMax = ThisWorkbook.Names("tblMax").RefersToRange.Value
+    tCls = ThisWorkbook.Names("tblClass").RefersToRange.Value
+    tData = ThisWorkbook.Names("tblData").RefersToRange.Value
+End Sub
+
+' Clips per gasket for a size and class from the table, -1 when there is no rule.
+Private Function ClipRate(ByVal sizeV As Double, ByVal cls As Long) As Double
+    Dim r As Long, c As Long, s As String, p As Long, bundle As Double
+    ClipRate = -1
+    If sizeV <= 0 Then Exit Function
+    For r = 1 To UBound(tMin, 1)
+        If IsNumeric(tMin(r, 1)) And IsNumeric(tMax(r, 1)) Then
+            If sizeV >= tMin(r, 1) And sizeV <= tMax(r, 1) Then
+                For c = 1 To UBound(tCls, 2)
+                    If IsNumeric(tCls(1, c)) Then
+                        If tCls(1, c) = cls Then
+                            s = Trim$(SafeText(tData(r, c)))
+                            p = InStr(s, "-")
+                            If p > 1 Then
+                                bundle = Val(Left$(s, p - 1))
+                                If bundle > 0 Then ClipRate = Val(Mid$(s, p + 1)) / bundle
+                            End If
+                        End If
+                    End If
+                Next c
+            End If
+        End If
+    Next r
 End Function
 
 Private Function IsAllDigits(ByVal s As String) As Boolean
@@ -864,26 +981,24 @@ Private Function FirstText(data As Variant, ByVal r As Long, ByVal lastCol As Lo
     Next c
 End Function
 
-' What the detail sheet shows as the item: description plus any separate size/class cells.
+' What the detail sheet shows as the item: description, spec and any separate
+' size/class cells, in sheet column order; the whole row when none of those exist.
 Private Function ItemText(data As Variant, ByVal r As Long, cols() As Long) As String
-    Dim s As String, k As Variant, part As String
-    For Each k In Array(F_DESC, F_SPEC, F_SIZE, F_CLASS)
-        If cols(k) > 0 Then
-            part = Trim$(SafeText(data(r, cols(k))))
-            If Len(part) > 0 Then
-                If Len(s) > 0 Then s = s & "  |  "
-                s = s & part
-            End If
+    Dim s As String, c As Long, part As String, useAll As Boolean
+    useAll = cols(F_DESC) = 0 And cols(F_SPEC) = 0 And cols(F_SIZE) = 0 And cols(F_CLASS) = 0
+    For c = 1 To UBound(data, 2)
+        If useAll Then
+            If c = cols(F_ORDER) Or c = cols(F_QTY) Then GoTo NextCol
+        ElseIf c <> cols(F_DESC) And c <> cols(F_SPEC) And c <> cols(F_SIZE) And c <> cols(F_CLASS) Then
+            GoTo NextCol
         End If
-    Next k
-    If Len(s) = 0 Then
-        For k = 1 To UBound(data, 2)
-            If k <> cols(F_ORDER) And k <> cols(F_QTY) Then
-                part = Trim$(SafeText(data(r, k)))
-                If Len(part) > 0 Then s = Trim$(s & " " & part)
-            End If
-        Next k
-    End If
+        part = Trim$(SafeText(data(r, c)))
+        If Len(part) > 0 Then
+            If Len(s) > 0 Then s = s & "  |  "
+            s = s & part
+        End If
+NextCol:
+    Next c
     ItemText = s
 End Function
 

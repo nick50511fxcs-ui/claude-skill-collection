@@ -16,6 +16,12 @@ bundle and no clips; `N/A` means there is no rule for that size and class.
 - final clips per order = ceil(sum of base clips × 1.2); the overall total is the
   sum of the order totals, so the report always adds up
 
+- a multi-rated spec such as `300/600LB` uses the listed class that gives the
+  most clips per gasket (ties keep the first listed); the choice is written to
+  the detail sheet's note column
+- lists without an order number column (the ERP "수주정보 상세목록" download) use
+  the order number typed in `수주입력!B3`
+
 The table and the 1.2 factor are editable on the `클립기준표` and `설정` sheets.
 
 ## Sheets

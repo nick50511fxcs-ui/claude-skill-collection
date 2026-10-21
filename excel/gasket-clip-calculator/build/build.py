@@ -42,18 +42,17 @@ TABLE = [
     ('36"', 36, 36, ["5-3", "5-3", "1-0", "1-0", "1-0", "N/A"]),
 ]
 
-SAMPLE_HEADER = ["수주번호", "품목코드", "품명", "규격", "수량", "단위"]
+# Same layout as the ERP "수주정보 상세목록" download (fictional values).
+SAMPLE_ORDER_NO = "예시-0001"
+SAMPLE_HEADER = ["순서", "품목", "품명", "규격", "수량", "단가", "단위", "생산특기사항", "라벨표기사항"]
 SAMPLE_ROWS = [
-    ["SO-2610-001", "SWG-150-015", "SPIRAL WOUND GASKET", '1-1/2" 150LB SS316/GRAPHITE, CS OUTER RING', 25, "EA"],
-    ["", "SWG-300-060", "SPIRAL WOUND GASKET", '6" 300LB SS316/GRAPHITE, CS OUTER RING', 12, "EA"],
-    ["", "SWG-900-240", "SPIRAL WOUND GASKET", '24" 900LB SS316/GRAPHITE, SS316 INNER RING', 4, "EA"],
-    ["SO-2610-002", "SWG-600-020", "SPIRAL WOUND GASKET", '2" CL600 SS316/GRAPHITE', 40, "EA"],
-    ["", "SWG-150-080", "SPIRAL WOUND GASKET", '8" 150# SS304/GRAPHITE', 18, "EA"],
-    ["", "SWG-900-160", "SPIRAL WOUND GASKET", '16" 900LB SS316/GRAPHITE', 6, "EA"],
-    ["SO-2610-003", "SWG-1500-007", "SPIRAL WOUND GASKET", '3/4" 1500LB SS316/PTFE', 8, "EA"],
-    ["", "SWG-2500-120", "SPIRAL WOUND GASKET", '12" 2500LB INCONEL625/GRAPHITE', 3, "EA"],
-    ["", "SWG-600-300", "SPIRAL WOUND GASKET", '30" 600LB SS316/GRAPHITE', 2, "EA"],
-    ["", "SWG-300-100", "SPIRAL WOUND GASKET", '10" 300LB SS316/GRAPHITE', 15, "EA"],
+    [1, "O-SW(3S)-000101", "SW(3S), 304, SF, OR(CS)", '4.5T RF 150LB 1" [*31.8*47.8*66.8]', 250, 0.24, "EA", "3S OEM", "GS010-150B1A"],
+    [2, "O-SW(3S)-000102", "SW(3S), 304, SF, OR(CS)", '4.5T RF 300/600LB 2" [*69.9*85.9*111.3]', 120, 0.44, "EA", "3S OEM", "GS020-300B1A"],
+    [3, "O-SW(3S)-000103", "SW(3S), 304, SF, OR(CS)", '4.5T RF 150LB 6" [*182.6*209.6*222.3]', 48, 1.15, "EA", "3S OEM", "GS060-150B1A"],
+    [4, "O-SW(3S)-000104", "SW(3S), 316L, SF, I/OR(316L,CS)", '4.5T RF 300LB 12" [317.5*339.9*374.7*422.4]', 20, 4.84, "EA", "3S OEM", "GSI120-300C1AC"],
+    [5, "O-SW(3S)-000105", "SW(3S), 304, SF, I/OR(304,CS)", '4.5T RF 900LB 24" [590.6*628.7*679.5*838.2]', 6, 19.18, "EA", "3S OEM", "GSI240-900B1AB"],
+    [6, "O-SW(3S)-000106", "SW(3S), None, None, IR(304)", '3.0T RF 150/300LB 6" [157.2*182.6]', 30, 0.9, "EA", "3S OEM", "IR060-150-300B"],
+    ["", "", "", "", "합 = 474", "", "", "", ""],
 ]
 
 
@@ -217,14 +216,17 @@ def build_guide(wb, ws, st):
 
     heading("2. 사용 방법 A — 수주 파일을 그대로 불러오기 (가장 쉬움)")
     para("위의 [① 수주 파일 불러와서 계산] 버튼을 누릅니다.", num="1")
-    para("수주 상세 내역 엑셀(또는 CSV) 파일을 골라 [열기]를 누릅니다.", num="2")
+    para("ERP에서 받은 '수주정보 상세목록' 엑셀(또는 CSV) 파일을 골라 [열기]를 누릅니다. 파일 양식은 고칠 필요 없습니다.", num="2")
     para("끝입니다. 자동으로 계산되고 [결과요약] 시트가 열립니다.", num="3")
 
     heading("3. 사용 방법 B — 복사해서 붙여넣기")
-    para("수주 상세 내역에서 제목 행(수주번호, 품명, 수량 …)을 포함해 필요한 부분을 복사합니다 (Ctrl + C).", num="1")
+    para("ERP에서 받은 '수주정보 상세목록' 엑셀을 열고, 아무 칸이나 클릭한 뒤 Ctrl + A → Ctrl + C 로 전체를 복사합니다 "
+         "(제목 행 '순서 · 품목 · 품명 · 규격 · 수량 …'이 꼭 포함되어야 합니다). 맨 아래 '합 = …' 행은 같이 복사돼도 자동으로 빠집니다.", num="1")
     para("[수주입력] 시트의 A5 셀을 클릭하고 붙여넣습니다 (Ctrl + V). "
          "예전 데이터가 남아 있으면 먼저 [초기화] 버튼을 누르세요.", num="2")
-    para("[② 붙여넣은 내역으로 계산] 버튼을 누릅니다.", num="3")
+    para("수주정보 상세목록에는 수주번호 열이 없으므로, [수주입력] 시트 B3 노란 칸에 수주번호를 적어 두면 결과에 그 번호로 표시됩니다 "
+         "(비워 두면 '(수주번호 미입력)'으로 표시되고 계산은 똑같이 됩니다).", num="3")
+    para("[② 붙여넣은 내역으로 계산] 버튼을 누릅니다.", num="4")
 
     heading("4. 결과 보는 법")
     table(["시트", "보이는 내용"], [
@@ -263,10 +265,13 @@ def build_guide(wb, ws, st):
 
     heading("7. 자동으로 알아보는 표기")
     table(["항목", "알아보는 예"], [
-        ["Size", '1/2"   3/4"   1-1/2"   1 1/2"   1.5"   2IN   6 INCH   NPS 6   2B   50A   DN50\n'
+        ["Size", '1/2"   3/4"   1-1/2"   1 1/2"   1.5"   2IN   6 INCH   NPS 6   2B   50A   DN50   30"(A)\n'
                  "(Size가 별도 열에 있으면 6, 1.5, 1-1/2 처럼 숫자만 있어도 됩니다)"],
-        ["Class", "150#   150LB   150LBS   CL150   CLASS 150   ANSI 150\n(Class가 별도 열에 있으면 150만 있어도 됩니다)"],
-        ["열 이름", "수주번호(ORDER NO, SO NO, PO NO…) · 품명/규격(DESCRIPTION, ITEM, SPEC…) · SIZE · "
+        ["Class", "150#   150LB   150LBS   CL150   CLASS 150   ANSI 150   300/600LB   150/300/600LB\n"
+                  "(Class가 별도 열에 있으면 150만 있어도 됩니다)\n"
+                  "300/600LB처럼 여러 Class가 함께 적혀 있으면, 기준표에서 클립이 더 많이 나오는 쪽을 적용하고 계산상세 '비고' 열에 적어 둡니다."],
+        ["열 이름", "수주정보 상세목록 양식(순서 · 품목 · 품명 · 규격 · 수량 …)은 그대로 인식합니다. 그 밖에 "
+                  "수주번호(ORDER NO, SO NO, PO NO…) · 품명/규격(DESCRIPTION, ITEM, SPEC…) · SIZE · "
                   "CLASS(RATING, 압력) · 수량(QTY…)\n이름이 달라 못 찾으면 [설정] 시트에서 열 문자(A, B, C…)를 직접 지정하세요."],
         ["기타", "합계 · 소계 행은 자동으로 빠집니다. 수주번호가 첫 줄에만 있고 아래 칸이 비어 있으면 위의 번호를 이어서 씁니다."],
     ], [(2, 3), (4, 9)])
@@ -342,7 +347,7 @@ def build_summary(wb, ws, st):
     for col, text in zip("BCDEFGH", ["수주번호", "품목 라인 수", "총 수량 (개)", "기본 클립 (개)",
                                      "최종 클립 (개)\n× 여유 계수", "확인 필요 라인", "비고"]):
         ws.write(f"{col}11", text, head)
-    ws.write("B12", "아직 계산 전입니다. 사용설명서 시트의 [클립 계산 실행] 버튼을 눌러 주세요.",
+    ws.write("B12", "아직 계산 전입니다. [② 붙여넣은 내역으로 계산] 버튼을 눌러 주세요.",
              st(font_color="#808080"))
 
     ws.insert_button("J2", {"macro": "RunClipCalc", "caption": "다시 계산", "width": 110, "height": 34})
@@ -377,6 +382,7 @@ def build_detail(wb, ws, st):
         ("L", 11, "기본 클립", st(align="center", num_format="#,##0", bold=True), False),
         ("M", 20, "상태", center, False),
         ("N", 9, "원본 행", st(align="center", font_color="#7F7F7F"), False),
+        ("O", 44, "비고", st(font_color="#595959"), False),
     ]
     ws.set_row(3, 34)
     for col, w, title, fmt, editable in cols:
@@ -384,7 +390,7 @@ def build_detail(wb, ws, st):
         ws.write(f"{col}4", title, st(bold=True, align="center", text_wrap=True, border=1, border_color=LINE,
                                       bg_color="#FFE699" if editable else "#DDEBF7"))
     ws.freeze_panes(4, 0)
-    ws.conditional_format("A5:N60000", {"type": "formula", "criteria": '=AND($A5<>"",$M5<>"OK")',
+    ws.conditional_format("A5:O60000", {"type": "formula", "criteria": '=AND($A5<>"",$M5<>"OK")',
                                         "format": wb.add_format({"bg_color": "#FCE4D6", "font_color": "#9C0006"})})
     ws.conditional_format("M5:M60000", {"type": "cell", "criteria": "==", "value": '"OK"',
                                         "format": wb.add_format({"font_color": "#375623", "bold": True})})
@@ -395,18 +401,16 @@ def build_detail(wb, ws, st):
 
 
 def build_input(wb, ws, st):
-    ws.set_column("A:A", 15)
-    ws.set_column("B:B", 14)
-    ws.set_column("C:C", 22)
-    ws.set_column("D:D", 46)
-    ws.set_column("E:F", 8)
+    for col, w in {"A": 10, "B": 18, "C": 30, "D": 46, "E": 9, "F": 8, "G": 6, "H": 12, "I": 16}.items():
+        ws.set_column(f"{col}:{col}", w)
     for r in range(3):
         ws.set_row(r, 22)
     ws.write("A1", "수주 상세 내역 입력", st(bold=True, font_size=14, font_color=NAVY))
-    ws.write("A2", "[수주 파일 불러와서 계산] 버튼으로 파일을 고르거나, A5 셀부터 내역(제목 행 포함)을 붙여넣고 "
-                   "[붙여넣은 내역으로 계산] 버튼을 누르세요.", st(font_color="#595959"))
-    ws.write("A3", "불러온 파일:", st(font_color="#7F7F7F", font_size=9))
-    ws.write("B3", "예시 데이터", st(font_color="#7F7F7F", font_size=9))
+    ws.write("A2", "파일을 불러오거나, A5 셀부터 붙여넣고 계산 버튼을 누르세요.", st(font_color="#595959"))
+    ws.write("A3", "수주번호:", st(bold=True, align="right"))
+    ws.write_string("B3", SAMPLE_ORDER_NO, st(bg_color=INPUT_FILL, border=1, border_color=LINE, font_color=BLUE_TEXT))
+    ws.write("C3", "← 수주번호 열이 없는 양식이면 여기에 적으세요 (선택)", st(font_color="#7F7F7F", font_size=9))
+    wb.define_name("inputOrderNo", f"='{ws.name}'!$B$3")
     ws.write("A4", "▼ 이 아래 5행부터 수주 상세 내역을 넣으세요 (제목 행 포함). 아래는 예시 데이터입니다.",
              st(bold=True, font_color="#C65911"))
     head = st(bold=True, bg_color="#DDEBF7", border=1, border_color=LINE, align="center")
@@ -423,7 +427,7 @@ def build_input(wb, ws, st):
     for k, (macro, caption, w) in enumerate([("ImportAndCalc", "수주 파일 불러와서 계산", 190),
                                              ("RunClipCalc", "붙여넣은 내역으로 계산", 190),
                                              ("ResetAll", "초기화", 90)]):
-        ws.insert_button("H1", {"macro": macro, "caption": caption, "width": w, "height": 40,
+        ws.insert_button("F1", {"macro": macro, "caption": caption, "width": w, "height": 40,
                                 "x_offset": [0, 200, 400][k], "y_offset": 4})
     ws.set_landscape()
     ws.set_paper(9)
@@ -511,6 +515,9 @@ def build_setting(wb, ws, st):
     ws.write_blank("C14", None, inp)
     ws.write("D14", "이 단어가 들어간 행만 계산합니다 (여러 개는 쉼표로: GASKET,SWG).  비워 두면 모든 행을 계산합니다.", desc)
     wb.define_name("setFilter", f"='{ws.name}'!$C$14")
+    ws.write("B17", "마지막으로 불러온 파일", st(bg_color=GREY_FILL, border=1, border_color=LINE, font_color="#7F7F7F"))
+    ws.write("C17", "예시 데이터", st(font_color="#7F7F7F"))
+    wb.define_name("infoSource", f"='{ws.name}'!$C$17")
     wb.define_name("setFactor", f"='{ws.name}'!$C$4")
     ws.set_landscape()
     ws.set_paper(9)
@@ -536,7 +543,6 @@ def build(out_path):
         worksheets[name] = ws
     for name, _, fn in sheets:
         fn(wb, worksheets[name], st)
-    wb.define_name("infoSource", "='수주입력'!$B$3")
     worksheets["사용설명서"].activate()
 
     with open(os.path.join(ROOT, "vba", "ClipCalc.bas"), encoding="utf-8") as f:
