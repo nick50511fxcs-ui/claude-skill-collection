@@ -13,11 +13,11 @@ bundle and no clips; `N/A` means there is no rule for that size and class.
 
 - bundles per line = ceil(quantity / bundle size)
 - base clips per line = bundles × clips per bundle
-- final clips (total) = ceil(sum of every line's base clips × 1.2); each order
-  row shows ceil(order base × 1.2), so order rows can add up to a few more than
-  the total
-- 36" and larger: packed one by one, no clips, whatever the class (user rule that
-  replaces the spec's 36" row)
+- two clip types: `10-4` lines use 10-gasket clips, `5-3` lines 5-gasket clips;
+  final clips per type = ceil(type base × 1.2), and the overall final is the sum
+  of the types; order rows round per order, so they can add up to a few more
+- user rules on top of the spec: its `2-3` cells count as `1-0` (no clips), and
+  36" and larger are all `1-0`
 
 - a multi-rated spec such as `150/300LB` can be packed as either class, so the
   first listed class the table has a rule for is used; shortened forms such as

@@ -25,6 +25,8 @@ GREY_FILL = "#F2F2F2"
 LINE = "#BFBFBF"
 
 # JIC-3S-PSG-25-001 Rev.9, 4.3 Gasket Bundles & Spacer Requirements (Table 3).
+# User rules on top of the spec: its 2-3 cells are treated as 1-0 (no clips), and
+# 36" and larger are all 1-0.
 CLASSES = [150, 300, 600, 900, 1500, 2500]
 TABLE = [
     ('1/2" - 1-1/2"', 0.5, 1.5, ["10-4", "10-4", "10-4", "10-4", "10-4", "10-4"]),
@@ -34,9 +36,9 @@ TABLE = [
     ('10"', 10, 10, ["10-4", "5-3", "5-3", "5-3", "5-3", "5-3"]),
     ('12"', 12, 12, ["5-3", "5-3", "5-3", "5-3", "5-3", "5-3"]),
     ('14"', 14, 14, ["5-3", "5-3", "5-3", "5-3", "5-3", "N/A"]),
-    ('16"', 16, 16, ["5-3", "5-3", "5-3", "2-3", "2-3", "N/A"]),
-    ('18"', 18, 18, ["5-3", "5-3", "5-3", "2-3", "2-3", "N/A"]),
-    ('20"', 20, 20, ["5-3", "5-3", "5-3", "2-3", "2-3", "N/A"]),
+    ('16"', 16, 16, ["5-3", "5-3", "5-3", "1-0", "1-0", "N/A"]),
+    ('18"', 18, 18, ["5-3", "5-3", "5-3", "1-0", "1-0", "N/A"]),
+    ('20"', 20, 20, ["5-3", "5-3", "5-3", "1-0", "1-0", "N/A"]),
     ('24"', 24, 24, ["5-3", "5-3", "5-3", "1-0", "1-0", "N/A"]),
     ('30"', 30, 30, ["5-3", "5-3", "1-0", "1-0", "1-0", "N/A"]),
     # User rule (overrides the spec's 36" row): 36" and larger are packed one by one, no clips.
@@ -237,25 +239,28 @@ def build_guide(wb, ws, st):
 
     heading("4. 결과 보는 법")
     table(["시트", "보이는 내용"], [
-        ["결과요약", "맨 위 초록색 칸 '최종 필요 클립'이 전체 필요한 클립 수입니다. 아래 표에 수주번호별 "
-                 "기본 클립과 최종 클립(× 1.2)이 나옵니다. [결과 PDF 저장] 버튼으로 보고서를 PDF로 저장할 수 있습니다."],
+        ["결과요약", "맨 위 초록색 칸 '최종 필요 클립'이 전체 필요한 클립 수이고, 옆 칸에 10개용 클립 · 5개용 클립이 각각 "
+                 "몇 개 필요한지 나옵니다. 아래 표에 클립 종류별, 수주번호별 수량이 나옵니다. [결과 PDF 저장] 버튼으로 보고서를 PDF로 저장할 수 있습니다."],
         ["계산상세", "품목(라인)마다 Size · Class를 어떻게 읽었는지, 몇 묶음 · 몇 클립인지 보여 줍니다. "
                  "결과가 이상하면 여기를 확인하세요. 주황색 행은 계산에서 빠진 품목입니다."],
     ], [(2, 3), (4, 9)])
 
     heading("5. 계산 방법")
     para("기준표의 '10-4'는 10개씩 한 묶음으로 포장하고, 한 묶음에 클립 4개가 필요하다는 뜻입니다. "
-         "'5-3'은 5개씩 · 클립 3개, '2-3'은 2개씩 · 클립 3개, '1-0'은 1개씩 포장 · 클립 없음, 'N/A'는 기준이 없다는 뜻입니다. "
-         "36\" 이상은 Class와 관계없이 모두 1개씩 개별 포장(클립 0개)으로 계산합니다.")
+         "'5-3'은 5개씩 · 클립 3개, '1-0'은 1개씩 포장 · 클립 없음, 'N/A'는 기준이 없다는 뜻입니다. "
+         "원본 사양서의 '2-3'과 36\" 이상은 모두 '1-0'(클립 0개)으로 계산합니다.\n"
+         "클립은 두 종류입니다: '10-4' 품목은 10개용 클립, '5-3' 품목은 5개용 클립을 쓰며, 결과요약에 종류별로 따로 나옵니다.")
     para("묶음 수 = 수량 ÷ 묶음당 수량 (나머지가 있으면 한 묶음 더, 즉 올림)\n"
          "기본 클립 = 묶음 수 × 묶음당 클립\n"
-         "최종 필요 클립 = 모든 품목(줄)의 기본 클립 합계 × 1.2 (소수점은 올림)", fmt=tip)
+         "최종 클립 = 클립 종류(10개용 · 5개용)별 기본 클립 합계 × 1.2 (소수점은 올림)\n"
+         "최종 필요 클립(전체) = 10개용 최종 클립 + 5개용 최종 클립", fmt=tip)
     table(["품목 (예시)", "수량", "기준", "묶음 수", "기본 클립"], [
         ['1-1/2" 150#', "25개", "10-4", "25 ÷ 10 = 2.5 → 3묶음", "3 × 4 = 12개"],
         ['6" 300#', "12개", "5-3", "12 ÷ 5 = 2.4 → 3묶음", "3 × 3 = 9개"],
         ['24" 900#', "4개", "1-0", "4묶음", "4 × 0 = 0개"],
     ], [(2, 3), (4, 4), (5, 5), (6, 7), (8, 9)])
-    para("기본 클립 합계 = 12 + 9 + 0 = 21개  →  21 × 1.2 = 25.2  →  최종 26개", fmt=tip)
+    para("10개용 클립: 12개 × 1.2 = 14.4 → 15개     5개용 클립: 9개 × 1.2 = 10.8 → 11개     최종 필요 클립: 15 + 11 = 26개",
+         fmt=tip)
     para("※ 묶음은 품목 줄마다 따로 나눕니다. 수주번호별 최종 클립도 같은 방법(수주별 합계 × 1.2, 올림)으로 보여 주는데, "
          "수주마다 올림을 하기 때문에 수주별 값을 더하면 전체 최종 클립과 몇 개 차이 날 수 있습니다. 발주 수량은 전체 최종 클립을 보세요.",
          fmt=note)
@@ -314,25 +319,30 @@ def build_guide(wb, ws, st):
 
 def build_summary(wb, ws, st):
     ws.hide_gridlines(2)
-    widths = {"A": 2, "B": 24, "C": 13, "D": 15, "E": 14, "F": 18, "G": 14, "H": 22, "I": 3, "J": 14}
+    widths = {"A": 2, "B": 22, "C": 11, "D": 13, "E": 13, "F": 14, "G": 14, "H": 15, "I": 12, "J": 18,
+              "K": 3, "L": 14}
     for col, w in widths.items():
         ws.set_column(f"{col}:{col}", w)
     ws.set_row(1, 32)
-    ws.merge_range("B2:H2", "가스켓 포장 클립(Spacer) 소요량 산출 결과",
+    ws.merge_range("B2:J2", "가스켓 포장 클립(Spacer) 소요량 산출 결과",
                    st(bold=True, font_size=16, font_color=NAVY, bottom=2, bottom_color=NAVY))
-    ws.merge_range("B3:H3", "Gasket Bundle & Spacer(Clip) Requirement Report",
+    ws.merge_range("B3:J3", "Gasket Bundle & Spacer(Clip) Requirement Report",
                    st(italic=True, font_color="#7F7F7F", font_size=9))
     label = st(bold=True, bg_color=GREY_FILL, border=1, border_color=LINE)
     value = st(border=1, border_color=LINE)
     ws.write("B4", "산출 일시", label)
-    ws.merge_range("C4:D4", "", st(border=1, border_color=LINE, num_format="yyyy-mm-dd hh:mm", align="left"))
-    ws.write("E4", "원본 데이터", label)
-    ws.merge_range("F4:H4", "", value)
+    ws.merge_range("C4:E4", "", st(border=1, border_color=LINE, num_format="yyyy-mm-dd hh:mm", align="left"))
+    ws.write("F4", "원본 데이터", label)
+    ws.merge_range("G4:J4", "", value)
     ws.write("B5", "적용 기준", label)
-    ws.merge_range("C5:D5", "JIC-3S-PSG-25-001 Rev.9 (Table 3)", value)
-    ws.write("E5", "여유 계수", label)
-    ws.merge_range("F5:H5", "", value)
-    ws.write_formula("F5", "=setFactor", st(border=1, border_color=LINE, num_format='"× "0.0#', align="left"), 1.2)
+    ws.merge_range("C5:E5", "JIC-3S-PSG-25-001 Rev.9 (Table 3)", value)
+    ws.write("F5", "여유 계수", label)
+    ws.merge_range("G5:J5", "", value)
+    ws.write_formula("G5", "=setFactor", st(border=1, border_color=LINE, num_format='"× "0.0#', align="left"), 1.2)
+
+    # Detail-sheet columns used by the static formulas below.
+    det = lambda col: f"'계산상세'!${col}$5:${col}$60000"
+    I, J, K, L, M, A, D = (det(c) for c in "IJKLMAD")
 
     ws.set_row(6, 30)
     ws.set_row(7, 40)
@@ -342,33 +352,80 @@ def build_summary(wb, ws, st):
     ws.merge_range("B7:C7", "최종 필요 클립 (전체)", st(bold=True, font_color="#FFFFFF", bg_color="#548235",
                                                     align="center", border=1, border_color="#FFFFFF"))
     ws.merge_range("B8:C8", "", st(bg_color=GREEN_FILL, font_color="#375623", num_format='#,##0" 개"', **big))
-    cards = [("D", "기본 클립\n(여유 전)", '#,##0" 개"'), ("E", "수주 건수", '#,##0" 건"'),
-             ("F", "품목 라인 수", "#,##0"), ("G", "총 수량 (개)", "#,##0"),
-             ("H", "확인 필요 라인", "[Red]#,##0;[Red]-#,##0;0")]
-    for col, text, fmt in cards:
+    ws.write_formula("B8", "=H15", st(bg_color=GREEN_FILL, font_color="#375623", num_format='#,##0" 개"', **big))
+    type_label = st(bold=True, font_color="#FFFFFF", bg_color="#548235", align="center", text_wrap=True,
+                    border=1, border_color="#FFFFFF")
+    type_value = st(num_format='#,##0" 개"', bg_color=GREEN_FILL, font_color="#375623", **dict(big, font_size=16))
+    ws.write("D7", "10개용 클립", type_label)
+    ws.write_formula("D8", "=H12", type_value)
+    ws.write("E7", "5개용 클립", type_label)
+    ws.write_formula("E8", "=H13", type_value)
+    cards = [("F", "기본 클립\n(여유 전)", '#,##0" 개"', "=G15"),
+             ("G", "수주 건수", '#,##0" 건"', None),
+             ("H", "품목 라인 수", "#,##0", f"=COUNT({A})"),
+             ("I", "총 수량 (개)", "#,##0", f"=SUM({D})"),
+             ("J", "확인 필요 라인", "[Red]#,##0;[Red]-#,##0;0", f'=COUNT({A})-COUNTIF({M},"OK")')]
+    for col, text, fmt, formula in cards:
         ws.write(f"{col}7", text, card_label)
-        ws.write_blank(f"{col}8", None, st(num_format=fmt, **dict(big, font_size=16)))
+        cell_fmt = st(num_format=fmt, **dict(big, font_size=16))
+        if formula:
+            ws.write_formula(f"{col}8", formula, cell_fmt)
+        else:
+            ws.write_blank(f"{col}8", None, cell_fmt)
 
-    ws.set_row(9, 22)
-    ws.write("B10", "■ 수주번호별 클립 소요량", st(bold=True, font_size=12, font_color=NAVY))
-    ws.set_row(10, 34)
     head = st(bold=True, font_color="#FFFFFF", bg_color=NAVY, align="center", text_wrap=True,
               border=1, border_color=LINE)
-    for col, text in zip("BCDEFGH", ["수주번호", "품목 라인 수", "총 수량 (개)", "기본 클립 (개)",
-                                     "최종 클립 (개)\n× 여유 계수", "확인 필요 라인", "비고"]):
-        ws.write(f"{col}11", text, head)
-    ws.write("B12", "아직 계산 전입니다. [② 붙여넣은 내역으로 계산] 버튼을 눌러 주세요.",
+    # Clip types: a 10-x rule uses 10-gasket clips, a 5-x rule 5-gasket clips.
+    ws.set_row(9, 22)
+    ws.write("B10", "■ 클립 종류별 소요량", st(bold=True, font_size=12, font_color=NAVY))
+    ws.set_row(10, 34)
+    ws.write("B11", "클립 종류", head)
+    ws.merge_range("C11:E11", "포장 기준", head)
+    ws.write("F11", "묶음 수", head)
+    ws.write("G11", "기본 클립 (개)", head)
+    ws.write("H11", "최종 클립 (개)\n× 여유 계수", head)
+    cell = st(border=1, border_color=LINE)
+    num = st(border=1, border_color=LINE, num_format="#,##0")
+    final = st(border=1, border_color=LINE, num_format="#,##0", bold=True, bg_color=GREEN_FILL)
+    rows = [
+        (12, "10개용 클립", "'10-4' — 가스켓 10개 묶음당 클립 4개", f"({I}=10)"),
+        (13, "5개용 클립", "'5-3' — 가스켓 5개 묶음당 클립 3개", f"({I}=5)"),
+        (14, "기타", "10 · 5개 외 기준 (기준표를 고친 경우만 해당)", f"ISNUMBER({L})*({I}<>10)*({I}<>5)*({J}>0)"),
+    ]
+    for r, name, rule, cond in rows:
+        ws.set_row(r - 1, 20)
+        ws.write(f"B{r}", name, st(border=1, border_color=LINE, bold=True))
+        ws.merge_range(f"C{r}:E{r}", rule, cell)
+        ws.write_formula(f"F{r}", f"=SUMPRODUCT({cond}*1,{K})", num)
+        ws.write_formula(f"G{r}", f"=SUMPRODUCT({cond}*1,{L})", num)
+        ws.write_formula(f"H{r}", f"=ROUNDUP(G{r}*setFactor,0)", final)
+    total = st(bold=True, font_color="#FFFFFF", bg_color=NAVY, border=1, border_color=NAVY, num_format="#,##0")
+    ws.set_row(14, 22)
+    ws.write("B15", "합계", total)
+    ws.merge_range("C15:E15", "", total)
+    for col in "FGH":
+        ws.write_formula(f"{col}15", f"=SUM({col}12:{col}14)", total)
+
+    ws.set_row(16, 22)
+    ws.write("B17", "■ 수주번호별 클립 소요량", st(bold=True, font_size=12, font_color=NAVY))
+    ws.set_row(17, 34)
+    for col, text in zip("BCDEFGHIJ", ["수주번호", "품목 라인 수", "총 수량 (개)", "기본 클립 (개)",
+                                       "10개용 클립 (개)\n× 여유 계수", "5개용 클립 (개)\n× 여유 계수",
+                                       "최종 클립 합계 (개)", "확인 필요 라인", "비고"]):
+        ws.write(f"{col}18", text, head)
+    ws.write("B19", "아직 계산 전입니다. [② 붙여넣은 내역으로 계산] 버튼을 눌러 주세요.",
              st(font_color="#808080"))
 
-    ws.insert_button("J2", {"macro": "RunClipCalc", "caption": "다시 계산", "width": 110, "height": 34})
-    ws.insert_button("J4", {"macro": "ExportSummaryPdf", "caption": "결과 PDF 저장", "width": 110, "height": 34,
+    ws.insert_button("L2", {"macro": "RunClipCalc", "caption": "다시 계산", "width": 110, "height": 34})
+    ws.insert_button("L4", {"macro": "ExportSummaryPdf", "caption": "결과 PDF 저장", "width": 110, "height": 34,
                             "y_offset": 6})
     ws.set_paper(9)
+    ws.set_landscape()
     ws.fit_to_pages(1, 0)
     ws.center_horizontally()
     ws.set_margins(left=0.4, right=0.4, top=0.6, bottom=0.6)
     ws.set_footer("&C&8&P / &N")
-    ws.print_area("B2:H16")
+    ws.print_area("B2:J24")
 
 
 def build_detail(wb, ws, st):
@@ -386,7 +443,7 @@ def build_detail(wb, ws, st):
         ("F", 9, "Class\n(#)", st(align="center", num_format='0"#"'), True),
         ("G", 15, "기준 Size 구분", center, False),
         ("H", 10, "포장 기준\n(묶음-클립)", center, False),
-        ("I", 10, "묶음당\n수량", st(align="center", num_format="#,##0"), False),
+        ("I", 10, "묶음당 수량\n(클립 종류)", st(align="center", num_format="#,##0"), False),
         ("J", 10, "묶음당\n클립", st(align="center", num_format="#,##0"), False),
         ("K", 9, "묶음 수", st(align="center", num_format="#,##0"), False),
         ("L", 11, "기본 클립", st(align="center", num_format="#,##0", bold=True), False),
@@ -475,7 +532,7 @@ def build_table(wb, ws, st):
     last = 4 + len(TABLE)
     ws.write(last + 1, 0, "출처: JIC-3S-PSG-25-001 Rev.9, Product Specification for Gasket, "
                           "4.3 Gasket Bundles & Spacer Requirements (Table 3) — 사용자 제공 문서.  "
-                          "단, 마지막 행 '36\" 이상 = 전부 1-0(개별 포장, 클립 0개)'은 사용자 지정 규칙입니다.",
+                          "단, 원본의 '2-3'은 '1-0'으로 바꿨고, 마지막 행 '36\" 이상 = 전부 1-0(클립 0개)'은 사용자 지정 규칙입니다.",
              st(font_size=9, font_color="#7F7F7F"))
     ws.write(last + 2, 0, "H · I열은 Size를 표의 행에 맞추는 범위입니다 (예: 3/4\" = 0.75 → '1/2\" - 1-1/2\"' 행). "
                           "범위 밖 Size(22\", 1/4\" 등)는 '기준표에 없는 Size'로 표시됩니다.",

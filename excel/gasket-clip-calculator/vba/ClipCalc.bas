@@ -12,7 +12,7 @@ Option Explicit
 Private Const INPUT_FIRST_ROW As Long = 5
 Private Const HEADER_SCAN_ROWS As Long = 40
 Private Const DET_FIRST As Long = 5
-Private Const SUM_FIRST As Long = 12
+Private Const SUM_FIRST As Long = 19
 
 Private Const F_ORDER As Long = 1
 Private Const F_DESC As Long = 2
@@ -290,9 +290,11 @@ Done:
             msg = "계산이 끝났습니다." & vbCrLf & vbCrLf & _
                   "수주 " & orders.Count & "건 / 품목 " & n & "라인" & vbCrLf & _
                   "최종 필요 클립: " & Format(shSummary.Range("B8").Value, "#,##0") & "개" & vbCrLf & _
-                  "(전체 기본 클립 " & Format(shSummary.Range("D8").Value, "#,##0") & "개 × " & Setting("setFactor") & ", 소수점 올림)"
-            If shSummary.Range("H8").Value > 0 Then
-                msg = msg & vbCrLf & vbCrLf & "※ 확인이 필요한 품목 " & shSummary.Range("H8").Value & "라인은 클립 계산에서 빠졌습니다." & vbCrLf & "   계산상세 시트의 주황색 행을 확인하세요."
+                  "  - 10개용 클립: " & Format(shSummary.Range("D8").Value, "#,##0") & "개" & vbCrLf & _
+                  "  - 5개용 클립: " & Format(shSummary.Range("E8").Value, "#,##0") & "개" & vbCrLf & _
+                  "(기본 클립 " & Format(shSummary.Range("F8").Value, "#,##0") & "개 × " & Setting("setFactor") & ", 소수점 올림)"
+            If shSummary.Range("J8").Value > 0 Then
+                msg = msg & vbCrLf & vbCrLf & "※ 확인이 필요한 품목 " & shSummary.Range("J8").Value & "라인은 클립 계산에서 빠졌습니다." & vbCrLf & "   계산상세 시트의 주황색 행을 확인하세요."
                 MsgBox msg, vbExclamation
             Else
                 MsgBox msg, vbInformation
@@ -349,17 +351,22 @@ Private Sub ClearDetail()
     End If
 End Sub
 
+' Order table below the fixed blocks. The KPI cards and the clip-type table above it
+' are static formulas over the detail sheet (built by build.py), so only the order
+' rows, the order count and the run info are written here.
 Private Sub WriteSummary(orders As Collection, ByVal detLast As Long)
     Dim ws As Worksheet, i As Long, lastR As Long, totR As Long, noteR As Long
-    Dim dB As String, dD As String, dL As String, dM As String, p As String
+    Dim dB As String, dD As String, dI As String, dL As String, dM As String, p As String, ord As String
     Set ws = shSummary
     ClearSummary False
 
     p = "'" & shDetail.Name & "'!"
     dB = p & "R" & DET_FIRST & "C2:R" & detLast & "C2"
     dD = p & "R" & DET_FIRST & "C4:R" & detLast & "C4"
+    dI = p & "R" & DET_FIRST & "C9:R" & detLast & "C9"
     dL = p & "R" & DET_FIRST & "C12:R" & detLast & "C12"
     dM = p & "R" & DET_FIRST & "C13:R" & detLast & "C13"
+    ord = "(" & dB & "=RC2)"
 
     lastR = SUM_FIRST + orders.Count - 1
     totR = lastR + 1
@@ -368,14 +375,17 @@ Private Sub WriteSummary(orders As Collection, ByVal detLast As Long)
         ws.Cells(SUM_FIRST + i - 1, 2).Value = orders(i)
     Next i
 
-    ws.Range("C" & SUM_FIRST & ":C" & lastR).FormulaR1C1 = "=SUMPRODUCT(--(" & dB & "=RC2))"
-    ws.Range("D" & SUM_FIRST & ":D" & lastR).FormulaR1C1 = "=SUMPRODUCT(--(" & dB & "=RC2)," & dD & ")"
-    ws.Range("E" & SUM_FIRST & ":E" & lastR).FormulaR1C1 = "=SUMPRODUCT(--(" & dB & "=RC2)," & dL & ")"
-    ws.Range("F" & SUM_FIRST & ":F" & lastR).FormulaR1C1 = "=ROUNDUP(RC5*setFactor,0)"
-    ws.Range("G" & SUM_FIRST & ":G" & lastR).FormulaR1C1 = "=RC3-SUMPRODUCT(--(" & dB & "=RC2),--(" & dM & "=""OK""))"
-    ws.Range("H" & SUM_FIRST & ":H" & lastR).FormulaR1C1 = "=IF(RC7>0,""계산상세 시트 확인"","""")"
+    ws.Range("C" & SUM_FIRST & ":C" & lastR).FormulaR1C1 = "=SUMPRODUCT(--" & ord & ")"
+    ws.Range("D" & SUM_FIRST & ":D" & lastR).FormulaR1C1 = "=SUMPRODUCT(--" & ord & "," & dD & ")"
+    ws.Range("E" & SUM_FIRST & ":E" & lastR).FormulaR1C1 = "=SUMPRODUCT(--" & ord & "," & dL & ")"
+    ws.Range("F" & SUM_FIRST & ":F" & lastR).FormulaR1C1 = "=ROUNDUP(SUMPRODUCT(" & ord & "*(" & dI & "=10)," & dL & ")*setFactor,0)"
+    ws.Range("G" & SUM_FIRST & ":G" & lastR).FormulaR1C1 = "=ROUNDUP(SUMPRODUCT(" & ord & "*(" & dI & "=5)," & dL & ")*setFactor,0)"
+    ' Clips from any other rule (only if the table was edited) are added to the order total.
+    ws.Range("H" & SUM_FIRST & ":H" & lastR).FormulaR1C1 = "=RC6+RC7+ROUNDUP(MAX(0,RC5-SUMPRODUCT(" & ord & "*((" & dI & "=10)+(" & dI & "=5))," & dL & "))*setFactor,0)"
+    ws.Range("I" & SUM_FIRST & ":I" & lastR).FormulaR1C1 = "=RC3-SUMPRODUCT(--" & ord & ",--(" & dM & "=""OK""))"
+    ws.Range("J" & SUM_FIRST & ":J" & lastR).FormulaR1C1 = "=IF(RC9>0,""계산상세 시트 확인"","""")"
 
-    With ws.Range("B" & SUM_FIRST & ":H" & lastR)
+    With ws.Range("B" & SUM_FIRST & ":J" & lastR)
         .Font.Size = 10
         .Borders.LineStyle = xlContinuous
         .Borders.Color = RGB(191, 191, 191)
@@ -383,19 +393,22 @@ Private Sub WriteSummary(orders As Collection, ByVal detLast As Long)
         .RowHeight = 20
     End With
     ws.Range("B" & SUM_FIRST & ":B" & lastR).HorizontalAlignment = xlLeft
-    ws.Range("C" & SUM_FIRST & ":G" & lastR).HorizontalAlignment = xlRight
-    ws.Range("C" & SUM_FIRST & ":E" & lastR).NumberFormat = "#,##0"
-    ws.Range("F" & SUM_FIRST & ":F" & lastR).NumberFormat = "#,##0"
-    ws.Range("F" & SUM_FIRST & ":F" & lastR).Font.Bold = True
-    ws.Range("F" & SUM_FIRST & ":F" & lastR).Interior.Color = RGB(226, 239, 218)
-    ws.Range("G" & SUM_FIRST & ":G" & lastR).NumberFormat = "[Red]#,##0;[Red]-#,##0;""-"""
-    ws.Range("H" & SUM_FIRST & ":H" & lastR).Font.Color = RGB(192, 0, 0)
+    ws.Range("C" & SUM_FIRST & ":I" & lastR).HorizontalAlignment = xlRight
+    ws.Range("C" & SUM_FIRST & ":H" & lastR).NumberFormat = "#,##0"
+    ws.Range("H" & SUM_FIRST & ":H" & lastR).Font.Bold = True
+    ws.Range("H" & SUM_FIRST & ":H" & lastR).Interior.Color = RGB(226, 239, 218)
+    ws.Range("I" & SUM_FIRST & ":I" & lastR).NumberFormat = "[Red]#,##0;[Red]-#,##0;""-"""
+    ws.Range("J" & SUM_FIRST & ":J" & lastR).Font.Color = RGB(192, 0, 0)
 
+    ' Total row: counts are sums; clip totals come from the clip-type table, which
+    ' rounds each clip type once over all orders.
     ws.Cells(totR, 2).Value = "합계"
-    ws.Range("C" & totR & ":G" & totR).FormulaR1C1 = "=SUM(R" & SUM_FIRST & "C:R" & lastR & "C)"
-    ' Overall final = all base clips x factor, rounded up once (not the sum of order rows).
-    ws.Range("F" & totR).FormulaR1C1 = "=ROUNDUP(RC5*setFactor,0)"
-    With ws.Range("B" & totR & ":H" & totR)
+    ws.Range("C" & totR & ":E" & totR).FormulaR1C1 = "=SUM(R" & SUM_FIRST & "C:R" & lastR & "C)"
+    ws.Range("I" & totR).FormulaR1C1 = "=SUM(R" & SUM_FIRST & "C:R" & lastR & "C)"
+    ws.Range("F" & totR).Formula = "=H12"
+    ws.Range("G" & totR).Formula = "=H13"
+    ws.Range("H" & totR).Formula = "=H15"
+    With ws.Range("B" & totR & ":J" & totR)
         .Font.Bold = True
         .Interior.Color = RGB(31, 56, 100)
         .Font.Color = RGB(255, 255, 255)
@@ -404,22 +417,16 @@ Private Sub WriteSummary(orders As Collection, ByVal detLast As Long)
         .RowHeight = 24
         .VerticalAlignment = xlCenter
     End With
-    ws.Range("C" & totR & ":F" & totR).NumberFormat = "#,##0"
-    ws.Range("G" & totR).NumberFormat = "#,##0;-#,##0;""-"""
+    ws.Range("C" & totR & ":H" & totR).NumberFormat = "#,##0"
+    ws.Range("I" & totR).NumberFormat = "#,##0;-#,##0;""-"""
 
-    ' KPI cards
-    ws.Range("B8").Formula = "=F" & totR
-    ws.Range("D8").Formula = "=E" & totR
-    ws.Range("E8").Formula = "=COUNTA(B" & SUM_FIRST & ":B" & lastR & ")"
-    ws.Range("F8").Formula = "=C" & totR
-    ws.Range("G8").Formula = "=D" & totR
-    ws.Range("H8").Formula = "=G" & totR
+    ws.Range("G8").Formula = "=COUNTA(B" & SUM_FIRST & ":B" & lastR & ")"
     ws.Range("C4").Value = Now
-    ws.Range("F4").Value = SourceInfo()
+    ws.Range("G4").Value = SourceInfo()
 
     noteR = totR + 2
-    ws.Cells(noteR, 2).Value = "※ 계산 방법: 품목별 묶음 수 = 수량 ÷ 묶음당 수량(올림),  기본 클립 = 묶음 수 × 묶음당 클립"
-    ws.Cells(noteR + 1, 2).Value = "※ 전체 최종 클립 = 모든 품목의 기본 클립 합계 × 여유 계수 후 소수점 올림.  수주별 최종 클립은 수주마다 따로 올림하므로, 더하면 전체와 몇 개 차이 날 수 있습니다."
+    ws.Cells(noteR, 2).Value = "※ 계산 방법: 품목별 묶음 수 = 수량 ÷ 묶음당 수량(올림),  기본 클립 = 묶음 수 × 묶음당 클립.  '10-4' 품목은 10개용 클립, '5-3' 품목은 5개용 클립을 씁니다."
+    ws.Cells(noteR + 1, 2).Value = "※ 최종 클립 = 클립 종류별 기본 클립 합계 × 여유 계수 후 소수점 올림.  수주별 값은 수주마다 따로 올림하므로, 더하면 합계 행과 몇 개 차이 날 수 있습니다."
     ws.Cells(noteR + 2, 2).Value = "※ '확인 필요 라인'이 있으면 해당 품목은 클립 계산에서 빠져 있습니다. 계산상세 시트의 주황색 행을 확인하세요."
     With ws.Range("B" & noteR & ":B" & noteR + 2)
         .Font.Size = 9
@@ -427,7 +434,7 @@ Private Sub WriteSummary(orders As Collection, ByVal detLast As Long)
     End With
 
     On Error Resume Next
-    ws.PageSetup.PrintArea = "$B$2:$H$" & (noteR + 2)
+    ws.PageSetup.PrintArea = "$B$2:$J$" & (noteR + 2)
     On Error GoTo 0
 End Sub
 
@@ -437,11 +444,10 @@ Private Sub ClearSummary(ByVal showPlaceholder As Boolean)
     ws.Range(ws.Rows(SUM_FIRST), ws.Rows(SUM_FIRST + 5000)).UnMerge
     ws.Range(ws.Rows(SUM_FIRST), ws.Rows(SUM_FIRST + 5000)).Clear
     ws.Range(ws.Rows(SUM_FIRST), ws.Rows(SUM_FIRST + 5000)).RowHeight = 16.5
-    ws.Range("B8").MergeArea.ClearContents
-    ws.Range("D8:H8").ClearContents
+    ws.Range("G8").ClearContents
     If showPlaceholder Then
         ws.Range("C4").MergeArea.ClearContents
-        ws.Range("F4").MergeArea.ClearContents
+        ws.Range("G4").MergeArea.ClearContents
         ws.Cells(SUM_FIRST, 2).Value = "아직 계산 전입니다. [② 붙여넣은 내역으로 계산] 버튼을 눌러 주세요."
         ws.Cells(SUM_FIRST, 2).Font.Color = RGB(128, 128, 128)
     End If
