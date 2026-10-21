@@ -13,14 +13,19 @@ bundle and no clips; `N/A` means there is no rule for that size and class.
 
 - bundles per line = ceil(quantity / bundle size)
 - base clips per line = bundles × clips per bundle
-- final clips per order = ceil(sum of base clips × 1.2); the overall total is the
-  sum of the order totals, so the report always adds up
+- final clips (total) = ceil(sum of every line's base clips × 1.2); each order
+  row shows ceil(order base × 1.2), so order rows can add up to a few more than
+  the total
+- sizes above the table's largest (36") are flagged "확인 필요 (36인치 초과)" and
+  left out
 
 - a multi-rated spec such as `300/600LB` uses the listed class that gives the
   most clips per gasket (ties keep the first listed); the choice is written to
   the detail sheet's note column
-- lists without an order number column (the ERP "수주정보 상세목록" download) use
-  the order number typed in `수주입력!B3`
+- several orders at once: pick several files on import (each file is one order,
+  named after the file), or paste lists one below another; every repeated header
+  row starts a new order, named by a single-cell row just above it, else
+  `수주입력!B3` (first list only), else "수주 1", "수주 2", ...
 
 The table and the 1.2 factor are editable on the `클립기준표` and `설정` sheets.
 

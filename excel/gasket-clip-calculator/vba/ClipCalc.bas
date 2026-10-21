@@ -29,60 +29,79 @@ Private tMin As Variant, tMax As Variant, tCls As Variant, tData As Variant
 
 ' ============================================================ buttons
 
-' Button: pick an order file, copy it into the input sheet, then calculate.
+' Button: pick one or more order files, stack them on the input sheet, then calculate.
+' Each file becomes one order: its name goes in the row above its header row.
 Public Sub ImportAndCalc()
-    Dim f As Variant, wb As Workbook, src As Worksheet, ws As Worksheet
-    Dim lr As Long, lc As Long, cols(1 To N_FIELDS) As Long, dn As Boolean
-    Dim v As Variant, r As Long, c As Long, fileName As String
+    Dim files As Variant, f As Variant, wb As Workbook, src As Worksheet, ws As Worksheet
+    Dim lr As Long, lc As Long, hr As Long, srcHr As Long, cols(1 To N_FIELDS) As Long, dn As Boolean
+    Dim v As Variant, r As Long, c As Long, nextRow As Long, names As String, nFiles As Long
 
-    f = Application.GetOpenFilename("Excel/CSV (*.xlsx;*.xlsm;*.xls;*.csv),*.xlsx;*.xlsm;*.xls;*.csv", , "수주 상세 내역 파일을 선택하세요")
-    If VarType(f) = vbBoolean Then Exit Sub
+    files = Application.GetOpenFilename("Excel/CSV (*.xlsx;*.xlsm;*.xls;*.csv),*.xlsx;*.xlsm;*.xls;*.csv", , "수주 상세 내역 파일을 선택하세요 (Ctrl 또는 Shift를 누른 채 여러 개 선택 가능)", , True)
+    If Not IsArray(files) Then Exit Sub
 
     On Error GoTo Fail
     Application.ScreenUpdating = False
-    Set wb = Workbooks.Open(Filename:=f, ReadOnly:=True, UpdateLinks:=0)
-    fileName = wb.Name
-
-    ' Prefer the first sheet whose header row can be recognized.
-    For Each ws In wb.Worksheets
-        lr = LastUsedRow(ws)
-        lc = LastUsedCol(ws)
-        If lr > 0 Then
-            If FindHeaderRow(ws, 1, lr, lc, cols, dn) > 0 Then Set src = ws: Exit For
-            If src Is Nothing Then Set src = ws
+    ClearInputData
+    ThisWorkbook.Names("inputOrderNo").RefersToRange.Value = ""
+    nextRow = INPUT_FIRST_ROW
+    For Each f In files
+        Set wb = Workbooks.Open(Filename:=f, ReadOnly:=True, UpdateLinks:=0)
+        Set src = Nothing
+        srcHr = 1
+        ' Prefer the first sheet whose header row can be recognized.
+        For Each ws In wb.Worksheets
+            lr = LastUsedRow(ws)
+            lc = LastUsedCol(ws)
+            If lr > 0 Then
+                hr = FindHeaderRow(ws, 1, lr, lc, cols, dn)
+                If hr > 0 Then
+                    Set src = ws
+                    srcHr = hr
+                    Exit For
+                End If
+                If src Is Nothing Then Set src = ws
+            End If
+        Next ws
+        If Not src Is Nothing Then
+            lr = LastUsedRow(src)
+            lc = LastUsedCol(src)
+            v = src.Range(src.Cells(srcHr, 1), src.Cells(lr, lc)).Value
+            If Not IsArray(v) Then
+                Dim one(1 To 1, 1 To 1) As Variant
+                one(1, 1) = v
+                v = one
+            End If
+            ' Keep text as text: without the apostrophe Excel would turn 1/2 into a date.
+            For r = 1 To UBound(v, 1)
+                For c = 1 To UBound(v, 2)
+                    If VarType(v(r, c)) = vbString Then
+                        If Len(v(r, c)) > 0 Then v(r, c) = "'" & v(r, c)
+                    End If
+                Next c
+            Next r
+            With shInput.Cells(nextRow, 1)
+                .Value = "'" & BaseName(wb.Name)
+                .Font.Bold = True
+                .Interior.Color = RGB(255, 242, 204)
+            End With
+            shInput.Cells(nextRow + 1, 1).Resize(UBound(v, 1), UBound(v, 2)).Value = v
+            nextRow = nextRow + UBound(v, 1) + 2
+            nFiles = nFiles + 1
+            If Len(names) > 0 Then names = names & ", "
+            names = names & wb.Name
         End If
-    Next ws
-    If src Is Nothing Then
         wb.Close SaveChanges:=False
-        Application.ScreenUpdating = True
+        Set wb = Nothing
+    Next f
+    If nFiles > 1 Then names = "파일 " & nFiles & "개: " & names
+    If Len(names) > 250 Then names = Left$(names, 247) & "..."
+    SetSourceInfo names
+    Application.ScreenUpdating = True
+
+    If nFiles = 0 Then
         MsgBox "선택한 파일에 데이터가 없습니다.", vbExclamation
         Exit Sub
     End If
-
-    lr = LastUsedRow(src)
-    lc = LastUsedCol(src)
-    v = src.Range(src.Cells(1, 1), src.Cells(lr, lc)).Value
-    If Not IsArray(v) Then
-        Dim one(1 To 1, 1 To 1) As Variant
-        one(1, 1) = v
-        v = one
-    End If
-    ' Keep text as text: without the apostrophe Excel would turn 1/2 into a date.
-    For r = 1 To UBound(v, 1)
-        For c = 1 To UBound(v, 2)
-            If VarType(v(r, c)) = vbString Then
-                If Len(v(r, c)) > 0 Then v(r, c) = "'" & v(r, c)
-            End If
-        Next c
-    Next r
-    wb.Close SaveChanges:=False
-    Set wb = Nothing
-
-    ClearInputData
-    shInput.Cells(INPUT_FIRST_ROW, 1).Resize(UBound(v, 1), UBound(v, 2)).Value = v
-    SetSourceInfo fileName & "  (" & src.Name & ")"
-    Application.ScreenUpdating = True
-
     DoCalc True
     Exit Sub
 Fail:
@@ -90,6 +109,12 @@ Fail:
     If Not wb Is Nothing Then wb.Close SaveChanges:=False
     MsgBox "파일을 불러오는 중 문제가 생겼습니다." & vbCrLf & Err.Description, vbExclamation
 End Sub
+
+Private Function BaseName(ByVal fileName As String) As String
+    Dim p As Long
+    p = InStrRev(fileName, ".")
+    If p > 1 Then BaseName = Left$(fileName, p - 1) Else BaseName = fileName
+End Function
 
 ' Button: calculate from whatever is on the input sheet.
 Public Sub RunClipCalc()
@@ -136,7 +161,8 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
     Dim rowText As String, descText As String, otherText As String
     Dim orderText As String, lastOrder As String
     Dim qty As Variant, sizeV As Double, classV As Long, filters As Variant
-    Dim classText As String, note As String, noteV() As Variant, defaultOrder As String
+    Dim classText As String, note As String, noteV() As Variant
+    Dim newCols(1 To N_FIELDS) As Long, blockNo As Long, blockOrder As String, k As Long
 
     On Error GoTo Fail
     InitKeywords
@@ -169,9 +195,10 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
     ReDim outV(1 To lastRow, 1 To 6)
     ReDim srcRow(1 To lastRow, 1 To 1)
     ReDim noteV(1 To lastRow, 1 To 1)
-    ' Order lists without an order number column use the number typed on the input sheet.
-    defaultOrder = Trim$(SafeText(Setting("inputOrderNo")))
-    If Len(defaultOrder) = 0 Then defaultOrder = "(수주번호 미입력)"
+    ' Lists without an order number column are named per block: the text in the row
+    ' just above the header row, else B3 on the input sheet, else a numbered default.
+    blockNo = 1
+    blockOrder = BlockLabel(data, headerRow, lastCol, blockNo)
 
     For r = headerRow + 1 To lastRow
         rowText = ""
@@ -183,6 +210,21 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
             End If
         Next c
         If Len(Trim$(rowText)) = 0 Then GoTo NextRow
+
+        ' Another order list pasted below: its header row starts a new order.
+        If IsRepeatHeader(data, r, lastCol, cols, newCols) Then
+            If Not HasOverrides() Then
+                For k = 1 To N_FIELDS
+                    cols(k) = newCols(k)
+                Next k
+                dnMode = False
+                If cols(F_SIZE) > 0 Then dnMode = IsDnHeader(SafeText(data(r, cols(F_SIZE))))
+            End If
+            blockNo = blockNo + 1
+            blockOrder = BlockLabel(data, r, lastCol, blockNo)
+            lastOrder = ""
+            GoTo NextRow
+        End If
 
         descText = ""
         If cols(F_DESC) > 0 Then descText = Trim$(SafeText(data(r, cols(F_DESC))))
@@ -212,7 +254,7 @@ Public Function DoCalc(ByVal interactive As Boolean) As Long
         If cols(F_ORDER) > 0 Then
             If Len(orderText) = 0 Then orderText = lastOrder Else lastOrder = orderText
         End If
-        If Len(orderText) = 0 Then orderText = defaultOrder
+        If Len(orderText) = 0 Then orderText = blockOrder
 
         n = n + 1
         outV(n, 1) = n
@@ -248,7 +290,7 @@ Done:
             msg = "계산이 끝났습니다." & vbCrLf & vbCrLf & _
                   "수주 " & orders.Count & "건 / 품목 " & n & "라인" & vbCrLf & _
                   "최종 필요 클립: " & Format(shSummary.Range("B8").Value, "#,##0") & "개" & vbCrLf & _
-                  "(기본 " & Format(shSummary.Range("D8").Value, "#,##0") & "개 × 여유 계수 " & Setting("setFactor") & ", 수주별 올림)"
+                  "(전체 기본 클립 " & Format(shSummary.Range("D8").Value, "#,##0") & "개 × " & Setting("setFactor") & ", 소수점 올림)"
             If shSummary.Range("H8").Value > 0 Then
                 msg = msg & vbCrLf & vbCrLf & "※ 확인이 필요한 품목 " & shSummary.Range("H8").Value & "라인은 클립 계산에서 빠졌습니다." & vbCrLf & "   계산상세 시트의 주황색 행을 확인하세요."
                 MsgBox msg, vbExclamation
@@ -286,7 +328,7 @@ Private Sub WriteDetail(ByVal n As Long, outV() As Variant, srcRow() As Variant,
     ws.Range("J" & f & ":J" & lastR).FormulaR1C1 = "=IF(RC9="""","""",VALUE(MID(RC8,FIND(""-"",RC8)+1,10)))"
     ws.Range("K" & f & ":K" & lastR).FormulaR1C1 = "=IF(OR(RC9="""",NOT(ISNUMBER(RC4))),"""",ROUNDUP(RC4/RC9,0))"
     ws.Range("L" & f & ":L" & lastR).FormulaR1C1 = "=IF(RC11="""","""",RC11*RC10)"
-    ws.Range("M" & f & ":M" & lastR).FormulaR1C1 = "=IF(RC12<>"""",""OK"",IF(NOT(ISNUMBER(RC4)),""수량 확인 필요"",IF(RC5="""",""Size 인식 실패"",IF(RC6="""",""Class 인식 실패"",IF(RC7=""표에 없음"",""기준표에 없는 Size"",IF(RC8=""N/A"",""N/A (기준 없음)"",IF(RC8=""표에 없음"",""기준표에 없는 Class"",""확인 필요"")))))))"
+    ws.Range("M" & f & ":M" & lastR).FormulaR1C1 = "=IF(RC12<>"""",""OK"",IF(NOT(ISNUMBER(RC4)),""수량 확인 필요"",IF(RC5="""",""Size 인식 실패"",IF(RC6="""",""Class 인식 실패"",IF(RC5>MAX(tblMax),""확인 필요 (36인치 초과)"",IF(RC7=""표에 없음"",""기준표에 없는 Size"",IF(RC8=""N/A"",""N/A (기준 없음)"",IF(RC8=""표에 없음"",""기준표에 없는 Class"",""확인 필요""))))))))"
 
     With ws.Range("A" & f & ":O" & lastR).Borders
         .LineStyle = xlContinuous
@@ -351,6 +393,8 @@ Private Sub WriteSummary(orders As Collection, ByVal detLast As Long)
 
     ws.Cells(totR, 2).Value = "합계"
     ws.Range("C" & totR & ":G" & totR).FormulaR1C1 = "=SUM(R" & SUM_FIRST & "C:R" & lastR & "C)"
+    ' Overall final = all base clips x factor, rounded up once (not the sum of order rows).
+    ws.Range("F" & totR).FormulaR1C1 = "=ROUNDUP(RC5*setFactor,0)"
     With ws.Range("B" & totR & ":H" & totR)
         .Font.Bold = True
         .Interior.Color = RGB(31, 56, 100)
@@ -375,7 +419,7 @@ Private Sub WriteSummary(orders As Collection, ByVal detLast As Long)
 
     noteR = totR + 2
     ws.Cells(noteR, 2).Value = "※ 계산 방법: 품목별 묶음 수 = 수량 ÷ 묶음당 수량(올림),  기본 클립 = 묶음 수 × 묶음당 클립"
-    ws.Cells(noteR + 1, 2).Value = "※ 최종 클립 = 수주별 기본 클립 × 여유 계수 후 소수점 올림.  전체 최종 클립은 수주별 최종 클립의 합계입니다."
+    ws.Cells(noteR + 1, 2).Value = "※ 전체 최종 클립 = 모든 품목의 기본 클립 합계 × 여유 계수 후 소수점 올림.  수주별 최종 클립은 수주마다 따로 올림하므로, 더하면 전체와 몇 개 차이 날 수 있습니다."
     ws.Cells(noteR + 2, 2).Value = "※ '확인 필요 라인'이 있으면 해당 품목은 클립 계산에서 빠져 있습니다. 계산상세 시트의 주황색 행을 확인하세요."
     With ws.Range("B" & noteR & ":B" & noteR + 2)
         .Font.Size = 9
@@ -468,11 +512,27 @@ Private Function FindHeaderRow(ByVal ws As Worksheet, ByVal firstRow As Long, By
 End Function
 
 Private Function MapHeader(ByVal ws As Worksheet, ByVal r As Long, ByVal lastCol As Long, cols() As Long) As Long
-    Dim fieldOrder As Variant, f As Variant, kw As Variant, c As Long, k As Long, pass As Long
-    Dim hdr() As String
+    Dim hdr() As String, c As Long
     ReDim hdr(1 To lastCol)
     For c = 1 To lastCol
         hdr(c) = NormHeader(ws.Cells(r, c).Value)
+    Next c
+    MapHeader = MapNames(hdr, lastCol, cols)
+End Function
+
+Private Function MapHeaderData(data As Variant, ByVal r As Long, ByVal lastCol As Long, cols() As Long) As Long
+    Dim hdr() As String, c As Long
+    ReDim hdr(1 To lastCol)
+    For c = 1 To lastCol
+        hdr(c) = NormHeader(data(r, c))
+    Next c
+    MapHeaderData = MapNames(hdr, lastCol, cols)
+End Function
+
+' hdr() holds normalized header texts; fills cols() and returns how many fields were found.
+Private Function MapNames(hdr() As String, ByVal lastCol As Long, cols() As Long) As Long
+    Dim fieldOrder As Variant, f As Variant, kw As Variant, c As Long, k As Long, pass As Long
+    For c = 1 To lastCol
         If Len(hdr(c)) > 20 Then hdr(c) = ""
     Next c
     For k = 1 To N_FIELDS
@@ -505,8 +565,49 @@ Private Function MapHeader(ByVal ws As Worksheet, ByVal r As Long, ByVal lastCol
         Next f
     Next pass
     For k = 1 To N_FIELDS
-        If cols(k) > 0 Then MapHeader = MapHeader + 1
+        If cols(k) > 0 Then MapNames = MapNames + 1
     Next k
+End Function
+
+' A later header row (a second order list pasted below the first).
+Private Function IsRepeatHeader(data As Variant, ByVal r As Long, ByVal lastCol As Long, cols() As Long, newCols() As Long) As Boolean
+    If cols(F_QTY) > 0 Then
+        If Not IsEmpty(ParseQty(data(r, cols(F_QTY)))) Then Exit Function
+    End If
+    If MapHeaderData(data, r, lastCol, newCols) >= 3 Then IsRepeatHeader = newCols(F_QTY) > 0
+End Function
+
+Private Function HasOverrides() As Boolean
+    Dim nm As Variant
+    For Each nm In Array("setColOrder", "setColDesc", "setColSize", "setColClass", "setColQty")
+        If Len(Trim$(SafeText(Setting(nm)))) > 0 Then HasOverrides = True: Exit Function
+    Next nm
+End Function
+
+' Order name for the list whose header is at row hr (see DoCalc).
+Private Function BlockLabel(data As Variant, ByVal hr As Long, ByVal lastCol As Long, ByVal blockNo As Long) As String
+    Dim t As String, c As Long, n As Long
+    If hr - 1 >= INPUT_FIRST_ROW Then
+        For c = 1 To lastCol
+            If Len(Trim$(SafeText(data(hr - 1, c)))) > 0 Then
+                n = n + 1
+                t = Trim$(SafeText(data(hr - 1, c)))
+            End If
+        Next c
+        If n = 1 And Not IsTotalRow(t) Then
+            ' Accept an optional "order no:" style prefix before the number.
+            If Left$(t, 4) = "수주번호" Then t = Mid$(t, 5)
+            Do While Len(t) > 0 And InStr(":=- ", Left$(t, 1)) > 0
+                t = Mid$(t, 2)
+            Loop
+            If Len(t) > 0 Then BlockLabel = t: Exit Function
+        End If
+    End If
+    If blockNo = 1 Then
+        t = Trim$(SafeText(Setting("inputOrderNo")))
+        If Len(t) > 0 Then BlockLabel = t: Exit Function
+    End If
+    BlockLabel = "수주 " & blockNo
 End Function
 
 Private Function ColumnTaken(cols() As Long, ByVal c As Long) As Boolean
@@ -1007,7 +1108,7 @@ Private Function IsTotalRow(ByVal s As String) As Boolean
     t = UCase$(Replace(Trim$(s), " ", ""))
     If Len(t) = 0 Then Exit Function
     If t = "계" Then IsTotalRow = True: Exit Function
-    For Each k In Array("합계", "소계", "총계", "TOTAL", "SUBTOTAL", "GRANDTOTAL")
+    For Each k In Array("합계", "소계", "총계", "합=", "합:", "TOTAL", "SUBTOTAL", "GRANDTOTAL")
         If Left$(t, Len(k)) = k Then IsTotalRow = True: Exit Function
     Next k
 End Function
