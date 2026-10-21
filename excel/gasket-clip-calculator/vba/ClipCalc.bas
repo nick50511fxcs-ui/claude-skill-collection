@@ -328,7 +328,7 @@ Private Sub WriteDetail(ByVal n As Long, outV() As Variant, srcRow() As Variant,
     ws.Range("J" & f & ":J" & lastR).FormulaR1C1 = "=IF(RC9="""","""",VALUE(MID(RC8,FIND(""-"",RC8)+1,10)))"
     ws.Range("K" & f & ":K" & lastR).FormulaR1C1 = "=IF(OR(RC9="""",NOT(ISNUMBER(RC4))),"""",ROUNDUP(RC4/RC9,0))"
     ws.Range("L" & f & ":L" & lastR).FormulaR1C1 = "=IF(RC11="""","""",RC11*RC10)"
-    ws.Range("M" & f & ":M" & lastR).FormulaR1C1 = "=IF(RC12<>"""",""OK"",IF(NOT(ISNUMBER(RC4)),""수량 확인 필요"",IF(RC5="""",""Size 인식 실패"",IF(RC6="""",""Class 인식 실패"",IF(RC5>MAX(tblMax),""확인 필요 (36인치 초과)"",IF(RC7=""표에 없음"",""기준표에 없는 Size"",IF(RC8=""N/A"",""N/A (기준 없음)"",IF(RC8=""표에 없음"",""기준표에 없는 Class"",""확인 필요""))))))))"
+    ws.Range("M" & f & ":M" & lastR).FormulaR1C1 = "=IF(RC12<>"""",""OK"",IF(NOT(ISNUMBER(RC4)),""수량 확인 필요"",IF(RC5="""",""Size 인식 실패"",IF(RC6="""",""Class 인식 실패"",IF(RC7=""표에 없음"",""기준표에 없는 Size"",IF(RC8=""N/A"",""N/A (기준 없음)"",IF(RC8=""표에 없음"",""기준표에 없는 Class"",""확인 필요"")))))))"
 
     With ws.Range("A" & f & ":O" & lastR).Borders
         .LineStyle = xlContinuous
@@ -937,21 +937,26 @@ Private Function ParseClassText(ByVal s As String) As String
 End Function
 
 ' Reads 150 or 150/300/600 at position i. ok = every number looks like a class.
+' Shortened ratings such as 9/1500 (900/1500) or 3/600 (300/600) are expanded.
 Private Sub ReadClassChain(ByVal t As String, ByVal i As Long, chain As String, j As Long, ok As Boolean)
-    Dim k As Long, v As Long
-    chain = ""
-    ok = True
+    Dim k As Long, n As Long, nums(1 To 10) As Long
     j = i
     Do
         k = ReadDigits(t, j)
-        v = 0
-        If k - j <= 4 Then v = CLng(Mid$(t, j, k - j))
-        If v < 75 Then ok = False
-        If Len(chain) > 0 Then chain = chain & "/"
-        chain = chain & CStr(v)
+        If n < 10 Then n = n + 1
+        nums(n) = 0
+        If k - j <= 4 Then nums(n) = CLng(Mid$(t, j, k - j))
         j = k
         If CharAt(t, j) = "/" And DigitAt(t, j + 1) Then j = j + 1 Else Exit Do
     Loop
+    chain = ""
+    ok = True
+    For k = 1 To n
+        If n >= 2 And nums(n) >= 75 And nums(k) > 0 And nums(k) < 75 Then nums(k) = nums(k) * 100
+        If nums(k) < 75 Then ok = False
+        If Len(chain) > 0 Then chain = chain & "/"
+        chain = chain & CStr(nums(k))
+    Next k
     If CharAt(t, j) = "." And DigitAt(t, j + 1) Then ok = False
 End Sub
 
@@ -974,42 +979,23 @@ Private Function ParseClassCell(ByVal v As Variant) As String
     End Select
 End Function
 
-' One class for the calculation. With several (300/600LB) take the one the table
-' gives the most clips per gasket for, so clips are never under-counted; ties keep
-' the first listed. note explains the choice for the detail sheet.
+' One class for the calculation. A multi-rated item (150/300LB) may be packed by
+' any of its classes, so take the first listed class the table has a rule for.
+' note records the choice for the detail sheet.
 Private Function PickClass(ByVal classes As String, ByVal sizeV As Double, note As String) As Long
-    Dim parts As Variant, k As Long, best As Long, bestRate As Double, rate As Double
-    Dim nValid As Long, minRate As Double
+    Dim parts As Variant, k As Long
     note = ""
     If Len(classes) = 0 Then Exit Function
     parts = Split(classes, "/")
-    best = CLng(parts(0))
-    If UBound(parts) > 0 Then
-        bestRate = -1
-        minRate = 1E+30
-        For k = 0 To UBound(parts)
-            rate = ClipRate(sizeV, CLng(parts(k)))
-            If rate >= 0 Then
-                nValid = nValid + 1
-                If rate < minRate Then minRate = rate
-            End If
-            If rate > bestRate Then
-                bestRate = rate
-                best = CLng(parts(k))
-            End If
-        Next k
-        note = "복수 Class " & classes & "# → " & best & "# 적용"
-        If bestRate < 0 Then
-            note = note & " (기준표 해당 없음)"
-        ElseIf nValid = 1 Then
-            note = note & " (기준표에 있는 Class)"
-        ElseIf minRate = bestRate Then
-            note = note & " (클립 기준 동일)"
-        Else
-            note = note & " (클립이 더 많은 기준)"
+    PickClass = CLng(parts(0))
+    If UBound(parts) = 0 Then Exit Function
+    For k = 0 To UBound(parts)
+        If ClipRate(sizeV, CLng(parts(k))) >= 0 Then
+            PickClass = CLng(parts(k))
+            Exit For
         End If
-    End If
-    PickClass = best
+    Next k
+    note = "복수 Class " & classes & "# → " & PickClass & "# 적용"
 End Function
 
 Private Sub LoadTable()

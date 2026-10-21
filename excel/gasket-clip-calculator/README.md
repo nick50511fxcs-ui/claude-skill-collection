@@ -16,12 +16,12 @@ bundle and no clips; `N/A` means there is no rule for that size and class.
 - final clips (total) = ceil(sum of every line's base clips × 1.2); each order
   row shows ceil(order base × 1.2), so order rows can add up to a few more than
   the total
-- sizes above the table's largest (36") are flagged "확인 필요 (36인치 초과)" and
-  left out
+- 36" and larger: packed one by one, no clips, whatever the class (user rule that
+  replaces the spec's 36" row)
 
-- a multi-rated spec such as `300/600LB` uses the listed class that gives the
-  most clips per gasket (ties keep the first listed); the choice is written to
-  the detail sheet's note column
+- a multi-rated spec such as `150/300LB` can be packed as either class, so the
+  first listed class the table has a rule for is used; shortened forms such as
+  `9/1500LB` read as 900/1500; the choice is written to the note column
 - several orders at once: pick several files on import (each file is one order,
   named after the file), or paste lists one below another; every repeated header
   row starts a new order, named by a single-cell row just above it, else
