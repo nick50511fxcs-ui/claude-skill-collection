@@ -40,6 +40,7 @@ skills/<name>/SKILL.md            the skills (add new ones as folders here)
 hooks/                            long-conversation reminder hook (/new)
 scripts/check-skills.sh           skill count cap and format checks
 install.sh / install.ps1          one-shot installers
+excel/<tool>/                     standalone Excel tools (e.g. gasket-clip-calculator: order list -> packing clip count)
 ```
 
 ## Usage
