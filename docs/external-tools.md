@@ -88,3 +88,20 @@ npx @21st-dev/cli@latest init --client claude    # Cursor: --client cursor
 
 Not in `install.sh`: it needs an interactive sign-up and a personal API key.
 Then ask for things like "find a pricing-table component that fits the checkout page".
+
+## Modern Web Guidance — modern web best-practice search
+
+- Source: https://github.com/GoogleChrome/modern-web-guidance-src (authoring repo; Apache-2.0).
+  The distributed package is https://github.com/GoogleChrome/modern-web-guidance.
+- Requires: Node.js 22+
+
+```bash
+npx modern-web-guidance@latest install      # interactive wizard
+npx modern-web-guidance@latest search "light dismiss dialog"   # try it without installing
+```
+
+It is an npm CLI plus a skill that calls it with `npx -y modern-web-guidance@latest`
+at run time, so copying only the `SKILL.md` would not work and it is **not** vendored
+here. Its skill description says to run it first for every HTML/CSS/client-side JS task,
+which adds a CLI call (network + tokens) to each web task. Install it per project
+where you want that, not globally. Not installed by `install.sh`.

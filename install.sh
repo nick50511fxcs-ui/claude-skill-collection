@@ -61,7 +61,7 @@ fi
 if [ "$WITH_MEM" = 1 ]; then
   if command -v claude >/dev/null 2>&1; then
     claude plugin marketplace add "$REPO"
-    claude plugin install claude-mem@claude-skill-collection
+    claude plugin install session-memory@claude-skill-collection
   else
     echo "claude-mem needs the claude CLI; skipping." >&2
   fi

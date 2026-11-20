@@ -14,7 +14,7 @@
       "source": "./"
     },
     {
-      "name": "claude-mem",
+      "name": "session-memory",
       "description": "Memory that persists project and file context across sessions (thedotmack/claude-mem)",
       "source": {
         "source": "github",
