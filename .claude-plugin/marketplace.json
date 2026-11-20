@@ -62,6 +62,26 @@
         "url": "https://github.com/backnotprop/plannotator.git",
         "path": "apps/hook"
       }
+    },
+    {
+      "name": "stitch-design",
+      "description": "Google Stitch design workflows: generate screens, code-to-design, design systems, extract HTML (needs the Stitch MCP server and API key)",
+      "strict": false,
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/google-labs-code/stitch-skills.git",
+        "path": "plugins/stitch-design"
+      }
+    },
+    {
+      "name": "stitch-utilities",
+      "description": "Google Stitch helpers: DESIGN.md specs, prompt enhancement, stitch-loop site building (needs the Stitch MCP server for most skills)",
+      "strict": false,
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/google-labs-code/stitch-skills.git",
+        "path": "plugins/stitch-utilities"
+      }
     }
   ]
 }
