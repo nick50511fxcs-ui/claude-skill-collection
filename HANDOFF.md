@@ -1,39 +1,40 @@
-# Handoff (2026-09-23, updated)
+# Handoff (2026-11-20)
 
 ## Goal
 - Keep the user's Claude skills in this public GitHub repo so they work in every
   cloud session (claude.ai/code) and on any machine, with low token overhead.
+- This session: pick useful items from GitHub weekly/monthly trending for the user's work
+  (games, documents, PPT/Word design) and add them.
 
 ## Decisions
-- The repo is a Claude Code plugin marketplace; skills live in `skills/`. Default branch is `master`.
-- Cloud setup script (already saved in the user's environment):
-  `git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills && bash /tmp/skills/install.sh --copy --with-headroom || true`
-- The repo must stay **public**: the setup script has no GitHub credentials (a private repo failed with exit 128).
-- task-observer is **not** auto-started (it costs ~15k tokens per session and cloud logs reset per session).
-  It is turned on on demand with `/task`. Its upstream description told Claude to invoke it
-  before the first tool call of every session, so it still auto-ran; the vendored copy now has
-  a replaced description (recorded in its `UPSTREAM.txt`; re-apply when updating from upstream). The upstream feedback report was drafted, and the user chose not to file it.
-- Cap of 50 skills (`scripts/check-skills.sh` plus the `check-skills` CI on every PR).
-- Everything committed is in **English**; CI fails on Korean text outside vendored skills and HANDOFF.md.
-- Headroom is installed as `headroom-ai[mcp]` (~430MB), not `[all]` (~7GB).
-- OmniRoute is not installed: it sends prompts to third-party models.
-- No CLAUDE.md for now (the user agreed it is not needed).
+- Repo is a plugin marketplace; skills live in `skills/`. Default branch is `master`. Keep it **public**.
+- Plugins/tools with hooks or binaries are registered in `.claude-plugin/marketplace.json` (not copied);
+  plain skills are copied with `UPSTREAM.txt`. Optional installs via `install.sh` flags.
+- Cloud setup script (saved on the "Claude Skill" environment, changed through `update_environment` approval cards):
+  `git clone ... /tmp/skills && bash /tmp/skills/install.sh --copy --with-headroom --with-impeccable --with-hallmark --with-stitch || true`
+- From now on, propose environment changes (hosts, setup script) with `update_environment` and let the user approve; secrets are entered by the user in the environment's Network secrets.
+- pixelfx: the upstream "Publish it on Patch" section (curl | sh CLI install) was removed on purpose (user will not publish); re-apply when updating.
+- `claude-mem` entry renamed to `session-memory` (names starting with `claude-` are reserved); the `--with-claude-mem` flag name is unchanged.
+- modern-web-guidance is only documented in `docs/external-tools.md` (npm CLI, mandatory-on-every-web-task skill): not installed.
+- Not added: last30days-skill (user excluded), cloudflare/security-audit-skill, doc-coauthoring (no license file), docx/pptx/pdf/xlsx (built in).
 - Merge PRs only when the user asks.
 
 ## Current state
-- Merged: PR #1 (marketplace, task-observer, installers), #3 (README setup notes),
-  #4 (`/task` shortcut), #5 (`skill-intake` skill, 50-skill cap and CI).
-- Closed without merging: PR #2 (task-observer autostart).
-- Merged: PR #6 (`/new` skill, long-conversation reminder hook at 100k tokens, English-only convention).
-- Merged: PR #7 (task-observer no longer auto-runs; it loads only via `/task`).
-- No open PRs.
+- Merged: #11 (theme-factory, canvas-design, webapp-testing skills; plugins astryx, chrome-devtools-mcp, impeccable, hallmark, plannotator registered),
+  #12 (session-memory rename, `--with-stitch`, stitch-design/stitch-utilities entries), #13 (pixelfx skill). No open PRs.
+- 12 skills (cap 50). `claude plugin validate` and `scripts/check-skills.sh` pass.
+- Stitch: MCP `https://stitch.googleapis.com/mcp`, key header `X-Goog-Api-Key`. The key is a Network secret on the environment (never in the repo);
+  authenticated `list_projects` returned HTTP 200 via curl. `install.sh --with-stitch` registers the MCP with a placeholder header.
 
 ## Next steps
-1. Parked, per the user: build small custom skills for their repeated work tasks (e.g. online-store product pages).
+1. In a fresh session, verify the setup script worked: `claude plugin list` (impeccable, hallmark, stitch-design, stitch-utilities) and `claude mcp get stitch`.
+2. Decide whether to keep both `hallmark` and `impeccable` alongside `design-taste-frontend` (all three overlap).
+3. Parked: small custom skills for repeated work tasks (e.g. online-store product pages).
 
 ## Notes
-- User request with /new: "지금까지 대화 핵심들만 요약해서 저장해줘" (summarize only the key points so far).
-- The user works only in cloud sessions: no always-on local PC, and Remote Control is not an option.
-- The user is token-conscious and prefers plain-language Korean explanations in chat.
-- `.claude/` writes trigger an approval prompt; that is why the note lives at the repo root.
-- Windows (`install.ps1`) is untested and does not register the reminder hook.
+- The user pasted a Stitch API key in chat once; it should be rotated and the environment secret updated.
+- Allowed hosts added to the environment: stitch.withgoogle.com, stitch.google.com.
+- Force-push is denied in this environment; when the work branch has old merged history, merge it with `git merge -s ours FETCH_HEAD` and push normally.
+- Plannotator is registered but needs a browser UI and a `curl | bash` binary install; probably impractical in cloud sessions.
+- The user works only in cloud sessions (desktop app) and prefers plain-language Korean explanations.
+- User text after /new: none.
