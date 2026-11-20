@@ -1,11 +1,10 @@
-// Boot: load or create a save, catch up offline time, then run the logic
-// loop (10 Hz, wall-clock based) and the render loop (requestAnimationFrame).
+// Boot: load or create a save, pay out idle miners for the time away, then run the
+// logic loop (20 Hz) and the render loop (requestAnimationFrame).
 import { Game, newState, migrate } from './engine.js';
 import { Renderer } from './render.js';
 import { UI } from './ui.js';
-import { LINES, ITEMS } from './data.js';
 
-const KEY = 'campfire-chronicle-save-v1';
+const KEY = 'campfire-mine-save-v1';
 
 function readSave() {
   try {
@@ -22,31 +21,29 @@ function start(hotData = {}) {
   let raw = null;
   try { raw = hotData.save ? JSON.parse(hotData.save) : readSave(); } catch { raw = null; }
   const state = raw ? migrate(raw) : newState();
-  if (!raw) state.tut.step = 1;
   const fresh = !raw;
   let game = new Game(state);
   const canvas = document.getElementById('scene');
-  const renderer = new Renderer(canvas, document.getElementById('overlay'), game);
+  const renderer = new Renderer(canvas, game);
 
-  let lastSaveAt = 0;
+  // A run in progress is banked (its loot kept) before saving, so closing the tab never loses ore.
+  const bank = () => { if (game.run && !game.run.over) game.endRun(true); };
   const save = (withCloud = false) => {
-    try { localStorage.setItem(KEY, game.serialize()); lastSaveAt = Date.now(); } catch { /* storage blocked: keep playing */ }
+    try { localStorage.setItem(KEY, game.serialize()); } catch { /* storage blocked: keep playing */ }
     if (withCloud) cloudSave();
   };
-  // Cloud save: one private document per signed-in viewer (data/users/<id>/save).
-  // Browser storage stays the fast local copy; the cloud copy follows the player across devices.
-  const cloud = { ref: null, ok: false, busy: false, lastAt: 0, status: '연결 중…' };
+  // Cloud save: one private document per signed-in viewer.
+  const cloud = { ref: null, ok: false, busy: false, status: '연결 중…' };
   const cloudSave = async () => {
     if (!cloud.ok || cloud.busy) return;
     cloud.busy = true;
     try {
       await cloud.ref.set({ json: game.serialize(), time: game.s.time, at: Date.now() });
-      cloud.lastAt = Date.now();
       cloud.status = '연결됨';
     } catch (e) {
-      if (e && (e.code === 'invalid_argument' || e.code === 'revoked' || e.code === 'not_granted' || e.code === 'quota_exceeded')) {
+      if (e && ['invalid_argument', 'revoked', 'not_granted', 'quota_exceeded'].includes(e.code)) {
         cloud.ok = false;
-        cloud.status = e.code === 'invalid_argument' ? '이 페이지에 저장 권한이 없어 브라우저에만 저장됩니다' : '사용할 수 없어 브라우저에만 저장됩니다';
+        cloud.status = '사용할 수 없어 브라우저에만 저장됩니다';
       }
     } finally {
       cloud.busy = false;
@@ -54,170 +51,108 @@ function start(hotData = {}) {
   };
   const hooks = {
     save,
+    flush: () => { if (game.events.length) { renderer.handle(game.events); ui.handle(game.events); game.events.length = 0; } },
     exportSave: () => encode(game.serialize()),
     importSave: str => {
       try {
-        const data = migrate(JSON.parse(decode(str)));
-        if (!data.char || !data.skills) return false;
-        swap(new Game(data));
-        save();
-        cloudSave();
+        const data = JSON.parse(decode(str));
+        if (!data || !data.res) return false;
+        swap(new Game(migrate(data)));
+        save(true);
         return true;
       } catch {
         return false;
       }
     },
     cloudStatus: () => cloud,
-    lastSave: () => lastSaveAt,
     reset: () => {
-      const st = newState();
-      st.tut.step = 1; // a new game starts straight in the tutorial
-      swap(new Game(st));
-      save();
-      cloudSave();
+      swap(new Game(newState()));
+      save(true);
       ui.close();
-      ui.toast('새 모험을 시작합니다');
+      ui.toast('새로 시작합니다');
     },
   };
-  hooks.flush = () => {
-    if (game.events.length) { renderer.handle(game.events); ui.handle(game.events); game.events.length = 0; }
-  };
   const ui = new UI(game, renderer, hooks);
-  renderer.onNotice = (text, tier, kind) => {
-    if (text) ui.toast(text, tier);
-    if (kind === 'mini') ui.showTip('mini', '<b>기회!</b> 작업 장소에 빛나는 표시가 나타났어요. 설명대로 <b>화면을 클릭</b>하면 한 번에 여러 개를 얻고, 희귀 확률도 올라갑니다.');
-    hooks.flush();
-  };
-  // Clicks on the scene: chance events, the wisp, extra hits on the monster.
-  canvas.addEventListener('pointerdown', e => {
-    const r = canvas.getBoundingClientRect();
-    renderer.click(((e.clientX - r.left) / r.width) * 384, ((e.clientY - r.top) / r.height) * 216);
-    hooks.flush();
-  });
   function swap(g) {
     game = g;
     renderer.g = g;
     ui.g = g;
-    renderer.slotVis = [];
+    ui.mode = null;
+    ui.update();
   }
 
-  // Offline catch-up. There is no cap: a day of absence computes in well under
-  // a second, so long absences run in one-day chunks behind a progress note
-  // instead of freezing the page.
-  let catching = false;
-  const merge = parts => {
-    const first = parts[0], lastPart = parts.at(-1), skills = {};
-    for (const p of parts) for (const x of p.skills) skills[x.k] = { k: x.k, from: skills[x.k] ? skills[x.k].from : x.from, to: x.to };
-    return {
-      sec: parts.reduce((a, p) => a + p.sec, 0),
-      kills: parts.reduce((a, p) => a + p.kills, 0),
-      deaths: parts.reduce((a, p) => a + p.deaths, 0),
-      drops: first.drops.map((_, i) => parts.reduce((a, p) => a + p.drops[i], 0)),
-      best: parts.flatMap(p => p.best),
-      records: parts.reduce((a, p) => a + p.records, 0),
-      codex: parts.flatMap(p => p.codex),
-      fails: parts.reduce((a, p) => a + p.fails, 0),
-      gold: parts.reduce((a, p) => a + p.gold, 0),
-      charLv: [first.charLv[0], lastPart.charLv[1]],
-      floor: [first.floor[0], lastPart.floor[1]],
-      skills: Object.values(skills),
-    };
-  };
-  const catchUp = async (sec, report) => {
-    if (catching || sec < 1) return;
-    catching = true;
-    const parts = [];
-    try {
-      if (sec <= 2 * 86400) parts.push(game.fastForward(sec));
-      else {
-        ui.showModal('<h2>📜 귀환 중…</h2><p class="lead" id="ffProgress"></p>', [], true);
-        for (let done = 0; done < sec;) {
-          const chunk = Math.min(86400, sec - done);
-          parts.push(game.fastForward(chunk));
-          done += chunk;
-          const el = document.getElementById('ffProgress');
-          if (el) el.textContent = `자리를 비운 ${Math.ceil(sec / 86400)}일을 정리하는 중… ${Math.round((done / sec) * 100)}%`;
-          await new Promise(r => setTimeout(r, 0));
-        }
-        ui.closeModal();
-      }
-    } finally {
-      catching = false;
-    }
-    game.events.length = 0;
-    const sm = merge(parts);
-    if (report && sec >= 60) {
-      ui.offlineReport(sm, Math.random);
-      renderer.replay(sm.best.filter(id => ITEMS[id].tier >= 4));
-    }
-  };
+  // Idle miners: pay out the time away (no cap).
   if (!fresh && !hotData.save) {
     const away = (Date.now() - state.lastSeen) / 1000;
-    catchUp(away, true);
+    if (away > 60) ui.offlineReport(game.fastForward(away));
   }
   if (fresh) {
-    ui.showModal(`<h2>🔥 모닥불 연대기</h2>
-      <p class="lead">한 명의 모험가가 끝없는 길을 오릅니다.</p>
+    ui.showModal(`<h2>⛏ 끝없는 광산</h2>
+      <p class="lead">모닥불 곁의 광부가 땅 밑으로 끝없이 파 내려갑니다.</p>
       <ul class="report">
-        <li>싸우다 지치면 <b>모닥불 야영지</b>에서 쉬며 생활 스킬을 합니다.</li>
-        <li>광질·벌목·채집·낚시·사냥·연금술의 레벨은 <b>윤회해도 사라지지 않고</b> 전투를 영원히 강하게 만듭니다.</li>
-        <li>모든 행동에 운이 있습니다. 가장 귀한 것은 <b>0.0001%</b>.</li>
-        <li>창을 닫아도 모험은 계속됩니다. 몇 시간이든 며칠이든, 돌아오면 그동안의 일을 정리해 드려요.</li>
-      </ul>`, [['모험 시작', null]]);
+        <li><b>채굴 출발</b>을 누르면 곡괭이 내구가 다할 때까지 아래로 팝니다.</li>
+        <li>캐 온 <b>돌과 광석</b>으로 능력치를 강화하고 더 좋은 장비를 만드세요.</li>
+        <li><b>보물상자</b>에서 나온 유물은 영구 효과를 주고, 같은 유물을 또 얻으면 레벨이 올라요.</li>
+        <li>깊을수록 새로운 광석이 나옵니다. 바닥은 없어요.</li>
+      </ul>`, [['시작하기', 'modal-close']]);
   }
+
+  // Input: hold a direction (keys, buttons or the block next to the miner).
+  const keyDir = { ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right', ArrowDown: 'down', s: 'down' };
+  addEventListener('keydown', e => {
+    if (e.target.closest?.('textarea, input')) return;
+    const run = game.run;
+    if (run && keyDir[e.key]) { run.input = keyDir[e.key]; e.preventDefault(); }
+    else if (run && e.key === ' ') { game.frenzy(); e.preventDefault(); }
+    else if (e.key === 'Escape') ui.close();
+  });
+  addEventListener('keyup', e => { if (game.run && keyDir[e.key] && game.run.input === keyDir[e.key]) game.run.input = null; });
+  canvas.addEventListener('pointerdown', e => {
+    const dir = ui.canvasDir(e.clientX, e.clientY, canvas.getBoundingClientRect());
+    if (!dir) return;
+    game.run.input = dir;
+    canvas.setPointerCapture?.(e.pointerId);
+  });
+  for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, () => { if (game.run) game.run.input = null; });
 
   // Logic loop
   let last = performance.now();
   setInterval(() => {
     const now = performance.now();
-    const dt = (now - last) / 1000;
+    const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
-    if (catching) return;
-    if (dt > 3) catchUp(dt, dt > 60); // tab was throttled in the background
-    else game.advance(dt, true);
-    if (game.events.length) {
-      renderer.handle(game.events);
-      ui.handle(game.events);
-      game.events.length = 0;
-    }
-  }, 100);
+    game.advance(dt);
+    hooks.flush();
+  }, 50);
 
   // Render loop
-  let lastF = performance.now();
-  let uiT = 0, panelT = 0, talkT = 8;
+  let lastF = performance.now(), uiT = 0, panelT = 0;
   const frame = now => {
     const dt = Math.min(0.05, (now - lastF) / 1000);
     lastF = now;
     renderer.frame(dt);
-    uiT += dt; panelT += dt; talkT -= dt;
-    if (uiT > 0.2) { uiT = 0; ui.updateBar(); }
-    if (panelT > 1.5) { panelT = 0; ui.refreshPanel(); }
-    if (talkT < 0) {
-      talkT = 14 + Math.random() * 14;
-      const s = game.s;
-      const pool = s.mode === 'camp' ? [...LINES.camp, ...LINES[s.slots[0].k]] : LINES.fight;
-      renderer.say(pool[Math.floor(Math.random() * pool.length)]);
-    }
+    uiT += dt; panelT += dt;
+    if (uiT > 0.15) { uiT = 0; ui.update(); }
+    if (panelT > 2) { panelT = 0; ui.refreshPanel(); }
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
 
-  // Autosave every 10 minutes, plus whenever the tab is hidden or closed.
-  setInterval(() => save(true), 600000);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) save(true); });
+  setInterval(() => { if (!game.run) save(true); }, 300000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { bank(); hooks.flush(); save(true); } });
+  addEventListener('pagehide', () => { bank(); save(); });
   (async () => {
     try {
       if (!window.claude?.use) { cloud.status = '이 환경에서는 브라우저에만 저장됩니다'; return; }
       const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
       const uid = user ? await user.id() : null;
       if (!db || !uid) { cloud.status = '로그인하면 클라우드 저장을 쓸 수 있습니다'; return; }
-      cloud.ref = db.doc('data/users/' + uid + '/save');
+      cloud.ref = db.doc('data/users/' + uid + '/mine');
       const snap = await cloud.ref.get();
       if (snap.exists) {
         const raw = JSON.parse(snap.data().json);
-        if (raw && raw.time > game.s.time + 30) {
+        if (raw && raw.time > game.s.time + 30 && !game.run) {
           swap(new Game(migrate(raw)));
-          catchUp((Date.now() - raw.lastSeen) / 1000, true);
           save();
           ui.toast('클라우드에 저장된 진행을 불러왔습니다', 2);
         }
@@ -229,10 +164,8 @@ function start(hotData = {}) {
       cloud.status = '사용할 수 없어 브라우저에만 저장됩니다';
     }
   })();
-  addEventListener('pagehide', save);
-  window.claude?.hot?.snapshot?.(() => ({ save: game.serialize() }));
+  window.claude?.hot?.snapshot?.(() => { bank(); return { save: game.serialize() }; });
   if (location.hash === '#debug') window.__cc = { game: () => game, renderer, ui };
-  ui.updateBar();
 }
 
 if (window.claude?.hot?.ready) window.claude.hot.ready(start);

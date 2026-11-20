@@ -1,987 +1,420 @@
-// Pure game logic. No DOM access, so the same code runs in the browser and in
-// the Node balance simulator (sim/simulate.mjs).
+// Pure game logic for the mining game (no DOM), shared with the simulator.
+// The base: upgrades, gear, abilities, relics, village, missions, idle miners.
+// A run: dig down an endless 9-wide shaft until the pickaxe's durability runs out.
+import { makeRng } from './rng.js';
 import {
-  TIERS, TIER_P, LUCK_CAP, SKILLS, ITEMS, SPOT_LV, SPOT_XP, SPOTS, SKILL_RARES, SEASON_FISH,
-  RECIPES, MONSTERS, REGIONS, GEAR_NAMES, GEAR_TIER_MULT, PERKS, MEMORIES, PRESETS, AWAKENINGS,
-  TOOL_TIERS, MASTER_BONUS, UNLOCKS, BOSS_EVERY, ELITE_EVERY, AFFIXES, BOSS_TROPHY,
+  COLS, LAYER_SIZE, ORES, GEAR, GEAR_SLOTS, gearCost, UPGRADES, upgradeCost, ABILITIES, ABILITY, ABIL_MAX,
+  abilityUnlockFloor, abilityCost, RARITY, RELICS, RELIC, RELIC_COPIES, RELIC_MAX, BUILDING, BUILD_MAX, buildCost, MISSIONS,
 } from './data.js';
-import { makeRng, hash32 } from './rng.js';
 
 export const VERSION = 1;
-export const ACTION_TIME = 3;
-export const ALCH_TIME = 4;
-export const CLONE_SPEED = 0.6;
-export const KILLS_PER_FLOOR = 10;
-export const MON_INTERVAL = 1.8;
-export const REBIRTH_XP = 0.05;
-export const FEVER_SEC = 30;
-export const SKILL_CD = { strike: 8, heal: 30, rage: 45 };
-export const AUTOCAST_LV = 100;
-export const RECALL_MULT = 5;
-export const RECALL_UNTIL = 0.95;
-export const RECALL_FLOOR = 0.2;
+const BASE_INTERVAL = 0.5;
+const BASE_DUR = 80;
+const GAUGE_MAX = 30;
+const FRENZY_SEC = 6;
+export const CHECKPOINT = 25;
 
-// ---------- Curves ----------
-export const xpNeed = lv => Math.floor(20 + 1.8 * Math.pow(lv, 1.9));
-export const charXpNeed = lv => Math.floor(15 * Math.pow(1.12, lv - 1));
-export const toolTier = lv => Math.min(10, Math.floor(lv / 100));
-export const spotsUnlocked = lv => SPOT_LV.filter(l => lv >= l).length;
-export const skillPassive = lv => lv * 0.001 + Math.floor(lv / 10) * 0.01;
-export const perkCost = (id, lv) => Math.ceil(PERKS[id].base * Math.pow(PERKS[id].grow, lv));
-// Soft pity: past 1.5x the expected count, myth/primordial odds ramp up (x2 at 2x, x3 at 2.5x).
-export const pity = ratio => (ratio > 1.5 ? 1 + 2 * (ratio - 1.5) : 1);
-export const ashFor = maxFloor => (maxFloor > 20 ? Math.floor(Math.pow(maxFloor / 5, 1.5)) : 0);
-// Monsters grow faster than gear (1.16 vs 1.12 per floor), so the climb always
-// meets a wall that only permanent multipliers can push back.
-export const monHp = f => 20 * Math.pow(1.16, f - 1);
-export const monAtk = f => 3 * Math.pow(1.15, f - 1);
-export const GEAR_GROWTH = 1.12;
-
-export function gearValue(g) {
-  return (g.slot === 'weapon' ? 5 : 22) * Math.pow(GEAR_GROWTH, g.f - 1) * GEAR_TIER_MULT[g.tier] * g.roll * (1 + 0.1 * g.enh);
-}
-export function charmValue(g) {
-  const k = (g.tier + 1) * g.roll * (1 + 0.1 * g.enh);
-  return { luck: 0.02 * k, crit: 0.01 * k };
-}
-export function gearScore(g) {
-  if (!g) return 0;
-  if (g.slot === 'charm') { const c = charmValue(g); return c.luck * 10 + c.crit * 10; }
-  return gearValue(g);
-}
-export const gearName = g => `${g.affix ? AFFIXES[g.affix].name + ' ' : ''}${GEAR_NAMES[g.slot][g.tier]}${g.enh ? ' +' + g.enh : ''}`;
-export const affixValue = g => (g && g.affix ? AFFIXES[g.affix].v * (1 + 0.5 * g.tier) : 0);
-export const enhanceCost = g => Math.ceil(10 * Math.pow(1.13, g.f - 1) * Math.pow(1.5, g.enh));
-
-// What happens at a given skill level (used for logs and the "next milestone" list).
-export function milestoneAt(k, lv) {
-  if (lv === 1000) return `마스터 달성 · ${MASTER_BONUS[k]}`;
-  if (AWAKENINGS[lv]) return AWAKENINGS[lv];
-  if (k === 'alchemy') {
-    const r = RECIPES.find(x => x.lv === lv && !x.secret);
-    if (r) return `새 레시피: ${ITEMS[r.id].name}`;
-  }
-  const si = SPOT_LV.indexOf(lv);
-  if (si > 0 && SPOTS[k]) return `새 장소: ${SPOTS[k][si].name}`;
-  if (lv % 100 === 0) return `도구 승급: ${TOOL_TIERS[toolTier(lv)].name} (속도 +10%)`;
-  if (lv % 10 === 0) return `${SKILLS[k].stat} +1% 보너스`;
-  return null;
-}
-export function nextMilestones(k, lv, count = 4) {
-  const out = [];
-  for (let l = lv + 1; out.length < count && l <= lv + 1000; l++) {
-    const m = milestoneAt(k, l);
-    if (m && (!m.endsWith('+1% 보너스') || out.length === 0)) out.push({ lv: l, text: m });
-  }
-  return out;
-}
-
-function freshChar(floor) {
+export function newState(seed = (Math.random() * 2 ** 32) >>> 0) {
   return {
-    lv: 1, xp: 0, pts: 0, st: { str: 5, agi: 5, vit: 5, luk: 5 }, preset: 'balanced', auto: true,
-    hp: 1e12, sta: 1e12, gold: 0, floor, kills: 0, maxFloor: floor, farmUntil: 0,
-    gear: { weapon: null, armor: null, charm: null }, bag: [],
-  };
-}
-export const BAG_MAX = 40;
-export const sellPrice = g => Math.ceil(Math.pow(1.13, g.f - 1) * 5 * (g.tier + 1) * (1 + 0.5 * g.enh));
-
-export function newState(seed = (Math.random() * 4294967296) >>> 0) {
-  const skills = {};
-  for (const k of Object.keys(SKILLS)) skills[k] = { lv: 1, xp: 0, n: 0, dryM: 0, dryP: 0 };
-  const now = Date.now();
-  return {
-    v: VERSION, seed, rng: seed, time: 0, created: now, lastSeen: now,
-    char: freshChar(1), mode: 'fight', focus: false,
-    slots: [{ k: 'mining', p: 0 }],
-    spots: { mining: 0, wood: 0, forage: 0, fish: 0, hunt: 0 },
-    recipe: 'p_str', secret: false,
-    skills, items: {}, codex: {}, records: {},
-    potAuto: { str: true, hp: true, sta: true, antidote: true, warm: true, luck: true, haste: true, focus: true, wisdom: true },
-    pot: {}, catUntil: 0, gatherUntil: 0, elixirs: { atk: 0, hp: 0, all: 0, agi: 0, sta: 0, luck: 0, crit: 0, lifexp: 0 },
-    act: { cd: { strike: 0, heal: 0, rage: 0 }, rageUntil: 0, fever: 0, feverUntil: 0, autoCast: false, alchGreat: 0 },
-    rb: { count: 0, ash: 0, totalAsh: 0, perks: {}, memory: null, choices: null, bestFloor: 1, bestLv: 1 },
-    stats: { kills: 0, deaths: 0, bosses: 0, actions: 0, gold: 0 },
-    hall: [], log: [], firstKills: {},
-    tut: { step: 0, done: false, tips: {} },
-    settings: { autoEquip: false },
+    v: VERSION, seed, rngState: seed, time: 0, lastSeen: Date.now(),
+    res: { stone: 0, gems: 0, chests: 0, ...Object.fromEntries(ORES.map(o => [o.id, 0])) },
+    gear: Object.fromEntries(GEAR_SLOTS.map(k => [k, 0])),
+    up: Object.fromEntries(Object.keys(UPGRADES).map(k => [k, 0])),
+    abil: {}, relics: {}, town: {}, missions: {},
+    stats: { deepest: 0, blocks: 0, runs: 0, opened: 0 },
+    auto: true, start: 0, idleAcc: { stone: 0, ore: 0 }, tips: {},
   };
 }
 
-// A life skill is open once the skill before it reached its level (or it was already played).
-export function isUnlocked(s, k) {
-  const u = UNLOCKS[k];
-  if (!u) return true;
-  return s.skills[u.skill].lv >= u.lv || s.skills[k].lv > 1;
-}
-
-// Fill in fields added in later versions so old saves keep loading.
+// Fill in fields added later so older saves keep loading; saves from the old RPG start fresh.
 export function migrate(raw) {
+  if (!raw || raw.v !== VERSION || !raw.res) return newState();
   const base = newState(raw.seed);
   const s = { ...base, ...raw };
-  s.settings = { ...base.settings, ...(raw.settings || {}) };
-  s.char = { ...freshChar(1), ...raw.char, st: { ...base.char.st, ...(raw.char?.st || {}) }, gear: { ...base.char.gear, ...(raw.char?.gear || {}) } };
-  for (const k of Object.keys(base.skills)) s.skills[k] = { ...base.skills[k], ...(raw.skills?.[k] || {}) };
-  s.rb = { ...base.rb, ...(raw.rb || {}) };
-  s.stats = { ...base.stats, ...(raw.stats || {}) };
-  s.potAuto = { ...base.potAuto, ...(raw.potAuto || {}) };
-  s.elixirs = { ...base.elixirs, ...(raw.elixirs || {}) };
-  s.act = { ...base.act, ...(raw.act || {}), cd: { ...base.act.cd, ...((raw.act && raw.act.cd) || {}) } };
-  s.tut = { ...base.tut, ...(raw.tut || {}), tips: { ...((raw.tut && raw.tut.tips) || {}) } };
-  s.v = VERSION;
+  for (const k of ['res', 'gear', 'up', 'stats', 'idleAcc']) s[k] = { ...base[k], ...(raw[k] || {}) };
   return s;
 }
 
-const VARIANTS = {
-  golden: { name: '황금 ', hp: 2, atk: 1, xp: 2, gold: 10 },
-  giant: { name: '거대 ', hp: 5, atk: 1.5, xp: 10, gold: 5 },
-  ancient: { name: '고대 ', hp: 20, atk: 2, xp: 100, gold: 50 },
-};
-const NO_VARIANT = { name: '', hp: 1, atk: 1, xp: 1, gold: 1 };
+export const hpAt = y => 4 * Math.pow(3, y / LAYER_SIZE);
+export const layerOf = y => Math.floor(y / LAYER_SIZE);
+const HP_MULT = { rock: 1, ore: 1.4, gem: 2.5, chest: 2, hard: 3.5 };
+export const relicLevel = copies => RELIC_COPIES.filter(c => copies >= c).length;
 
 export class Game {
-  constructor(state, opts = {}) {
+  constructor(state) {
     this.s = state;
-    this.rng = makeRng(state.rng);
-    this.clock = opts.clock || (() => Date.now());
-    this.quiet = !!opts.quiet; // simulator: skip logs
-    this.simStep = opts.simStep || 0;
     this.events = [];
-    this.live = true;
-    this.summary = null;
-    this.mon = null;
-    this.heroTimer = 0.3;
-    this.monTimer = 1;
-    this.lastEnv = -1e9;
-    this.env = this.envNow();
-    this.dirty = true;
+    this.rng = makeRng(state.rngState ?? state.seed);
+    this.run = null;
     this.calc();
-    const c = state.char;
-    c.hp = Math.min(c.hp, this.d.hp);
-    c.sta = Math.min(c.sta, this.d.sta);
   }
 
-  // ---------- Infrastructure ----------
-  emit(e) {
-    if (this.live) this.events.push(e);
-    if (this.summary) this.summarize(e);
-  }
-  log(text, tier = 0) {
-    if (this.quiet) return;
-    this.s.log.unshift({ at: this.clock(), text, tier });
-    if (this.s.log.length > 80) this.s.log.length = 80;
-  }
-  has(id) { return !!this.s.codex[id]; }
-  // Primordial items stack: every duplicate adds a little more to its effect.
-  // Capped at 10 duplicates so faster gathering cannot feed itself without limit.
-  prim(id, base, per) { const n = Math.min(11, this.s.items[id] || 0); return n ? base + per * (n - 1) : 0; }
-  P(id) { return this.s.rb.perks[id] || 0; }
+  emit(e) { this.events.push(e); }
   serialize() {
-    this.s.rng = this.rng.getState();
-    this.s.lastSeen = this.clock();
+    this.s.rngState = this.rng.getState();
+    this.s.lastSeen = Date.now();
     return JSON.stringify(this.s);
   }
 
-  envNow() {
-    const t = this.clock();
-    const d = new Date(t);
-    const h = d.getHours();
-    const m = d.getMonth();
-    const season = m >= 2 && m <= 4 ? 0 : m >= 5 && m <= 7 ? 1 : m >= 8 && m <= 10 ? 2 : 3;
-    const w = hash32((Math.floor(t / 3600000) * 2654435761) ^ 0x9e37);
-    const weather = w < 0.18 ? (season === 3 ? 'snow' : 'rain') : 'clear';
-    return { night: h >= 20 || h < 6, hour: h + d.getMinutes() / 60, season, weather };
-  }
-
   // ---------- Derived stats ----------
+  relicFx() {
+    const fx = {};
+    for (const [id, r] of Object.entries(this.s.relics)) {
+      const def = RELIC[id];
+      if (!def || !r.lv) continue;
+      for (const [k, v] of Object.entries(def.fx)) fx[k] = (fx[k] || 0) + v * r.lv;
+    }
+    return fx;
+  }
   calc() {
-    const s = this.s, c = s.char, st = c.st, sk = s.skills, mem = s.rb.memory, pot = s.pot, env = this.env;
-    const pb = k => skillPassive(sk[k].lv);
-    const master = k => sk[k].lv >= 1000;
-    let codex = 0;
-    for (const id in s.codex) codex += TIERS[ITEMS[id].tier].codex;
-    const potPow = (1 + pb('alchemy')) * (this.prim('a_prim', 2, 0.1) || 1) * (master('alchemy') ? 2 : 1);
-    const allMul = (this.prim('c_prim', 1.05, 0.02) || 1) * (1 + 0.03 * s.elixirs.all);
-    const g = c.gear;
-    const wAtk = g.weapon ? gearValue(g.weapon) : 0;
-    const aHp = g.armor ? gearValue(g.armor) : 0;
-    const ch = g.charm ? charmValue(g.charm) : { luck: 0, crit: 0 };
-    const aff = { atk: 0, hp: 0, spd: 0, crit: 0, critD: 0, luck: 0, sta: 0, xp: 0 };
-    for (const sl of ['weapon', 'armor', 'charm']) if (g[sl] && g[sl].affix) aff[AFFIXES[g[sl].affix].stat] += affixValue(g[sl]);
-
-    let atk = (4 + st.str * 2 + wAtk) * (1 + pb('mining')) * (1 + pb('combat')) * (1 + codex)
-      * (1 + 0.1 * this.P('w_atk')) * (1 + 0.02 * s.elixirs.atk) * allMul * (1 + aff.atk);
-    if (pot.str) atk *= 1 + 0.25 * potPow;
-    atk *= this.prim('m_prim', 1.5, 0.1) || 1;
-    if (master('mining')) atk *= 1.25;
-    if (master('combat')) atk *= 1.25;
-    if (mem === 'coward') atk *= 0.9;
-    if (mem === 'warrior') atk *= 1.15;
-
-    let hp = (40 + st.vit * 8 + c.lv * 4 + aHp) * (1 + pb('forage')) * (1 + pb('combat')) * (1 + codex)
-      * (1 + 0.1 * this.P('w_hp')) * (1 + 0.02 * s.elixirs.hp) * allMul * (1 + aff.hp);
-    if (pot.hp) hp *= 1 + 0.25 * potPow;
-    if (master('forage')) hp *= 1.25;
-    if (master('combat')) hp *= 1.25;
-
-    let sta = 100 * (1 + st.vit * 0.005) * (1 + pb('wood')) * (1 + 0.02 * s.elixirs.sta) * (1 + aff.sta);
-    if (pot.sta) sta *= 1 + 0.4 * potPow;
-
-    const luckCap = LUCK_CAP + this.prim('f_prim', 0.5, 0.1) + (master('fish') ? 0.5 : 0);
-    let luck = 1 + st.luk * 0.002 + sk.fish.lv * 0.0005 + Math.floor(sk.fish.lv / 10) * 0.005
-      + 0.05 * this.P('a_luck') + ch.luck + (mem === 'lucky' ? 0.5 : 0) + (pot.luck ? 0.3 * potPow : 0)
-      + 0.01 * s.elixirs.luck + aff.luck;
-    luck = Math.min(luckCap, luck);
-
-    const critC = Math.min(0.75, 0.05 + st.luk * 0.003 + ch.crit + aff.crit + (pot.focus ? 0.1 * potPow : 0));
-    const critD = (1.5 + pb('hunt') + this.prim('h_prim', 1, 0.2)) * (master('hunt') ? 1.5 : 1) * (1 + 0.02 * s.elixirs.crit) * (1 + aff.critD);
-    const interval = Math.max(0.2, 1.4 / (1 + st.agi * 0.008) / (1 + 0.01 * s.elixirs.agi) / (1 + aff.spd) / (pot.haste ? 1 + 0.25 * potPow : 1));
-    const dodge = Math.min(0.6, st.agi * 0.002 + (mem === 'coward' ? 0.3 : 0));
-    const nightXp = env.night ? this.prim('s_prim', 1.3, 0.05) || 1 : 1;
-
+    const s = this.s, fx = this.relicFx(), t = k => s.town[k] || 0, g = s.gear;
+    const luck = (1 + s.up.luck * UPGRADES.luck.per + GEAR.lamp.val(g.lamp) + (fx.luck || 0)) * (1 + (fx.luckMul || 0));
     this.d = {
-      atk, hp, sta, luck, luckCap, critC, critD, interval, dodge, potPow, codex,
-      res: { poison: Math.min(1, sk.forage.lv / 60), ice: Math.min(1, sk.wood.lv / 80) },
-      lifeSpeed: (1 + 0.03 * this.P('a_speed')) * (this.prim('w_prim', 1.25, 0.05) || 1) * (master('wood') ? 1.15 : 1),
-      lifeXp: (1 + 0.05 * this.P('a_xp')) * (1 + 0.02 * s.elixirs.lifexp) * nightXp,
-      charXp: (1 + 0.15 * this.P('w_xp')) * this.rebirthXp() * nightXp * (1 + aff.xp) * (pot.wisdom ? 1 + 0.3 * potPow : 1),
-      gold: (1 + 0.2 * this.P('r_gold')) * (mem === 'rich' ? 3 : 1),
-      campDur: 60 * (mem === 'sleepy' ? 1.5 : 1),
+      atk: GEAR.pick.val(g.pick) * (1 + s.up.atk * UPGRADES.atk.per + (fx.atk || 0) + t('smith') * BUILDING.smith.per) * (1 + (fx.atkMul || 0)),
+      dur: Math.round((BASE_DUR + s.up.dur * UPGRADES.dur.per + GEAR.helm.val(g.helm) + (fx.durFlat || 0)) * (1 + GEAR.armor.val(g.armor) + t('inn') * BUILDING.inn.per + (fx.durPct || 0))),
+      interval: Math.max(0.08, BASE_INTERVAL * Math.pow(1 - UPGRADES.spd.per, s.up.spd) * (1 - GEAR.boots.val(g.boots)) * (1 - Math.min(0.5, fx.spd || 0))),
+      luck,
+      crit: Math.min(0.5, 0.05 * luck),
+      ore: 0.1 * Math.min(2, Math.sqrt(luck)) * (1 + (fx.ore || 0)),
+      chest: 0.0015 * Math.sqrt(luck) * (1 + (fx.chest || 0) + t('vault') * BUILDING.vault.per),
+      gem: 0.006 * Math.sqrt(luck) * (1 + (fx.gem || 0)),
+      double: Math.min(0.9, 0.05 * luck + (fx.double || 0) + t('smelter') * BUILDING.smelter.per),
+      abil: 1 + (fx.abil || 0),
+      cd: Math.max(0.6, 1 - (fx.cd || 0)),
+      stone: 1 + (fx.stone || 0),
+      revive: fx.revive || 0,
+      costMul: 1 - t('trader') * BUILDING.trader.per,
+      idle: t('hut') * 40 * (1 + (fx.idle || 0)),
     };
-    this.dirty = false;
+    return this.d;
   }
+  abilEvery(a) { return Math.max(4, Math.round((a.every - ((this.s.abil[a.id] || 1) - 1)) * this.d.cd)); }
+  abilMult(a) { return a.mult * (1 + 0.3 * ((this.s.abil[a.id] || 1) - 1)) * this.d.abil; }
 
-  skillSpeed(k) {
-    const sk = this.s.skills[k];
-    return this.d.lifeSpeed * (1 + 0.1 * toolTier(sk.lv)) * (k === 'forage' && this.env.weather === 'rain' ? 1.2 : 1)
-      * (this.s.gatherUntil > this.s.time ? 1.3 : 1) * (this.fever() ? 2 : 1);
+  // ---------- Time ----------
+  advance(dt) {
+    this.s.time += dt;
+    this.idleTick(dt);
+    if (this.run && !this.run.over) this.runStep(dt);
   }
-  skillXpMult(k) {
-    const mem = this.s.rb.memory;
-    return this.d.lifeXp * (mem && MEMORIES[mem].skill === k ? 2 : 1) * (k === 'combat' && mem === 'warrior' ? 2 : 1);
+  // Village miners keep digging while the page is closed. No cap.
+  idleTick(sec) {
+    const d = this.d, s = this.s;
+    if (!d.idle) return { stone: 0, ore: 0, oreId: null };
+    const oreId = ORES[Math.min(ORES.length - 1, layerOf(s.stats.deepest))].id;
+    s.idleAcc.stone += (d.idle * (1 + s.stats.deepest / 50) * sec) / 3600;
+    s.idleAcc.ore += ((s.town.hut || 0) * 1.5 * sec) / 3600;
+    const st = Math.floor(s.idleAcc.stone), or = Math.floor(s.idleAcc.ore);
+    s.idleAcc.stone -= st; s.idleAcc.ore -= or;
+    s.res.stone += st;
+    s.res[oreId] += or;
+    return { stone: st, ore: or, oreId };
   }
-  rareMult(k) {
-    const sk = this.s.skills[k];
-    return this.d.luck * (sk.lv >= 750 ? 1.5 : 1) * (this.s.catUntil > this.s.time && k !== 'combat' ? 1.5 : 1)
-      * (k === 'fish' && this.env.night ? 1.3 : 1) * (this.burstMult || 1);
-  }
-
-  // ---------- Main loop ----------
-  advance(sec, live = true) {
-    this.live = live;
-    const stepMax = live ? 0.1 : this.simStep || 0.5;
-    let left = sec;
-    while (left > 1e-9) {
-      const dt = Math.min(stepMax, left);
-      this.step(dt);
-      left -= dt;
-    }
-    this.live = true;
-  }
-
   fastForward(sec) {
-    const c = this.s.char;
-    const startLv = c.lv, startFloor = c.maxFloor, startGold = this.s.stats.gold;
-    const skillStart = Object.fromEntries(Object.entries(this.s.skills).map(([k, v]) => [k, v.lv]));
-    this.summary = { sec, kills: 0, deaths: 0, drops: [0, 0, 0, 0, 0, 0, 0], best: [], records: 0, codex: [], fails: 0, rebirth: false };
-    this.advance(sec, false);
-    const sm = this.summary;
-    this.summary = null;
-    sm.charLv = [startLv, this.s.char.lv];
-    sm.floor = [startFloor, this.s.char.maxFloor];
-    sm.gold = this.s.stats.gold - startGold;
-    sm.skills = Object.entries(this.s.skills).filter(([k, v]) => v.lv > skillStart[k]).map(([k, v]) => ({ k, from: skillStart[k], to: v.lv }));
-    return sm;
-  }
-
-  summarize(e) {
-    const sm = this.summary;
-    if (e.t === 'kill') sm.kills++;
-    else if (e.t === 'death') sm.deaths++;
-    else if (e.t === 'drop') {
-      sm.drops[e.tier] += e.n;
-      if (e.tier >= 3) sm.best.push(e.id);
-    } else if (e.t === 'record') sm.records++;
-    else if (e.t === 'codex') sm.codex.push(e.id);
-    else if (e.t === 'act' && e.kind === 'fail') sm.fails++;
-  }
-
-  step(dt) {
-    const s = this.s;
-    s.time += dt;
-    if (s.time - this.lastEnv >= 60) {
-      this.env = this.envNow();
-      this.lastEnv = s.time;
-      this.dirty = true;
+    const out = { sec, stone: 0, ore: 0, oreId: null };
+    for (let done = 0; done < sec;) {
+      const step = Math.min(3600, sec - done);
+      const r = this.idleTick(step);
+      out.stone += r.stone; out.ore += r.ore; out.oreId = r.oreId;
+      done += step;
     }
-    if (this.dirty) this.calc();
-    const cloneSpeed = CLONE_SPEED * (1 + 0.05 * this.P('r_offline'));
-    for (let i = 1; i < s.slots.length; i++) this.lifeTick(s.slots[i], i, dt * cloneSpeed);
-    if (s.mode === 'fight') this.fightStep(dt);
-    else this.campStep(dt);
+    this.s.time += sec;
+    return out;
   }
 
-  // ---------- Camp & life skills ----------
-  enterCamp(reason) {
-    const s = this.s;
-    s.mode = 'camp';
-    s.pot = {};
-    this.mon = null;
-    this.dirty = true;
-    this.emit({ t: 'camp', reason });
+  // ---------- Run ----------
+  startOptions() {
+    const top = Math.floor(this.s.stats.deepest / CHECKPOINT) * CHECKPOINT;
+    const out = [];
+    for (let f = 0; f <= top; f += CHECKPOINT) out.push(f);
+    return out;
   }
-
-  enterFight() {
-    const s = this.s, c = s.char;
-    s.mode = 'fight';
-    s.pot = {};
+  startRun(floor = this.s.start) {
+    if (this.run && !this.run.over) return false;
     this.calc();
-    const gm = this.gimmick(c.floor);
-    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_haste', 'p_focus', 'p_wisdom', 'p_antidote', 'p_warm']) {
-      const type = ITEMS[id].potion;
-      if (!s.potAuto[type] || !(s.items[id] > 0)) continue;
-      if (type === 'antidote' && (gm !== 'poison' || this.d.res.poison >= 1)) continue;
-      if (type === 'warm' && (gm !== 'ice' || this.d.res.ice >= 1)) continue;
-      s.items[id]--;
-      s.pot[type] = true;
-    }
-    this.calc();
-    c.hp = this.d.hp;
-    c.sta = this.d.sta;
-    this.emit({ t: 'fight', pots: Object.keys(s.pot) });
-  }
-
-  campStep(dt) {
-    const s = this.s, c = s.char, d = this.d;
-    c.sta = Math.min(d.sta, c.sta + (d.sta / d.campDur) * dt);
-    c.hp = Math.min(d.hp, c.hp + (d.hp / (d.campDur * 0.6)) * dt);
-    this.lifeTick(s.slots[0], 0, dt);
-    if (!s.focus && c.sta >= d.sta && c.hp >= d.hp) this.enterFight();
-  }
-
-  recipe() { return RECIPES.find(r => r.id === this.s.recipe); }
-  canCraft(r) {
-    if (!r) return false;
-    const s = this.s;
-    if (r.secret && !s.secret) return false;
-    if (s.skills.alchemy.lv < r.lv) return false;
-    if (r.max && this.crafted(r) >= r.max) return false;
-    for (const id in r.in) if ((s.items[id] || 0) < r.in[id]) return false;
-    return true;
-  }
-  crafted(r) {
-    const e = ITEMS[r.id].elixir;
-    return e ? this.s.elixirs[e] : 0;
-  }
-
-  lifeTick(slot, idx, dt) {
-    const k = slot.k;
-    if (k === 'alchemy' && !this.canCraft(this.recipe())) { slot.p = 0; slot.blocked = true; return; }
-    slot.blocked = false;
-    slot.p += (dt * this.skillSpeed(k)) / (k === 'alchemy' ? ALCH_TIME : ACTION_TIME);
-    while (slot.p >= 1) {
-      slot.p -= 1;
-      if (k === 'alchemy') {
-        this.alchemyAction(idx);
-        if (!this.canCraft(this.recipe())) { slot.p = 0; break; }
-      } else this.gatherAction(k, idx);
-    }
-  }
-
-  rollTier(k, mult) {
-    const sk = this.s.skills[k];
-    // Luck only counts as its square root for myth/primordial, so they stay rare.
-    const top = Math.sqrt(mult);
-    const eM = 1 / (TIER_P[5] * top), eP = 1 / (TIER_P[6] * top);
-    const pityM = pity(sk.dryM / eM), pityP = pity(sk.dryP / eP);
-    let r = this.rng();
-    const p6 = TIER_P[6] * top * pityP;
-    if (r < p6) { sk.dryP = 0; sk.dryM++; return 6; }
-    r -= p6;
-    const p5 = TIER_P[5] * top * pityM;
-    if (r < p5) { sk.dryM = 0; sk.dryP++; return 5; }
-    r -= p5;
-    sk.dryM++;
-    sk.dryP++;
-    for (let t = 4; t >= 2; t--) {
-      const p = TIER_P[t] * mult;
-      if (r < p) return t;
-      r -= p;
-    }
-    return r < TIER_P[1] ? 1 : 0;
-  }
-
-  gatherAction(k, slot) {
-    const s = this.s, sk = s.skills[k];
-    const spot = Math.min(s.spots[k], spotsUnlocked(sk.lv) - 1);
-    const tier = this.rollTier(k, this.rareMult(k));
-    let id;
-    if (tier >= 3) id = this.pick(SKILL_RARES[k], tier);
-    else {
-      id = this.pick(SPOTS[k][spot].items, tier);
-      if (k === 'fish' && tier === 2 && this.rng() < 0.3) id = this.pick(SEASON_FISH.filter(f => ITEMS[f].season === this.env.season), 2);
-    }
-    const dbl = sk.lv >= 500 ? 0.1 : sk.lv >= 250 ? 0.05 : 0;
-    const n = dbl && tier < 3 && this.rng() < dbl ? 2 : 1;
-    sk.n++;
-    s.stats.actions++;
-    let w = 0;
-    if (ITEMS[id].w) w = this.fishRecord(id);
-    this.gain(id, n, k);
-    this.skillXp(k, SPOT_XP[spot] * this.skillXpMult(k));
-    this.emit({ t: 'act', k, slot, id, tier, n, w });
-  }
-
-  // Random item of a tier from a list.
-  pick(list, tier) {
-    const pool = list.filter(id => ITEMS[id].tier === tier);
-    return pool.at(Math.floor(this.rng() * pool.length)) || list.at(0);
-  }
-
-  gauss() {
-    const u = Math.max(1e-12, this.rng()), v = this.rng();
-    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-  }
-  fishRecord(id) {
-    const w = +(ITEMS[id].w * Math.exp(0.35 * this.gauss())).toFixed(2);
-    const rec = this.s.records[id];
-    if (!rec || w > rec) {
-      this.s.records[id] = w;
-      if (rec) {
-        this.emit({ t: 'record', id, w });
-        this.log(`신기록! ${ITEMS[id].name} ${w}kg`, 2);
-      }
-    }
-    return w;
-  }
-
-  alchemyAction(slot) {
-    const s = this.s, sk = s.skills.alchemy, r = this.recipe();
-    for (const id in r.in) s.items[id] -= r.in[id];
-    const noFail = this.has('a_prim') || s.rb.memory === 'alchem';
-    const failP = noFail ? 0 : Math.max(0, 0.15 - sk.lv * 0.002);
-    const roll = this.rng();
-    let kind = 'ok', n = 1;
-    if (roll < failP) { kind = 'fail'; n = 0; }
-    else if (roll < failP + 0.001) { kind = 'miracle'; n = 10; }
-    else if (roll < failP + 0.051 || s.act.alchGreat > 0) { kind = 'great'; n = 2; }
-    if (s.act.alchGreat > 0) s.act.alchGreat--;
-    if (n) {
-      const it = ITEMS[r.id];
-      if (r.max) n = Math.min(n, r.max - this.crafted(r));
-      if (it.elixir) {
-        s.elixirs[it.elixir] += n;
-        this.register(r.id);
-        this.dirty = true;
-        this.emit({ t: 'drop', id: r.id, n, tier: it.tier, src: 'alchemy' });
-      } else this.gain(r.id, n, 'alchemy');
-    }
-    if (kind === 'miracle') this.log(`연금술 기적! ${ITEMS[r.id].name} ×10`, 4);
-    if (!s.secret && this.rng() < 0.00001 * this.d.luck) {
-      s.secret = true;
-      this.log('미지의 레시피를 발견했다! ???의 영약', 5);
-      this.emit({ t: 'secret' });
-    }
-    const t = this.rollTier('alchemy', this.rareMult('alchemy'));
-    if (t >= 3) this.gain(this.pick(SKILL_RARES.alchemy, t), 1, 'alchemy');
-    sk.n++;
-    s.stats.actions++;
-    this.skillXp('alchemy', r.xp * (kind === 'fail' ? 1.5 : 1) * this.skillXpMult('alchemy'));
-    this.emit({ t: 'act', k: 'alchemy', slot, id: r.id, kind, n, tier: ITEMS[r.id].tier });
-  }
-
-  register(id) {
-    const s = this.s, it = ITEMS[id];
-    if (s.codex[id]) return;
-    s.codex[id] = 1;
-    this.dirty = true;
-    this.emit({ t: 'codex', id });
-    this.log(`도감 등록: ${it.name}`, it.tier);
-  }
-
-  gain(id, n, src) {
-    const s = this.s, it = ITEMS[id];
-    s.items[id] = (s.items[id] || 0) + n;
-    this.register(id);
-    if (it.tier >= 4) {
-      s.hall.unshift({ id, at: this.clock(), n: s.skills[src] ? s.skills[src].n : 0, src });
-      if (s.hall.length > 60) s.hall.length = 60;
-      this.log(`[${TIERS[it.tier].name}] ${it.name} 획득!`, it.tier);
-    }
-    this.emit({ t: 'drop', id, n, tier: it.tier, src });
-  }
-
-  skillXp(k, x) {
-    const sk = this.s.skills[k];
-    sk.xp += x;
-    while (sk.xp >= xpNeed(sk.lv)) {
-      sk.xp -= xpNeed(sk.lv);
-      sk.lv++;
-      this.dirty = true;
-      const m = milestoneAt(k, sk.lv);
-      this.emit({ t: 'slv', k, lv: sk.lv, m });
-      for (const k2 in UNLOCKS) {
-        const u = UNLOCKS[k2];
-        if (u && u.skill === k && u.lv === sk.lv && this.s.skills[k2].lv === 1) {
-          this.log(`새 생활 스킬 해금: ${SKILLS[k2].name}`, 4);
-          this.emit({ t: 'unlock', k: k2 });
-        }
-      }
-      if (m && (sk.lv % 10 !== 0 || sk.lv % 50 === 0)) this.log(`${SKILLS[k].name} Lv.${sk.lv} · ${m}`, sk.lv % 100 === 0 ? 3 : 2);
-    }
-  }
-
-  useItem(id) {
-    const s = this.s;
-    if (!(s.items[id] > 0)) return false;
-    if (id === 'x_cat') { s.catUntil = Math.max(s.time, s.catUntil) + 3600; this.log('행운의 촉매 사용: 1시간 동안 생활 희귀 확률 ×1.5', 2); }
-    else if (id === 't_gather') { s.gatherUntil = Math.max(s.time, s.gatherUntil) + 1800; this.log('장인의 강장제 사용: 30분 동안 생활 속도 ×1.3', 2); }
-    else if (id === 't_fever') this.addFever(100);
-    else return false;
-    s.items[id]--;
-    return true;
-  }
-
-  // ---------- Active play (all optional; idle play never needs it) ----------
-  fever() { return this.s.act.feverUntil > this.s.time; }
-  addFever(x) {
-    const a = this.s.act;
-    if (this.fever()) return;
-    a.fever = Math.min(100, a.fever + x);
-    if (a.fever >= 100) {
-      a.fever = 0;
-      a.feverUntil = this.s.time + FEVER_SEC;
-      this.emit({ t: 'fever' });
-      this.log('열정 폭발! 30초 동안 모든 속도 ×2', 3);
-    }
-  }
-  rage() { return this.s.act.rageUntil > this.s.time; }
-  cdLeft(id) { return Math.max(0, this.s.act.cd[id] - this.s.time); }
-  castSkill(id) {
-    const s = this.s, c = s.char, d = this.d, a = s.act;
-    if (s.mode !== 'fight' || this.cdLeft(id) > 0) return false;
-    if (id === 'strike') {
-      if (!this.mon || this.mon.approach > 0) return false;
-      const crit = this.rng() < d.critC;
-      this.damage(d.atk * 5 * (crit ? d.critD : 1), crit, 'strike');
-    } else if (id === 'heal') {
-      c.hp = Math.min(d.hp, c.hp + d.hp * 0.4);
-      c.sta = Math.min(d.sta, c.sta + d.sta * 0.3);
-      this.emit({ t: 'heal' });
-    } else if (id === 'rage') {
-      a.rageUntil = s.time + 10;
-      this.emit({ t: 'rage' });
-    } else return false;
-    a.cd[id] = s.time + SKILL_CD[id];
-    this.addFever(8);
-    return true;
-  }
-  // Clicking the monster: a quick extra hit (rate-limited).
-  tap() {
-    const s = this.s;
-    if (s.mode !== 'fight' || !this.mon || this.mon.approach > 0) return false;
-    if (s.time - (this.lastTap || -1) < 0.1) return false;
-    this.lastTap = s.time;
-    const crit = this.rng() < this.d.critC;
-    this.damage(this.d.atk * 0.25 * (crit ? this.d.critD : 1), crit, 'tap');
-    this.addFever(0.6);
-    return true;
-  }
-  damage(dmg, crit, src) {
-    const m = this.mon;
-    if (!m) return;
-    m.hp -= dmg;
-    this.emit({ t: 'hit', who: 'mon', dmg, crit, src });
-    if (m.hp <= 0) this.kill();
-  }
-  autoCastTick() {
-    const s = this.s, c = s.char;
-    if (!s.act.autoCast || s.skills.combat.lv < AUTOCAST_LV || s.mode !== 'fight') return;
-    if (this.cdLeft('strike') === 0) this.castSkill('strike');
-    if (this.cdLeft('heal') === 0 && c.hp < this.d.hp * 0.45) this.castSkill('heal');
-    if (this.cdLeft('rage') === 0 && this.mon && (this.mon.boss || this.mon.elite)) this.castSkill('rage');
-  }
-  // Mini-game success: n instant actions of the skill with boosted rare odds.
-  lifeBurst(k, n, rareBoost) {
-    if (k === 'alchemy') { this.s.act.alchGreat += n; this.addFever(20); return; }
-    this.burstMult = rareBoost;
-    for (let i = 0; i < n; i++) this.gatherAction(k, 0);
-    this.burstMult = 1;
-    this.addFever(20);
-  }
-  // Wandering wisp (random event): rewards scale with progress.
-  claimWisp() {
-    const s = this.s, c = s.char, r = this.rng();
-    let text;
-    if (r < 0.3) { const g = 40 * Math.pow(1.13, c.maxFloor - 1); c.gold += g; text = `골드 +${Math.round(g)}`; }
-    else if (r < 0.55) { this.charXp(charXpNeed(c.lv) * 0.6); text = '경험치 대량 획득'; }
-    else if (r < 0.75) { const ids = ['p_str', 'p_hp', 'p_sta', 'p_luck']; const id = ids[Math.floor(this.rng() * ids.length)]; this.gain(id, 2, 'alchemy'); text = `${ITEMS[id].name} ×2`; }
-    else if (r < 0.9) { this.addFever(60); text = '열정 +60'; }
-    else { s.catUntil = Math.max(s.time, s.catUntil) + 900; text = '15분 동안 생활 희귀 확률 ×1.5'; }
-    this.log(`떠돌이 요정의 선물: ${text}`, 3);
-    return text;
-  }
-
-  // ---------- Combat ----------
-  region(f) {
-    for (let i = REGIONS.length - 1; i >= 0; i--) if (f >= REGIONS[i].from) return REGIONS[i];
-    return REGIONS[0];
-  }
-  gimmick(f) {
-    const g = this.region(f).gimmick;
-    return g === 'mixed' ? ['poison', 'ice', null][f % 3] : g;
-  }
-
-  spawn() {
-    const c = this.s.char, f = c.floor, reg = this.region(f), boss = f % BOSS_EVERY === 0;
-    const elite = !boss && f % ELITE_EVERY === 0;
-    // Tower bosses rotate starting at its first boss floor (40 = the first entry).
-    const key = boss ? (reg.bosses ? reg.bosses.at((Math.floor(f / BOSS_EVERY) - Math.ceil(reg.from / BOSS_EVERY)) % reg.bosses.length) : reg.boss)
-      : reg.mobs[Math.floor(this.rng() * reg.mobs.length)];
-    const M = MONSTERS[key];
-    let variant = null;
-    if (!boss && !elite) {
-      const vr = this.rng() / this.d.luck;
-      if (vr < 0.00001) variant = 'ancient';
-      else if (vr < 0.001) variant = 'giant';
-      else if (vr < 0.01) variant = 'golden';
-    }
-    const vm = VARIANTS[variant] || NO_VARIANT;
-    const hp = monHp(f) * M.hp * (boss ? 10 : elite ? 4 : 1) * vm.hp;
-    this.mon = {
-      key, boss, elite, variant, f, hp, maxHp: hp, hits: 0,
-      name: (elite ? '정예 ' : '') + vm.name + (reg.theme === 'tower' && !M.unique ? '심연의 ' : '') + M.name,
-      atk: monAtk(f) * M.atk * (boss ? 2.2 : elite ? 1.5 : 1) * vm.atk,
-      approach: 0.8,
+    floor = Math.max(0, Math.min(floor, this.startOptions().at(-1)));
+    this.s.start = floor;
+    const d = this.d;
+    this.run = {
+      seed: (this.rng() * 2 ** 32) >>> 0, start: floor, x: Math.floor(COLS / 2), y: floor,
+      dur: d.dur, maxDur: d.dur, swing: 0, hits: 0, broken: 0, rows: new Map(),
+      loot: { stone: 0, gems: 0, chests: 0, ores: {} }, dir: 'down', face: 1,
+      anim: null, gauge: 0, frenzy: 0, haste: 0, revived: false, deepest: floor, abil: {}, input: null, t: 0, over: false,
     };
-    this.heroTimer = 0.15;
-    this.monTimer = 0.9;
-    if (variant === 'ancient') this.log(`고대 개체 출현! ${this.mon.name}`, 5);
-    if (boss) this.log(`${f}층 보스 등장: ${this.mon.name}`, 3);
-    this.emit({ t: 'spawn', mon: this.mon });
+    this.s.stats.runs++;
+    this.emit({ t: 'start', floor });
+    return true;
   }
+  row(y) {
+    const run = this.run;
+    let r = run.rows.get(y);
+    if (r) return r;
+    const rng = makeRng((run.seed ^ Math.imul(y + 1, 0x9e3779b1)) >>> 0);
+    r = [];
+    const d = this.d, hp = hpAt(y), L = Math.min(ORES.length - 1, layerOf(y));
+    for (let x = 0; x < COLS; x++) {
+      if (y < run.start || (y === run.start && x === run.x)) { r.push(null); continue; }
+      const v = rng();
+      let c;
+      if (v < d.chest) c = { t: 'chest' };
+      else if (v < d.chest + d.gem) c = { t: 'gem' };
+      else if (v < d.chest + d.gem + d.ore) c = { t: 'ore', o: pickOre(L, rng) };
+      else if (y > 30 && v > 0.95) c = { t: 'hard' };
+      else c = { t: 'rock' };
+      c.max = c.hp = hp * HP_MULT[c.t] * (0.85 + rng() * 0.3);
+      c.v = (rng() * 4) | 0; // sprite variant
+      r.push(c);
+    }
+    run.rows.set(y, r);
+    // Drop rows far above the miner to bound memory on long runs.
+    if (run.rows.size > 80) for (const k of run.rows.keys()) if (k < run.y - 30) run.rows.delete(k);
+    return r;
+  }
+  cell(x, y) { return x < 0 || x >= COLS ? undefined : this.row(y)[x]; }
 
-  fightStep(dt) {
-    const s = this.s, c = s.char, d = this.d;
-    const gm = this.gimmick(c.floor);
-    // Poison fog shortens fights (stamina x2.5) instead of killing: a wall slows, never stops.
-    const poison = gm === 'poison' && !s.pot.antidote ? 1.5 * (1 - d.res.poison) : 0;
-    c.sta -= dt * (1 + poison);
-    if (c.sta <= 0) { c.sta = 0; this.enterCamp('tired'); return; }
-    if (!this.mon) this.spawn();
-    const m = this.mon;
-    if (m.approach > 0) { m.approach -= dt; return; }
-    this.autoCastTick();
-    if (!this.mon || s.mode !== 'fight') return;
-    const iv = d.interval / (gm === 'ice' && !s.pot.warm ? 1 - 0.4 * (1 - d.res.ice) : 1) / (this.rage() ? 2 : 1) / (this.fever() ? 1.5 : 1);
-    this.heroTimer -= dt;
-    this.monTimer -= dt;
-    while (this.mon && s.mode === 'fight' && (this.heroTimer <= 0 || this.monTimer <= 0)) {
-      if (this.heroTimer <= this.monTimer) { this.heroTimer += iv; this.heroHit(); }
-      else { this.monTimer += MON_INTERVAL; this.monHit(); }
+  runStep(dt) {
+    const run = this.run;
+    run.t += dt;
+    run.frenzy = Math.max(0, run.frenzy - dt);
+    run.haste = Math.max(0, run.haste - dt);
+    if (this.s.auto && run.gauge >= GAUGE_MAX) this.frenzy();
+    if (run.anim) {
+      run.anim.t += dt;
+      if (run.anim.t < run.anim.dur) return;
+      run.anim = null;
+    }
+    // Gravity first.
+    if (this.cell(run.x, run.y + 1) === null) { this.moveTo(run.x, run.y + 1, 0.07); return; }
+    const dir = this.chooseDir();
+    if (!dir) { run.swing = 0; return; }
+    run.dir = dir;
+    if (dir !== 'down') run.face = dir === 'left' ? -1 : 1;
+    const tx = run.x + (dir === 'left' ? -1 : dir === 'right' ? 1 : 0), ty = run.y + (dir === 'down' ? 1 : 0);
+    const c = this.cell(tx, ty);
+    if (c === undefined) return;
+    if (c === null) { run.swing = 0; this.moveTo(tx, ty, 0.14); return; }
+    const iv = this.d.interval * (run.frenzy > 0 ? 0.5 : 1) * (run.haste > 0 ? 0.7 : 1);
+    run.swing += dt;
+    while (run.swing >= iv && !run.over) {
+      run.swing -= iv;
+      this.swingAt(tx, ty);
+      if (this.cell(tx, ty) === null) { run.swing = 0; break; }
     }
   }
-
-  heroHit() {
-    const s = this.s, c = s.char, d = this.d, m = this.mon;
-    let dmg = d.atk * (0.9 + 0.2 * this.rng());
-    if (s.rb.memory === 'berserk' && c.hp < d.hp * 0.5) dmg *= 1.6;
-    const crit = this.rng() < d.critC + (this.rage() ? 0.25 : 0);
-    if (crit) dmg *= d.critD;
-    this.damage(dmg, crit, 'auto');
+  moveTo(x, y, dur) {
+    const run = this.run;
+    run.anim = { fx: run.x, fy: run.y, t: 0, dur };
+    run.x = x; run.y = y;
+    if (y > run.deepest) run.deepest = y;
+    if (y > this.s.stats.deepest) {
+      this.s.stats.deepest = y;
+      if (y % 100 === 0) this.emit({ t: 'layer', y });
+    }
   }
-
-  monHit() {
-    const c = this.s.char, m = this.mon;
-    if (this.rng() < this.d.dodge) { this.emit({ t: 'miss' }); return; }
-    m.hits++;
-    // Bosses telegraph nothing but hit hard every fourth swing.
-    const slam = m.boss && m.hits % 4 === 0;
-    const dmg = m.atk * (0.9 + 0.2 * this.rng()) * (slam ? 2.2 : 1);
+  // Manual input wins; otherwise the auto miner heads for the best nearby block or digs down.
+  chooseDir() {
+    const run = this.run;
+    if (run.input) return run.input;
+    if (!this.s.auto) return null;
+    let best = null, bestV = 0;
+    for (let dy = 0; dy <= 2; dy++) {
+      const y = run.y + dy, r = this.row(y);
+      for (let x = 0; x < COLS; x++) {
+        const c = r[x];
+        if (!c || Math.abs(x - run.x) > 3) continue;
+        const v = c.t === 'chest' ? 12 : c.t === 'gem' ? 9 : c.t === 'ore' ? 5 + c.o : 0;
+        const score = v - Math.abs(x - run.x) * 2 - dy;
+        if (v && score > bestV) { bestV = score; best = { x, y }; }
+      }
+    }
+    if (best && best.x !== run.x) return best.x < run.x ? 'left' : 'right';
+    return 'down';
+  }
+  swingAt(tx, ty) {
+    const run = this.run, d = this.d;
+    run.hits++;
+    run.dur -= 1;
+    const crit = this.rng() < d.crit;
+    this.damage(tx, ty, d.atk * (run.frenzy > 0 ? 3 : 1) * (crit ? 2 : 1), crit ? 'crit' : 'pick');
+    this.emit({ t: 'swing', x: tx, y: ty });
+    for (const a of ABILITIES) {
+      if (!this.s.abil[a.id]) continue;
+      run.abil[a.id] = (run.abil[a.id] || 0) + 1;
+      if (run.abil[a.id] >= this.abilEvery(a)) { run.abil[a.id] = 0; this.cast(a); }
+    }
+    if (run.dur <= 0) {
+      if (d.revive && !run.revived) {
+        run.revived = true;
+        run.dur = Math.max(1, Math.round(run.maxDur * Math.min(0.6, d.revive)));
+        this.emit({ t: 'revive' });
+      } else this.endRun();
+    }
+  }
+  damage(x, y, dmg, src) {
+    const c = this.cell(x, y);
+    if (!c) return;
     c.hp -= dmg;
-    this.emit({ t: 'hit', who: 'hero', dmg, slam });
-    if (c.hp <= 0) this.die();
+    this.emit({ t: 'hit', x, y, dmg, src });
+    if (c.hp <= 0) this.breakCell(x, y, c);
   }
-
-  kill() {
-    const s = this.s, c = s.char, d = this.d, m = this.mon;
-    const vm = VARIANTS[m.variant] || NO_VARIANT;
-    const bossMul = m.boss ? 10 : m.elite ? 4 : 1;
-    s.stats.kills++;
-    this.mon = null;
-    const xp = 4 * Math.pow(1.14, m.f - 1) * bossMul * vm.xp * d.charXp;
-    // During recall every kill is worth at least 10% of the current level, so a new life
-    // climbs back to its previous best level in a few hundred kills.
-    this.charXp(this.recall() > 1 ? Math.max(xp * RECALL_MULT, charXpNeed(c.lv) * RECALL_FLOOR) : xp);
-    const gold = Math.pow(1.13, m.f - 1) * bossMul * vm.gold * d.gold;
-    c.gold += gold;
-    s.stats.gold += gold;
-    this.skillXp('combat', (1 + m.f * 0.08) * (m.boss ? 5 : 1) * this.skillXpMult('combat'));
-    s.skills.combat.n++;
-    const reg = this.region(m.f);
-    if (m.variant || m.boss || this.rng() < 0.4) {
-      const t = this.rollTier('combat', d.luck * (m.variant ? 2 : 1));
-      this.gain(this.pick(t >= 3 ? SKILL_RARES.combat : reg.mats, t), 1, 'combat');
+  breakCell(x, y, c) {
+    const run = this.run, d = this.d, loot = run.loot;
+    this.row(y)[x] = null;
+    run.broken++;
+    run.gauge = Math.min(GAUGE_MAX, run.gauge + 1);
+    let drop = null;
+    const dbl = this.rng() < d.double ? 2 : 1;
+    if (c.t === 'rock' || c.t === 'hard') {
+      const n = Math.round((1 + y / 40) * d.stone * (c.t === 'hard' ? 3 : 1));
+      loot.stone += n; drop = { k: 'stone', n };
+    } else if (c.t === 'ore') {
+      const id = ORES[c.o].id;
+      loot.ores[id] = (loot.ores[id] || 0) + dbl;
+      loot.stone += 1;
+      drop = { k: id, n: dbl };
+    } else if (c.t === 'gem') {
+      const n = (1 + Math.floor(y / 300)) * dbl;
+      loot.gems += n; drop = { k: 'gems', n };
+    } else if (c.t === 'chest') {
+      loot.chests += 1; drop = { k: 'chests', n: 1 };
     }
-    const sure = m.boss || m.elite || m.variant === 'giant' || m.variant === 'ancient';
-    const first = (m.boss || m.elite) && !s.firstKills[m.f];
-    if (m.boss && BOSS_TROPHY[m.key] && (first || this.rng() < 0.15)) this.gain(BOSS_TROPHY[m.key], 1, 'combat');
-    if (first) {
-      s.firstKills[m.f] = 1;
-      this.dropGear(m, m.boss ? 3 : 2);
-      this.log(`${m.f}층 ${m.boss ? '보스' : '정예'} 첫 처치 보상!`, m.boss ? 4 : 3);
-    }
-    if (sure || this.rng() < 0.03) this.dropGear(m);
-    this.emit({ t: 'kill', mon: m, gold });
-    if (m.boss) {
-      s.stats.bosses++;
-      this.log(`${m.f}층 보스 ${m.name} 처치!`, 3);
-    }
-    c.kills++;
-    if (m.boss || m.elite || c.kills >= KILLS_PER_FLOOR) {
-      c.kills = 0;
-      if (s.time >= c.farmUntil) {
-        c.floor++;
-        if (c.floor > c.maxFloor) {
-          c.maxFloor = c.floor;
-          if (c.maxFloor > s.rb.bestFloor) s.rb.bestFloor = c.maxFloor;
-          if (c.maxFloor === 21 && s.rb.count === 0) this.log('윤회가 해금되었다!', 4);
-        }
-        this.emit({ t: 'floor', floor: c.floor });
+    this.emit({ t: 'break', x, y, c, drop });
+  }
+  cast(a) {
+    const run = this.run, dmg = this.d.atk * this.abilMult(a);
+    const cells = [];
+    const add = (x, y) => { if (x >= 0 && x < COLS && !(x === run.x && y === run.y) && y >= run.y - 3) cells.push([x, y]); };
+    const circle = (cx, cy, r) => { for (let y = cy - r; y <= cy + r; y++) for (let x = cx - r; x <= cx + r; x++) if ((x - cx) ** 2 + (y - cy) ** 2 <= (r + 0.5) ** 2) add(x, y); };
+    let cx = run.x, cy = run.y;
+    const dx = run.dir === 'left' ? -1 : run.dir === 'right' ? 1 : 0, dy = run.dir === 'down' ? 1 : 0;
+    if (a.shape === 'circle') circle(run.x, run.y, a.r);
+    else if (a.shape === 'line') for (let i = 1; i <= a.n; i++) add(run.x + dx * i, run.y + dy * i);
+    else if (a.shape === 'row') for (let x = 0; x < COLS; x++) add(x, run.y + 1);
+    else if (a.shape === 'col') for (let i = 1; i <= a.n; i++) add(run.x, run.y + i);
+    else if (a.shape === 'meteor') { cx = Math.max(1, Math.min(COLS - 2, run.x + Math.floor(this.rng() * 5) - 2)); cy = run.y + 3; circle(cx, cy, a.r); }
+    else if (a.shape === 'chain') {
+      const list = [];
+      for (let y = run.y - 1; y <= run.y + a.r; y++) for (let x = 0; x < COLS; x++) {
+        const dist = Math.abs(x - run.x) + Math.abs(y - run.y);
+        if (this.cell(x, y) && dist <= a.r) list.push([x, y, dist + this.rng()]);
       }
+      list.sort((p, q) => p[2] - q[2]).slice(0, a.n).forEach(([x, y]) => add(x, y));
     }
+    if (a.haste) run.haste = a.haste;
+    this.emit({ t: 'cast', id: a.id, cells, cx, cy, from: [run.x, run.y] });
+    for (const [x, y] of cells) this.damage(x, y, dmg, a.id);
   }
-
-  die() {
-    const s = this.s, c = s.char;
-    s.stats.deaths++;
-    this.emit({ t: 'death', floor: c.floor });
-    c.floor = Math.max(1, c.floor - 1);
-    c.kills = 0;
-    c.hp = 0;
-    c.farmUntil = s.time + 180;
-    this.enterCamp('death');
-  }
-
-  rollGearTier(mult, min = 0) {
-    let r = this.rng();
-    for (let t = 6; t >= 2; t--) {
-      const p = TIER_P[t] * (t >= 5 ? Math.sqrt(mult) : mult);
-      if (r < p) return Math.max(min, t);
-      r -= p;
-    }
-    return Math.max(min, r < TIER_P[1] ? 1 : 0);
-  }
-
-  dropGear(m, minTier = 0) {
-    const s = this.s, c = s.char;
-    const slot = ['weapon', 'armor', 'charm'][Math.floor(this.rng() * 3)];
-    const tier = this.rollGearTier(this.d.luck, Math.max(minTier, m.variant === 'ancient' ? 3 : m.boss ? 1 : 0));
-    const g = { slot, tier, f: m.f, roll: +(0.8 + 0.4 * this.rng()).toFixed(3), enh: 0, affix: null };
-    if (this.rng() < 0.3 + 0.1 * tier) { const keys = Object.keys(AFFIXES); g.affix = keys[Math.floor(this.rng() * keys.length)]; }
-    const cur = c.gear[slot];
-    if (tier >= 2) this.log(`장비 획득: [${TIERS[tier].name}] ${gearName(g)} (${m.f}층)`, tier);
-    // Auto-equip is opt-in; by default every drop goes to the bag for the player to equip.
-    if (s.settings.autoEquip && gearScore(g) > gearScore(cur)) {
-      if (cur) this.toBag(cur);
-      c.gear[slot] = g;
-      this.dirty = true;
-      this.emit({ t: 'gear', g, equip: true });
-    } else {
-      this.toBag(g);
-      this.emit({ t: 'gear', g, equip: false, better: gearScore(g) > gearScore(cur) });
-    }
-  }
-
-  toBag(g) {
-    const c = this.s.char;
-    c.bag.push(g);
-    if (c.bag.length > BAG_MAX) {
-      // Full bag: sell the weakest piece.
-      let worst = 0;
-      for (let i = 1; i < c.bag.length; i++) if (gearScore(c.bag.at(i)) < gearScore(c.bag.at(worst))) worst = i;
-      c.gold += sellPrice(c.bag.splice(worst, 1)[0]);
-    }
-  }
-  equip(i) {
-    const c = this.s.char, g = c.bag[i];
-    if (!g) return false;
-    c.bag.splice(i, 1);
-    const cur = c.gear[g.slot];
-    if (cur) c.bag.push(cur);
-    c.gear[g.slot] = g;
-    this.dirty = true;
+  frenzy() {
+    const run = this.run;
+    if (!run || run.over || run.gauge < GAUGE_MAX) return false;
+    run.gauge = 0;
+    run.frenzy = FRENZY_SEC;
+    this.emit({ t: 'frenzy' });
     return true;
   }
-  unequip(slot) {
-    const c = this.s.char, g = c.gear[slot];
-    if (!g) return false;
-    c.gear[slot] = null;
-    c.bag.push(g);
-    this.dirty = true;
-    return true;
+  gaugeMax() { return GAUGE_MAX; }
+  endRun(early = false) {
+    const run = this.run, s = this.s;
+    if (!run || run.over) return;
+    run.over = true;
+    s.res.stone += run.loot.stone;
+    s.res.gems += run.loot.gems;
+    s.res.chests += run.loot.chests;
+    for (const [id, n] of Object.entries(run.loot.ores)) s.res[id] += n;
+    s.stats.blocks += run.broken;
+    this.emit({ t: 'end', early, loot: run.loot, deepest: run.deepest, start: run.start, broken: run.broken });
   }
-  sell(i) {
-    const c = this.s.char, g = c.bag[i];
-    if (!g) return false;
-    c.bag.splice(i, 1);
-    c.gold += sellPrice(g);
-    return true;
-  }
-  sellAll() {
-    const c = this.s.char;
-    for (const g of c.bag) c.gold += sellPrice(g);
-    c.bag = [];
-  }
-  // Best piece in the bag that beats what is worn, per slot (for the "upgrade available" dot).
-  upgrades() {
-    const c = this.s.char;
-    return c.bag.filter(g => gearScore(g) > gearScore(c.gear[g.slot])).length;
-  }
+  leaveRun() { if (this.run && this.run.over) this.run = null; }
 
-  enhance(slot) {
-    const c = this.s.char, g = c.gear[slot];
-    if (!g) return false;
-    const cost = enhanceCost(g);
-    if (c.gold < cost) return false;
-    c.gold -= cost;
-    g.enh++;
-    this.dirty = true;
-    return true;
-  }
-
-  charXp(x) {
-    const c = this.s.char;
-    c.xp += x;
-    let up = false;
-    while (c.xp >= charXpNeed(c.lv)) {
-      c.xp -= charXpNeed(c.lv);
-      c.lv++;
-      c.pts += 3;
-      if (c.lv > this.s.rb.bestLv) this.s.rb.bestLv = c.lv;
-      up = true;
-    }
-    if (up) {
-      if (c.auto) this.autoAllocate();
-      this.dirty = true;
-      this.emit({ t: 'lv', lv: c.lv });
-    }
-  }
-
-  autoAllocate() {
-    const c = this.s.char, w = PRESETS[c.preset].w;
-    while (c.pts > 0) {
-      let best = null, bestV = Infinity;
-      for (const k in w) {
-        if (!w[k]) continue;
-        const v = (c.st[k] - 5) / w[k];
-        if (v < bestV) { bestV = v; best = k; }
-      }
-      c.st[best]++;
-      c.pts--;
-    }
-    this.dirty = true;
-  }
-  allocate(stat, n = 1) {
-    const c = this.s.char;
-    n = Math.min(n, c.pts);
-    if (n <= 0) return;
-    c.st[stat] += n;
-    c.pts -= n;
-    this.dirty = true;
-  }
-  respec() {
-    const c = this.s.char;
-    for (const k in c.st) { c.pts += c.st[k] - 5; c.st[k] = 5; }
-    if (c.auto) this.autoAllocate();
-    this.dirty = true;
-  }
-
-  // ---------- Slots & settings ----------
-  unlocked(k) { return isUnlocked(this.s, k); }
-  setSlotSkill(i, k) {
-    if (!this.unlocked(k)) return false;
-    const sl = this.s.slots;
-    const other = sl.findIndex((x, j) => j !== i && x.k === k);
-    if (other >= 0) sl[other].k = sl[i].k; // swap so one skill never runs twice
-    sl[i].k = k;
-    sl[i].p = 0;
-    if (other >= 0) sl[other].p = 0;
-  }
-  freeSkill() {
-    const used = new Set(this.s.slots.map(x => x.k));
-    return ['fish', 'wood', 'forage', 'hunt', 'mining', 'alchemy'].find(k => !used.has(k) && this.unlocked(k)) || 'mining';
-  }
-
-  // ---------- Rebirth ----------
-  // Permanent: every rebirth adds +5% character XP, forever.
-  rebirthXp() { return 1 + REBIRTH_XP * this.s.rb.count; }
-  // Past-life recall: until the character is back near its best level, XP is multiplied.
-  recall() { return this.s.char.lv < this.s.rb.bestLv * RECALL_UNTIL ? RECALL_MULT : 1; }
-  canRebirth() { return this.s.char.maxFloor > 20; }
-  rebirth() {
-    if (!this.canRebirth()) return false;
-    const s = this.s, rb = s.rb, old = s.char;
-    const gain = ashFor(old.maxFloor);
-    rb.ash += gain;
-    rb.totalAsh += gain;
-    rb.count++;
-    const start = Math.max(1, Math.min(1 + 5 * this.P('w_start'), rb.bestFloor - 10));
-    s.char = freshChar(start);
-    s.char.preset = old.preset;
-    s.char.auto = old.auto;
-    rb.memory = null;
-    const keys = Object.keys(MEMORIES);
-    const pick = [];
-    while (pick.length < 3) {
-      const k = keys[Math.floor(this.rng() * keys.length)];
-      if (!pick.includes(k)) pick.push(k);
-    }
-    rb.choices = pick;
-    s.pot = {};
-    s.mode = 'fight';
-    this.mon = null;
+  // ---------- Base actions ----------
+  afford(cost) { return Object.entries(cost).every(([k, v]) => (this.s.res[k] || 0) >= v); }
+  pay(cost) { for (const [k, v] of Object.entries(cost)) this.s.res[k] -= v; }
+  upgradeCostOf(id) { return { stone: Math.max(1, Math.round(upgradeCost(id, this.s.up[id]) * this.d.costMul)) }; }
+  buyUpgrade(id) {
+    const cost = this.upgradeCostOf(id);
+    if (!this.afford(cost)) return false;
+    this.pay(cost);
+    this.s.up[id]++;
     this.calc();
-    s.char.hp = this.d.hp;
-    s.char.sta = this.d.sta;
-    this.log(`윤회 ${rb.count}회차 시작 · 모닥불의 재 +${gain}`, 4);
-    this.emit({ t: 'rebirth', gain });
-    return gain;
-  }
-  chooseMemory(key) {
-    const rb = this.s.rb;
-    if (!rb.choices || !rb.choices.includes(key)) return false;
-    rb.memory = key;
-    rb.choices = null;
-    this.dirty = true;
-    this.log(`전생의 기억: ${MEMORIES[key].name}`, 3);
     return true;
   }
-  buyPerk(id) {
-    const rb = this.s.rb, lv = this.P(id), p = PERKS[id];
-    if (p.max && lv >= p.max) return false;
-    const cost = perkCost(id, lv);
-    if (rb.ash < cost) return false;
-    rb.ash -= cost;
-    rb.perks[id] = lv + 1;
-    if (id === 'r_clone') this.s.slots.push({ k: this.freeSkill(), p: 0 });
-    this.dirty = true;
+  craftCost(slot) { const t = this.s.gear[slot] + 1; return t > ORES.length ? null : gearCost(slot, t); }
+  canCraftTier(slot) { const t = this.s.gear[slot] + 1; return t <= ORES.length && this.s.stats.deepest >= (t - 1) * 100; }
+  craft(slot) {
+    const cost = this.craftCost(slot);
+    if (!cost || !this.afford(cost)) return false;
+    this.pay(cost);
+    this.s.gear[slot]++;
+    this.calc();
+    this.emit({ t: 'craft', slot, tier: this.s.gear[slot] });
     return true;
   }
+  abilityOpen(a) { return this.s.stats.deepest >= abilityUnlockFloor(a); }
+  learn(id) {
+    const a = ABILITY[id], lv = this.s.abil[id] || 0;
+    if (!a || lv >= ABIL_MAX || !this.abilityOpen(a)) return false;
+    const cost = { gems: abilityCost(a, lv) };
+    if (!this.afford(cost)) return false;
+    this.pay(cost);
+    this.s.abil[id] = lv + 1;
+    return true;
+  }
+  // Treasure chests open at the base into relics; a duplicate adds a copy toward the next level.
+  openChest() {
+    const s = this.s;
+    if (s.res.chests < 1) return null;
+    s.res.chests--;
+    s.stats.opened++;
+    const luckW = Math.min(3, this.d.luck);
+    const weights = RARITY.map((r, i) => r.w * (i ? luckW : 1));
+    let v = this.rng() * weights.reduce((a, b) => a + b, 0), rar = 0;
+    while (v >= weights[rar]) { v -= weights[rar]; rar++; }
+    const pool = RELICS.filter(r => r.r === rar);
+    const def = pool[Math.floor(this.rng() * pool.length)];
+    const cur = s.relics[def.id] || { copies: 0, lv: 0 };
+    if (cur.lv >= RELIC_MAX) { // maxed: refund as gems
+      s.res.gems += 5 * (rar + 1);
+      return { id: def.id, maxed: true, gems: 5 * (rar + 1) };
+    }
+    cur.copies++;
+    const before = cur.lv;
+    cur.lv = relicLevel(cur.copies);
+    s.relics[def.id] = cur;
+    this.calc();
+    return { id: def.id, isNew: before === 0, up: cur.lv > before, lv: cur.lv };
+  }
+  buildCostOf(id) { return buildCost(this.s.town[id] || 0); }
+  build(id) {
+    const lv = this.s.town[id] || 0;
+    if (!BUILDING[id] || lv >= BUILD_MAX) return false;
+    const cost = buildCost(lv);
+    if (!this.afford(cost)) return false;
+    this.pay(cost);
+    this.s.town[id] = lv + 1;
+    this.calc();
+    return true;
+  }
+  mission(m) {
+    const i = this.s.missions[m.id] || 0;
+    if (i >= m.goals.length) return { done: true, i };
+    const cur = m.stat(this.s);
+    return { i, goal: m.goals[i], cur, ready: cur >= m.goals[i], reward: m.reward(i) };
+  }
+  claim(id) {
+    const m = MISSIONS.find(x => x.id === id), st = m && this.mission(m);
+    if (!st || !st.ready) return false;
+    this.s.missions[id] = st.i + 1;
+    this.s.res.gems += st.reward.gems || 0;
+    this.s.res.chests += st.reward.chests || 0;
+    return true;
+  }
+  missionsReady() { return MISSIONS.filter(m => this.mission(m).ready).length; }
+}
 
-  // ---------- UI helpers ----------
-  goals() {
-    const s = this.s, c = s.char, out = [];
-    if (s.rb.choices) out.push('전생의 기억을 골라주세요 (윤회 탭)');
-    if (c.pts > 0 && !c.auto) out.push(`스탯 포인트 ${c.pts}개를 분배하세요`);
-    if (this.canRebirth() && s.rb.count === 0) out.push('윤회 가능! 윤회 탭을 열어보세요');
-    const nextG = Math.ceil(c.floor / ELITE_EVERY) * ELITE_EVERY;
-    out.push(`${nextG}층 ${nextG % BOSS_EVERY === 0 ? '보스' : '정예 몬스터'} 처치`);
-    const locked = Object.keys(UNLOCKS).find(k => !this.unlocked(k));
-    if (locked) { const u = UNLOCKS[locked]; out.push(`${SKILLS[u.skill].name} Lv.${u.lv} → ${SKILLS[locked].name} 해금`); }
-    if (c.maxFloor <= 20 && s.rb.count === 0) out.push('21층 도달 시 윤회 해금');
-    const k = s.slots[0].k, nm = nextMilestones(k, s.skills[k].lv, 1)[0];
-    if (nm) out.push(`${SKILLS[k].name} Lv.${nm.lv} · ${nm.text}`);
-    return out.slice(0, 3);
-  }
+function pickOre(L, rng) {
+  const w = [];
+  for (let i = 0; i <= Math.min(L + 1, ORES.length - 1); i++) w.push(i === L + 1 ? 0.25 : i === L ? 6 : i === L - 1 ? 3 : 1);
+  let v = rng() * w.reduce((a, b) => a + b, 0), i = 0;
+  while (v >= w[i]) { v -= w[i]; i++; }
+  return i;
 }

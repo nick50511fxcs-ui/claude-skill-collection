@@ -1,928 +1,384 @@
-// DOM UI: bottom bar, Idleon-style panels, toasts and modals.
-import {
-  TIERS, SKILLS, LIFE_SKILLS, ITEMS, SPOTS, SPOT_LV, SKILL_RARES, SEASON_FISH, SEASON_NAME, RECIPES,
-  PERKS, PERK_TREES, MEMORIES, PRESETS, STAT_NAMES, TOOL_TIERS, MASTER_TITLE, GIMMICK_TEXT, LUCK_CAP, UNLOCKS,
-} from './data.js';
-import {
-  xpNeed, charXpNeed, toolTier, spotsUnlocked, skillPassive, nextMilestones, perkCost, ashFor,
-  gearName, gearValue, charmValue, enhanceCost, pity, gearScore, sellPrice, BAG_MAX,
-} from './engine.js';
+// DOM layer: the base screen (resources, start bar, menu), the run HUD and
+// controls, and the panels: 제작, 장비, 마을, 보물상자, 미션, 설정.
 import { icon, sprite, HERO, HERO_PAL } from './sprites.js';
-import { fmtShort } from './render.js';
+import {
+  ORES, ORE, GEAR, GEAR_SLOTS, GEAR_TIERS, UPGRADES, ABILITIES, ABILITY, ABIL_MAX, abilityUnlockFloor, abilityCost,
+  RARITY, RELICS, RELIC, RELIC_COPIES, RELIC_MAX, fxText, BUILDINGS, BUILD_MAX, MISSIONS, TIPS,
+} from './data.js';
+import { fmt, W, H, T } from './render.js';
 
-const $ = (sel, root = document) => root.querySelector(sel);
+const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-export const fmt = n => fmtShort(n);
-const pct = (x, d = 1) => (x * 100).toFixed(d) + '%';
+const RES_ICON = { stone: ['stone', '#9a9aa6'], gems: ['gem', '#ff7ad8'], chests: ['chest', '#c8913a'], ...Object.fromEntries(ORES.map(o => [o.id, ['ore', o.color]])) };
+const RES_NAME = { stone: '돌', gems: '보석', chests: '보물상자', ...Object.fromEntries(ORES.map(o => [o.id, o.name])) };
+const TIER_COL = ['#a8743a', ...ORES.map(o => o.color)];
 
-function iconCanvas(tpl, color, size = 36, extra) {
-  const src = icon(tpl, color, extra);
+function iconCanvas(tpl, color, size = 24) {
+  const src = icon(tpl, color);
   const c = document.createElement('canvas');
-  c.width = src.width;
-  c.height = src.height;
-  const ctx = c.getContext('2d');
-  ctx.drawImage(src, 0, 0);
-  c.className = 'px';
-  c.style.width = size + 'px';
-  c.style.height = size + 'px';
+  c.width = src.width; c.height = src.height;
+  c.getContext('2d').drawImage(src, 0, 0);
+  c.className = 'px ic';
+  c.style.width = c.style.height = size + 'px';
   return c;
 }
-function itemIcon(id, size = 36) {
-  const it = ITEMS[id];
-  return iconCanvas(it.icon, it.color, size);
+// Markup uses <i data-ic="tpl" data-c="#hex" data-s="20"></i>; hydrate swaps in pixel canvases.
+const ic = (tpl, col, size = 20) => `<i data-ic="${tpl}" data-c="${col}" data-s="${size}"></i>`;
+const resIc = (k, size = 16) => ic(RES_ICON[k][0], RES_ICON[k][1], size);
+function hydrate(root) {
+  root.querySelectorAll('i[data-ic]').forEach(el => el.replaceWith(iconCanvas(el.dataset.ic, el.dataset.c, +el.dataset.s)));
 }
-const SKILL_ICON = { combat: ['sword', '#c8ccd8'], mining: ['pick', '#b8c4d0'], wood: ['axe', '#b8c4d0'], forage: ['leaf', '#6bbf5a'], fish: ['fish', '#5ab4ff'], hunt: ['bow', '#a8743a'], alchemy: ['potion', '#c27bff'] };
-const skillIcon = (k, size = 32) => iconCanvas(...SKILL_ICON[k], size);
-
-// Guided first session. A step with `until` waits for the player to do it; others show a Next button.
-const TUT = [
-  { text: () => '처음이신가요? 짧은 안내로 모닥불 연대기를 시작해 볼게요.', start: true },
-  { target: '#bar .bars', text: () => '모험가는 <b>혼자서 싸웁니다</b>. 빨간 바는 HP, 파란 바는 스태미나예요. 스태미나가 바닥나면 모닥불로 돌아가 쉬어요.' },
-  { target: '#combatSkills', text: () => '하지만 <b>직접 싸울 수도</b> 있어요! <b>「강타」</b>를 눌러 보세요 (키보드 1·2·3). 몬스터를 <b>클릭</b>해도 추가 공격이 들어갑니다.', until: g => g.s.act.cd.strike > 0 },
-  { target: '#fever', text: () => '직접 할수록 <b>열정</b>이 차요. 가득 차면 <b>30초 동안 모든 속도 ×2</b>! 가끔 하늘을 나는 <b>요정</b>을 클릭하면 선물을 줍니다.' },
-  { target: '#skillDock', text: () => '여기서 <b>지금 할 일</b>을 바로 고릅니다. <b>곡괭이(광질)</b>를 눌러 보세요!', until: g => g.s.mode === 'camp' && g.s.slots[0].k === 'mining' },
-  { target: '#stage', text: () => '광산에 왔어요. 가끔 <b>빛나는 약점</b> 같은 기회가 나타나요. 놓치지 말고 <b>클릭</b>하면 한 번에 여러 개를 캡니다!' },
-  { target: '#b-life', text: () => '<b>「생활」</b>에서 모든 스킬의 레벨과 다음 보상을 볼 수 있어요. 눌러 보세요.', until: (g, ui) => ui.panel === 'life' },
-  { target: '.skill-grid', text: () => '잠긴 스킬은 <b>앞 스킬의 레벨</b>을 올리면 열려요. 광질 Lv 10 → 벌목 Lv 10 → 채집 Lv 15 → 낚시 Lv 15 → 사냥 Lv 20 → 연금술. 카드를 누르면 바로 그 일을 하러 갑니다.' },
-  { text: g => `광질을 <b>Lv 10</b>까지 올려 보세요. 지금 <b>Lv ${g.s.skills.mining.lv}</b>. 빛나는 약점을 클릭하면 훨씬 빨라요!`, until: g => g.s.skills.mining.lv >= 10 },
-  { target: '#skillDock', text: () => '<b>벌목</b>이 열렸어요! 아래에서 <b>도끼</b>를 눌러 숲으로 가 보세요.', until: g => g.s.mode === 'camp' && g.s.slots[0].k === 'wood' },
-  { target: '#dk-combat', text: () => '<b>칼</b>을 누르면 다시 전투로 돌아가요. 생활 레벨은 윤회해도 남아서 전투력을 영원히 올려 줍니다.', until: g => !g.s.focus },
-  { target: '#b-char', text: () => '몬스터가 떨어뜨린 장비는 <b>「캐릭터」</b>에서 직접 착용해요. 5층마다 정예, 10층마다 보스가 길을 막습니다.' },
-  { target: '#b-rebirth', text: () => '<b>21층</b>에 도달하면 윤회가 열려요. 윤회해도 생활 레벨과 도감은 그대로입니다. 이제 마음껏 모험하세요!', last: true },
-];
 
 export class UI {
   constructor(game, renderer, hooks) {
     this.g = game;
     this.r = renderer;
     this.hooks = hooks;
+    this.mode = null;
     this.panel = null;
-    this.tab = {};
-    this.sel = { skill: 'mining', item: null, codex: 'mining', bag: 'mat' };
-    this.pointerDown = false;
-    this.confirm = null;
-    document.addEventListener('pointerdown', () => { this.pointerDown = true; });
-    document.addEventListener('pointerup', () => { this.pointerDown = false; setTimeout(() => this.refreshPanel(), 50); });
-    this.buildBar();
-    this.buildPanel();
-    this.buildTutor();
-    this.buildActions();
-  }
-
-  // ---------- Action strip: what to do now, combat skills, fever ----------
-  buildActions() {
-    const dock = $('#skillDock');
-    const add = (k, tpl, col, label) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'dk';
-      b.id = 'dk-' + k;
-      b.title = label;
-      b.setAttribute('aria-label', label);
-      b.appendChild(iconCanvas(tpl, col, 30));
-      b.insertAdjacentHTML('beforeend', '<span class="lk" hidden>🔒</span>');
-      b.addEventListener('click', () => this.goSkill(k));
-      dock.appendChild(b);
+    this.selAbil = null;
+    this.selRelic = null;
+    this.lastOpen = [];
+    this.el = { top: $('#top'), side: $('#side'), bottom: $('#bottom'), toasts: $('#toasts'), panel: $('#panel'), title: $('#panelTitle'), body: $('#panelBody'), modal: $('#modal') };
+    $('#panelClose').addEventListener('click', () => this.close());
+    for (const k of ['top', 'side', 'bottom', 'body']) this.el[k].addEventListener('click', e => this.onClick(e));
+    this.el.modal.addEventListener('click', e => this.onClick(e));
+    // Hold-to-dig direction buttons.
+    const hold = e => {
+      const b = e.target.closest('[data-dir]');
+      if (!b || !this.g.run) return;
+      e.preventDefault();
+      this.g.run.input = b.dataset.dir;
+      b.setPointerCapture?.(e.pointerId);
     };
-    add('combat', 'sword', '#e8eef8', '전투로');
-    dock.insertAdjacentHTML('beforeend', '<span class="dk-sep"></span>');
-    for (const k of ['mining', 'wood', 'forage', 'fish', 'hunt', 'alchemy']) add(k, ...SKILL_ICON[k], SKILLS[k].name);
-    const cs = $('#combatSkills');
-    const skills = [['strike', '강타', 'sword', '#ff9a3a', '1'], ['heal', '회복', 'potion', '#4aff7a', '2'], ['rage', '광폭', 'star', '#ff5a3a', '3']];
-    for (const [id, name, tpl, col, key] of skills) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'cs';
-      b.id = 'cs-' + id;
-      b.title = { strike: '공격력 ×5 일격 (8초)', heal: 'HP 40%·스태미나 30% 회복 (30초)', rage: '10초 동안 공격 속도 ×2, 치명 +25% (45초)' }[id];
-      b.appendChild(iconCanvas(tpl, col, 22));
-      b.insertAdjacentHTML('beforeend', `<span class="nm">${name}</span><span class="key">${key}</span><span class="cdv" hidden></span>`);
-      b.addEventListener('click', () => this.cast(id));
-      cs.appendChild(b);
-    }
-    const auto = document.createElement('button');
-    auto.type = 'button';
-    auto.id = 'autoCast';
-    auto.className = 'pbtn chip autocast';
-    auto.addEventListener('click', () => {
-      const g = this.g;
-      if (g.s.skills.combat.lv < 100) { this.toast('자동 시전은 전투 숙련 Lv 100에 열립니다'); return; }
-      g.s.act.autoCast = !g.s.act.autoCast;
-      this.updateActions();
-    });
-    cs.appendChild(auto);
-    document.addEventListener('keydown', e => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-      const id = { 1: 'strike', 2: 'heal', 3: 'rage' }[e.key];
-      if (id) this.cast(id);
-    });
-  }
-  cast(id) {
-    const g = this.g;
-    if (g.s.mode !== 'fight') { this.toast('전투 중에만 쓸 수 있어요. 칼 아이콘으로 전투로 돌아가세요'); return; }
-    if (!g.castSkill(id)) return;
-    this.hooks.flush();
-    this.updateActions();
-  }
-  goSkill(k) {
-    const g = this.g, s = g.s;
-    if (k === 'combat') {
-      s.focus = false;
-      this.toast(s.mode === 'camp' ? '쉬는 대로 전투로 돌아갑니다' : '전투 중입니다');
-    } else {
-      if (!g.unlocked(k)) { const u = UNLOCKS[k]; this.toast(`🔒 ${SKILLS[u.skill].name} Lv.${u.lv}이 되면 열립니다`); return; }
-      g.setSlotSkill(0, k);
-      s.focus = true;
-      if (s.mode === 'fight') g.enterCamp('focus');
-      this.close();
-      this.toast(`${SKILLS[k].name} · ${this.campPlace()}`, 1);
-    }
-    this.updateActions();
-    this.updateBar();
-  }
-  updateActions() {
-    const g = this.g, s = g.s;
-    for (const k of ['combat', 'mining', 'wood', 'forage', 'fish', 'hunt', 'alchemy']) {
-      const b = $('#dk-' + k);
-      const open = g.unlocked(k);
-      b.disabled = !open;
-      b.querySelector('.lk').hidden = open;
-      b.classList.toggle('on', k === 'combat' ? s.mode === 'fight' && !s.focus : s.mode === 'camp' && s.slots[0].k === k);
-    }
-    for (const id of ['strike', 'heal', 'rage']) {
-      const b = $('#cs-' + id), left = g.cdLeft(id), cdv = b.querySelector('.cdv');
-      cdv.hidden = left <= 0 && s.mode === 'fight';
-      cdv.textContent = s.mode !== 'fight' ? '—' : Math.ceil(left) + 's';
-      b.classList.toggle('ready', left <= 0 && s.mode === 'fight');
-    }
-    const auto = $('#autoCast');
-    auto.textContent = s.skills.combat.lv < 100 ? '자동 시전 🔒' : s.act.autoCast ? '자동 시전 켜짐' : '자동 시전 꺼짐';
-    auto.classList.toggle('on', !!s.act.autoCast && s.skills.combat.lv >= 100);
-    const fv = $('#fever');
-    const on = g.fever();
-    fv.classList.toggle('on', on);
-    $('#feverTxt').textContent = on ? `열정 폭발! ${Math.ceil(s.act.feverUntil - s.time)}초` : `열정 ${Math.floor(s.act.fever)}%`;
-    $('#feverFill').style.width = on ? '100%' : s.act.fever + '%';
+    const release = e => { if (e.target.closest('[data-dir]') && this.g.run) this.g.run.input = null; };
+    this.el.bottom.addEventListener('pointerdown', hold);
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) this.el.bottom.addEventListener(ev, release);
+    this.sync();
   }
 
-  // ---------- Tutorial & tips ----------
-  buildTutor() {
-    const box = document.createElement('div');
-    box.id = 'tutor';
-    box.hidden = true;
-    box.setAttribute('role', 'dialog');
-    box.setAttribute('aria-live', 'polite');
-    box.appendChild(iconCanvas('camp', '#ff8a3d', 44));
-    box.firstChild.classList.add('tt-icon');
-    box.insertAdjacentHTML('beforeend', '<div><div class="tt-step"></div><div class="tt-text"></div><div class="tt-btns"></div></div>');
-    document.body.appendChild(box);
-    this.tutBox = box;
-    this.tipQueue = [];
-    this.tip = null;
-    this.tutKey = '';
+  // ---------- Mode: base screen or run HUD ----------
+  sync() {
+    const mode = this.g.run ? 'run' : 'base';
+    if (mode === this.mode) return;
+    this.mode = mode;
+    const { top, side, bottom } = this.el;
+    document.body.dataset.mode = mode;
+    if (mode === 'run') {
+      this.close();
+      top.innerHTML = `<div class="hud">
+        <div class="hud-row"><div class="floor"><b id="hFloor"></b><small id="hBest"></small></div>
+          <button type="button" class="hbtn" data-act="leave">귀환</button></div>
+        <div class="meter dur"><i id="hDur"></i><span id="hDurT"></span></div>
+        <div class="loot" id="hLoot"></div></div>`;
+      side.innerHTML = '';
+      bottom.innerHTML = `<div class="ctl">
+        <div class="pad"><button type="button" data-dir="left" aria-label="왼쪽 파기">◀</button><button type="button" data-dir="down" aria-label="아래 파기">▼</button><button type="button" data-dir="right" aria-label="오른쪽 파기">▶</button></div>
+        <button type="button" class="auto" data-act="auto" id="hAuto">자동</button>
+        <button type="button" class="frenzy" data-act="frenzy" id="hFrenzy" aria-label="광란"><span>🔥</span><i id="hGauge"></i></button></div>`;
+      this.sideKey = '';
+    } else {
+      top.innerHTML = `<div class="res" id="bRes"></div>
+        <div class="base-info"><span id="bBest"></span><button type="button" class="hbtn" data-act="panel" data-id="menu" aria-label="설정">⚙</button></div>`;
+      side.innerHTML = '';
+      bottom.innerHTML = `<div class="startbar"><button type="button" data-act="floor" data-d="-1" aria-label="출발 층 낮추기">−</button>
+        <button type="button" class="go" data-act="go" id="bGo"></button>
+        <button type="button" data-act="floor" data-d="1" aria-label="출발 층 높이기">+</button></div>
+        <nav class="nav" id="bNav">${[['craft', '제작', 'pick', '#c8c8d0'], ['equip', '장비', 'helm', '#5a8ae0'], ['town', '마을', 'camp', '#ff8a3a'], ['chest', '보물상자', 'chest', '#c8913a'], ['missions', '미션', 'scroll', '#e8dcc8']]
+        .map(([id, label, tpl, c]) => `<button type="button" data-act="panel" data-id="${id}">${ic(tpl, c, 22)}<span>${label}</span><b class="dot" data-dot="${id}" hidden></b></button>`).join('')}</nav>`;
+      hydrate(bottom);
+    }
+    this.update();
   }
-  tutButton(label, fn, cls = 'pbtn') {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = cls;
-    b.textContent = label;
-    b.addEventListener('click', fn);
-    return b;
-  }
-  setHighlight(sel) {
-    if (this.hlSel === sel && (!sel || document.querySelector(sel)?.classList.contains('tut-hl'))) return;
-    document.querySelectorAll('.tut-hl').forEach(el => el.classList.remove('tut-hl'));
-    this.hlSel = sel;
-    if (sel) { const el = document.querySelector(sel); if (el) el.classList.add('tut-hl'); }
-  }
-  restartTutorial() {
-    this.g.s.tut = { step: 1, done: false, tips: this.g.s.tut.tips || {} };
-    this.tutKey = '';
-    this.close();
-  }
-  showTip(id, html, target) {
-    const tut = this.g.s.tut;
-    if (tut.tips[id] || this.tipQueue.some(t => t.id === id) || (this.tip && this.tip.id === id)) return;
-    this.tipQueue.push({ id, html, target });
-  }
-  tutTick() {
-    const g = this.g, tut = g.s.tut, box = this.tutBox;
-    const modalOpen = !document.getElementById('modal').hidden;
-    if (!tut.done) {
-      let step = TUT[tut.step];
-      while (step && step.until && step.until(g, this)) { tut.step++; step = TUT[tut.step]; }
-      if (!step) { tut.done = true; this.setHighlight(null); box.hidden = true; return; }
-      box.hidden = modalOpen;
-      if (modalOpen) { this.setHighlight(null); return; }
-      const html = step.text(g);
-      const key = tut.step + html;
-      this.setHighlight(step.target || null);
-      if (key === this.tutKey) return;
-      this.tutKey = key;
-      this.placeTutor(step.target);
-      box.querySelector('.tt-step').textContent = step.start ? 'GUIDE' : `GUIDE ${tut.step}/${TUT.length - 1}`;
-      box.querySelector('.tt-text').innerHTML = html;
-      const btns = box.querySelector('.tt-btns');
-      btns.innerHTML = '';
-      const finish = () => { tut.done = true; this.tutKey = ''; this.setHighlight(null); box.hidden = true; };
-      if (step.start) {
-        btns.appendChild(this.tutButton('건너뛰기', finish, 'tt-skip'));
-        btns.appendChild(this.tutButton('안내 시작', () => { tut.step++; this.tutTick(); }, 'pbtn big'));
-      } else {
-        btns.appendChild(this.tutButton('안내 끄기', finish, 'tt-skip'));
-        if (step.last) btns.appendChild(this.tutButton('모험 계속', finish, 'pbtn big'));
-        else if (!step.until) btns.appendChild(this.tutButton('다음', () => { tut.step++; this.tutTick(); }, 'pbtn big'));
+
+  update() {
+    this.sync();
+    const g = this.g, s = g.s;
+    if (this.mode === 'run') {
+      const run = g.run;
+      $('#hFloor').textContent = `${run.y}F`;
+      $('#hBest').textContent = ` / 최고 ${s.stats.deepest}F`;
+      $('#hDur').style.width = Math.max(0, (run.dur / run.maxDur) * 100) + '%';
+      $('#hDurT').textContent = `${Math.max(0, run.dur)} / ${run.maxDur}`;
+      const loot = run.loot;
+      const parts = [['stone', loot.stone], ['gems', loot.gems], ['chests', loot.chests], ...Object.entries(loot.ores)].filter(([, n]) => n > 0);
+      const key = parts.map(p => p.join(':')).join('|');
+      if (key !== this.lootKey) {
+        this.lootKey = key;
+        const el = $('#hLoot');
+        el.innerHTML = parts.map(([k, n]) => `<span>${resIc(k, 14)}${fmt(n)}</span>`).join('');
+        hydrate(el);
       }
+      const learned = ABILITIES.filter(a => s.abil[a.id]);
+      const sk = learned.map(a => a.id).join();
+      if (sk !== this.sideKey) {
+        this.sideKey = sk;
+        this.el.side.innerHTML = learned.map(a => `<div class="ab" title="${a.name}">${ic(a.icon, a.color, 18)}<div class="cd"><i data-cd="${a.id}"></i></div></div>`).join('');
+        hydrate(this.el.side);
+      }
+      for (const a of learned) {
+        const el = this.el.side.querySelector(`[data-cd="${a.id}"]`);
+        if (el) el.style.width = Math.min(100, ((run.abil[a.id] || 0) / g.abilEvery(a)) * 100) + '%';
+      }
+      $('#hAuto').classList.toggle('on', s.auto);
+      const gf = run.gauge / g.gaugeMax();
+      $('#hGauge').style.height = gf * 100 + '%';
+      $('#hFrenzy').classList.toggle('ready', gf >= 1);
+      $('#hFrenzy').classList.toggle('active', run.frenzy > 0);
       return;
     }
-    // One-time tips after the tutorial.
-    if (!this.tip && this.tipQueue.length && !modalOpen) {
-      this.tip = this.tipQueue.shift();
-      this.placeTutor(this.tip.target);
-      this.setHighlight(this.tip.target || null);
-      box.querySelector('.tt-step').textContent = 'TIP';
-      box.querySelector('.tt-text').innerHTML = this.tip.html;
-      const btns = box.querySelector('.tt-btns');
-      btns.innerHTML = '';
-      btns.appendChild(this.tutButton('확인', () => { tut.tips[this.tip.id] = 1; this.tip = null; this.setHighlight(null); box.hidden = true; this.tutTick(); }, 'pbtn big'));
-      box.hidden = false;
+    const keys = ['stone', 'gems', 'chests', ...ORES.filter(o => s.res[o.id] > 0).map(o => o.id)];
+    const rk = keys.map(k => k + s.res[k]).join();
+    if (rk !== this.resKey) {
+      this.resKey = rk;
+      const el = $('#bRes');
+      el.innerHTML = keys.map(k => `<span title="${RES_NAME[k]}">${resIc(k, 14)}${fmt(s.res[k])}</span>`).join('');
+      hydrate(el);
     }
-    if (this.tip) box.hidden = modalOpen;
-    else if (box.hidden === false && !this.tip) box.hidden = true;
+    $('#bBest').textContent = `최고 ${s.stats.deepest}F`;
+    $('#bGo').textContent = `${s.start}F에서 채굴 출발`;
+    const dots = { craft: this.anyCraft(), chest: s.res.chests > 0, missions: g.missionsReady() > 0, equip: ABILITIES.some(a => g.abilityOpen(a) && (s.abil[a.id] || 0) < ABIL_MAX && s.res.gems >= abilityCost(a, s.abil[a.id] || 0)), town: BUILDINGS.some(b => (s.town[b.id] || 0) < BUILD_MAX && g.afford(g.buildCostOf(b.id))) };
+    for (const [k, v] of Object.entries(dots)) { const d = this.el.bottom.querySelector(`[data-dot="${k}"]`); if (d) d.hidden = !v; }
   }
-  placeTutor(sel) {
-    const el = sel && document.querySelector(sel);
-    const low = el ? el.getBoundingClientRect().top > innerHeight * 0.55 : false;
-    this.tutBox.style.top = low ? '16px' : 'auto';
-    this.tutBox.style.bottom = low ? 'auto' : '16px';
-  }
-
-  // ---------- Bottom bar ----------
-  buildBar() {
-    const bar = $('#bar');
-    bar.innerHTML = `
-      <div class="who">
-        <canvas id="portrait" class="px" width="${HERO[0].length}" height="${HERO.length}"></canvas>
-        <div class="who-txt"><div class="who-nm">모험가</div><div class="who-sub" id="whoSub"></div></div>
-      </div>
-      <div class="bars">
-        <div class="meter hp"><i id="hpFill"></i><span id="hpTxt"></span><b>HP</b></div>
-        <div class="meter sta"><i id="staFill"></i><span id="staTxt"></span><b>ST</b></div>
-        <div class="meter xp"><i id="xpFill"></i><span id="xpTxt"></span><b>XP</b></div>
-      </div>
-      <nav class="btns" id="btns"></nav>`;
-    const pc = $('#portrait').getContext('2d');
-    pc.drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
-    const btns = [
-      ['mode', 'camp', '#ff8a3a', '순환'],
-      ['char', 'person', '#3f9a5c', '캐릭터'],
-      ['life', 'axe', '#b8c4d0', '생활'],
-      ['bag', 'bag', '#c8913a', '가방'],
-      ['codex', 'book', '#4a6ab8', '도감'],
-      ['rebirth', 'cycle', '#ffb84a', '윤회'],
-      ['log', 'scroll', '#e8dcc8', '일지'],
-      ['save', 'chest', '#6aa8ff', '저장'],
-      ['menu', 'gear', '#8a8a96', '설정'],
-    ];
-    const nav = $('#btns');
-    for (const [id, tpl, col, label] of btns) {
-      const b = document.createElement('button');
-      b.className = 'btn';
-      b.id = 'b-' + id;
-      b.type = 'button';
-      b.appendChild(iconCanvas(tpl, col, 30));
-      const l = document.createElement('span');
-      l.className = 'lbl';
-      l.textContent = label;
-      b.appendChild(l);
-      const dot = document.createElement('i');
-      dot.className = 'dot';
-      dot.hidden = true;
-      b.appendChild(dot);
-      b.addEventListener('click', () => (id === 'mode' ? this.toggleFocus() : id === 'save' ? this.manualSave() : this.toggle(id)));
-      nav.appendChild(b);
-    }
+  anyCraft() {
+    const g = this.g;
+    return Object.keys(UPGRADES).some(id => g.afford(g.upgradeCostOf(id))) || GEAR_SLOTS.some(k => { const c = g.craftCost(k); return c && g.afford(c); });
   }
 
-  manualSave() {
-    this.hooks.save(true);
-    this.toast(`저장했습니다 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`, 2);
+  // ---------- Clicks ----------
+  onClick(e) {
+    const b = e.target.closest('[data-act]');
+    if (!b || b.disabled) return;
+    const g = this.g, s = g.s, id = b.dataset.id, act = b.dataset.act;
+    let changed = true;
+    if (act === 'panel') return this.open(id);
+    if (act === 'go') { this.close(); g.startRun(s.start); this.hooks.flush(); }
+    else if (act === 'floor') {
+      const opts = g.startOptions();
+      const i = Math.max(0, Math.min(opts.length - 1, opts.indexOf(s.start) + Number(b.dataset.d)));
+      s.start = opts[i] ?? 0;
+    } else if (act === 'leave') { g.endRun(true); this.hooks.flush(); }
+    else if (act === 'auto') s.auto = !s.auto;
+    else if (act === 'frenzy') g.frenzy();
+    else if (act === 'home') { g.leaveRun(); this.closeModal(); this.hooks.save(); }
+    else if (act === 'up') { if (g.buyUpgrade(id)) this.flash(b); }
+    else if (act === 'craft') { if (g.craft(id)) this.toast(`${GEAR_TIERS[s.gear[id]]} ${GEAR[id].name} 제작!`, 2); }
+    else if (act === 'abil') this.selAbil = id;
+    else if (act === 'learn') { if (g.learn(id)) this.toast(`${ABILITY[id].name} Lv ${s.abil[id]}`, 2); }
+    else if (act === 'build') { if (g.build(id)) this.toast(`${BUILDINGS.find(x => x.id === id).name} Lv ${s.town[id]}`, 2); }
+    else if (act === 'open') {
+      const n = Math.min(Number(b.dataset.n), s.res.chests);
+      this.lastOpen = [];
+      for (let i = 0; i < n; i++) { const r = g.openChest(); if (r) this.lastOpen.push(r); }
+      const best = this.lastOpen.reduce((m, r) => Math.max(m, RELIC[r.id].r), 0);
+      if (best >= 2) this.toast(`${RARITY[best].name} 유물 획득!`, best + 1);
+    } else if (act === 'relic') this.selRelic = id;
+    else if (act === 'claim') { if (g.claim(id)) this.toast('미션 보상을 받았습니다', 2); }
+    else if (act === 'save') { this.hooks.save(true); this.toast('저장했습니다'); }
+    else if (act === 'export') { const t = $('#saveText'); t.value = this.hooks.exportSave(); t.select(); }
+    else if (act === 'import') { const ok = this.hooks.importSave($('#saveText').value.trim()); this.toast(ok ? '불러왔습니다' : '불러오기에 실패했습니다'); }
+    else if (act === 'reset') { if (b.dataset.sure) this.hooks.reset(); else { b.dataset.sure = '1'; b.textContent = '정말 초기화할까요? 한 번 더 누르세요'; changed = false; } }
+    else if (act === 'modal-close') this.closeModal();
+    else changed = false;
+    if (changed) { this.update(); this.refreshPanel(true); }
   }
+  flash(b) { b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); }
 
-  toggleFocus() {
-    const s = this.g.s;
-    s.focus = !s.focus;
-    if (s.focus && s.mode === 'fight') this.g.enterCamp('focus');
-    this.toast(s.focus ? '생활 집중: 전투를 멈추고 야영지에서 생활만 합니다' : '순환: 싸우고, 지치면 야영합니다');
-    this.updateBar();
-  }
-
-  updateBar() {
-    const g = this.g, s = g.s, c = s.char, d = g.d;
-    $('#whoSub').textContent = `윤회 ${s.rb.count}회 · LV ${c.lv}`;
-    const set = (id, v, max, txt) => {
-      $('#' + id + 'Fill').style.width = Math.max(0, Math.min(100, (v / max) * 100)) + '%';
-      $('#' + id + 'Txt').textContent = txt;
-    };
-    set('hp', c.hp, d.hp, `${fmt(Math.max(0, c.hp))} / ${fmt(d.hp)}`);
-    set('sta', c.sta, d.sta, `${Math.floor(c.sta)} / ${Math.floor(d.sta)}`);
-    const need = charXpNeed(c.lv);
-    set('xp', c.xp, need, `${fmt(c.xp)} / ${fmt(need)} (${((c.xp / need) * 100).toFixed(1)}%)`);
-    const mb = $('#b-mode .lbl');
-    mb.textContent = s.focus ? '집중' : '순환';
-    $('#b-mode').classList.toggle('on', s.focus);
-    $('#b-char .dot').hidden = !((c.pts > 0 && !c.auto) || g.upgrades() > 0);
-    const ls = this.hooks.lastSave();
-    $('#b-save').title = ls ? `마지막 저장 ${new Date(ls).toLocaleTimeString('ko-KR')}` : '아직 저장 안 됨';
-    $('#b-rebirth .dot').hidden = !(s.rb.choices || (g.canRebirth() && s.rb.count === 0));
-    $('#b-life .dot').hidden = !s.slots.some(x => x.blocked);
-    for (const id of ['char', 'life', 'bag', 'codex', 'rebirth', 'log', 'menu']) $('#b-' + id).classList.toggle('active', this.panel === id);
-    this.updateHud();
-    this.updateActions();
-    this.tutTick();
-  }
-
-  updateHud() {
-    const g = this.g, s = g.s, c = s.char, env = g.env;
-    const reg = g.region(c.floor);
-    const gm = s.mode === 'fight' ? g.gimmick(c.floor) : null;
-    const boss = c.floor % 10 === 0;
-    const timeIcon = env.night ? '🌙' : '☀️';
-    const w = env.weather === 'rain' ? ' · 🌧 비 (채집 +20%)' : env.weather === 'snow' ? ' · ❄ 눈' : '';
-    $('#hudTL').innerHTML = `
-      <div class="reg">${esc(s.mode === 'camp' ? this.campPlace() : reg.name)}</div>
-      <div class="fl">${s.mode === 'camp' ? `${esc(SKILLS[s.slots[0].k].name)} 중${s.focus ? ' · 생활 집중' : ''}` : `${c.floor}층 ${boss ? '· 보스' : `· ${c.kills}/10`}`}</div>
-      <div class="env">${timeIcon} ${SEASON_NAME[env.season]}${w}${env.night ? ' · 밤낚시 희귀 ×1.3' : ''}</div>
-      ${gm ? `<div class="gm ${s.pot[gm === 'poison' ? 'antidote' : 'warm'] || g.d.res[gm] >= 1 ? 'ok' : ''}">${esc(GIMMICK_TEXT[gm])}</div>` : ''}
-      ${s.catUntil > s.time ? `<div class="env">✨ 행운의 촉매 ${Math.ceil((s.catUntil - s.time) / 60)}분</div>` : ''}
-      ${g.recall() > 1 ? `<div class="env recall">⚡ 전생 기억 회복 중 · 경험치 ×${g.recall()} (Lv ${Math.ceil(s.rb.bestLv * 0.95)}까지)</div>` : ''}`;
-    $('#goals').innerHTML = g.goals().map(t => `<li>${esc(t)}</li>`).join('');
-    // Clone insets
-    const holder = $('#clones');
-    const n = s.slots.length - 1;
-    if (holder.childElementCount !== n) {
-      holder.innerHTML = '';
-      const list = [];
-      for (let i = 0; i < n; i++) {
-        const box = document.createElement('div');
-        box.className = 'clone';
-        const cv = document.createElement('canvas');
-        cv.width = 160;
-        cv.height = 90;
-        cv.className = 'px';
-        box.appendChild(cv);
-        const lb = document.createElement('div');
-        lb.className = 'clone-lb';
-        box.appendChild(lb);
-        holder.appendChild(box);
-        list.push(cv);
-      }
-      this.r.setCloneCanvases(list);
-    }
-    holder.querySelectorAll('.clone-lb').forEach((lb, i) => {
-      const k = s.slots[i + 1].k;
-      lb.textContent = `분신 ${i + 1} · ${SKILLS[k].name} Lv.${s.skills[k].lv}`;
-    });
-  }
-
-  campPlace() {
-    const s = this.g.s, k = s.slots[0].k;
-    if (!SPOTS[k]) return '연금술 공방';
-    return SPOTS[k][Math.min(s.spots[k] || 0, spotsUnlocked(s.skills[k].lv) - 1)].name;
-  }
-
-  toast(text, tier = 0) {
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.style.setProperty('--tc', TIERS[Math.min(6, tier)].color);
-    t.textContent = text;
-    $('#toasts').appendChild(t);
-    setTimeout(() => t.remove(), 3200);
-    const all = $('#toasts').children;
-    if (all.length > 4) all[0].remove();
-  }
-
+  // ---------- Events from the engine ----------
   handle(events) {
     for (const e of events) {
-      if (e.t === 'slv' && (e.lv % 10 === 0 || e.lv < 10)) this.toast(`${SKILLS[e.k].name} Lv.${e.lv}${e.m ? ' · ' + e.m : ''}`, e.lv % 100 === 0 ? 4 : 1);
-      else if (e.t === 'codex') { const it = ITEMS[e.id]; this.toast(`도감 등록 · ${it.name}`, it.tier); }
-      else if (e.t === 'gear' && e.equip && e.g.tier >= 1) this.toast(`장착 · [${TIERS[e.g.tier].name}] ${gearName(e.g)}`, e.g.tier);
-      else if (e.t === 'gear' && !e.equip) {
-        if (e.better || e.g.tier >= 2) this.toast(`장비 획득 · [${TIERS[e.g.tier].name}] ${gearName(e.g)}${e.better ? ' ▲' : ''} (가방)`, e.g.tier);
-        this.showTip('gear', '장비를 얻었어요! <b>「캐릭터」</b>에서 <b>착용</b>을 눌러 입으세요. 더 좋은 장비가 가방에 있으면 버튼에 빨간 점이 뜹니다. 자동 착용은 같은 곳에서 켤 수 있어요.', '#b-char');
-      }
-      else if (e.t === 'floor' && e.floor % 10 === 1) this.toast(`${e.floor}층 · ${this.g.region(e.floor).name}`, 2);
-      else if (e.t === 'unlock') {
-        this.toast(`새 생활 스킬 해금 · ${SKILLS[e.k].name}`, 4);
-        if (e.k !== 'wood') this.showTip('unlock_' + e.k, `<b>${SKILLS[e.k].name}</b>이(가) 열렸어요! 「생활」에서 카드를 고르고 「야영에 배치」를 눌러 보세요.`, '#b-life');
-      } else if (e.t === 'spawn' && e.mon.boss) this.showTip('boss', '<b>보스</b>가 나타났어요! 보스는 <b>네 번째 공격마다 강타</b>를 날립니다. 쓰러지면 한 층 아래에서 힘을 길러 다시 도전해요.');
-      else if (e.t === 'spawn' && e.mon.elite) this.showTip('elite', '<b>정예 몬스터</b>는 5층마다 한 마리만 나와요. 쓰러뜨리면 다음 층으로, 처음 잡으면 장비 보상이 확정입니다.');
-      else if (e.t === 'death') this.showTip('death', '쓰러져도 잃는 건 없어요. <b>한 층 아래</b>에서 3분간 힘을 기른 뒤 다시 올라갑니다. 생활 스킬과 장비 강화로 더 강해지세요.');
+      if (e.t === 'layer') this.toast(`${e.y}F 돌파! 새 광석: ${ORES[Math.min(ORES.length - 1, e.y / 100)]?.name ?? ''}`, 3);
+      else if (e.t === 'revive') this.toast('불사조 깃털이 타오릅니다!', 3);
+      else if (e.t === 'break' && e.c.t === 'chest') this.toast('보물상자 발견!', 2);
+      else if (e.t === 'end') this.runSummary(e);
+      else if (e.t === 'start') { this.sync(); this.tip('controls', '<b>←↓→</b> 버튼(키보드 방향키)을 누르고 있으면 그쪽을 팝니다. <b>자동</b>을 켜 두면 알아서 광석을 찾아 내려가요. 게이지가 차면 <b>🔥 광란</b>!'); }
     }
-    if (this.g.canRebirth() && this.g.s.rb.count === 0) this.showTip('rebirth', '<b>윤회</b>가 열렸어요! 레벨과 장비는 초기화되지만 <b>모닥불의 재</b>로 영구 특성을 얻고, 생활 레벨은 그대로 남아요.', '#b-rebirth');
+  }
+  runSummary(e) {
+    const loot = e.loot;
+    const rows = [['stone', loot.stone], ['gems', loot.gems], ['chests', loot.chests], ...Object.entries(loot.ores)].filter(([, n]) => n > 0);
+    this.showModal(`<h2>${e.early ? '귀환' : '곡괭이가 닳았어요'}</h2>
+      <p class="lead">${e.start}F → <b>${e.deepest}F</b> · 블록 ${fmt(e.broken)}개</p>
+      <div class="lootgrid">${rows.map(([k, n]) => `<div>${resIc(k, 22)}<span>${RES_NAME[k]}</span><b>+${fmt(n)}</b></div>`).join('') || '<p>얻은 것이 없어요</p>'}</div>`,
+    [['마을로', 'home']]);
   }
 
-  // ---------- Panel ----------
-  buildPanel() {
-    $('#panelClose').addEventListener('click', () => this.close());
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        if (!$('#modal').hidden && !this.modalLocked) this.closeModal();
-        else this.close();
-      }
-    });
+  // ---------- Panels ----------
+  open(name) {
+    this.panel = name;
+    this.el.panel.hidden = false;
+    this.refreshPanel(true);
   }
-  toggle(id) {
-    if (this.panel === id) this.close();
-    else this.open(id);
+  close() { this.panel = null; this.el.panel.hidden = true; }
+  refreshPanel(force) {
+    if (!this.panel) return;
+    if (!force && this.el.panel.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA') return;
+    const titles = { craft: '제작', equip: '장비', town: '마을', chest: '보물상자', missions: '미션', menu: '설정' };
+    this.el.title.textContent = titles[this.panel];
+    const body = this.el.body, top = body.scrollTop;
+    body.innerHTML = this['p_' + this.panel]();
+    hydrate(body);
+    if (this.panel === 'equip') this.drawHeroPic();
+    body.scrollTop = top;
   }
-  open(id) {
-    this.panel = id;
-    $('#panel').hidden = false;
-    $('#panel').dataset.kind = id;
-    this.confirm = null;
-    this.renderPanel();
-    this.updateBar();
-  }
-  close() {
-    this.panel = null;
-    $('#panel').hidden = true;
-    this.updateBar();
-  }
-  refreshPanel() {
-    if (!this.panel || this.pointerDown) return;
-    const ae = document.activeElement;
-    if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) return;
-    this.renderPanel();
-  }
-  renderPanel() {
-    const body = $('#panelBody');
-    const scroll = body.scrollTop;
-    const focusId = document.activeElement && body.contains(document.activeElement) ? document.activeElement.dataset.fid : null;
-    const titles = { char: '캐릭터 정보', life: '생활 스킬', bag: '가방', codex: '도감', rebirth: '윤회', log: '모험 일지', menu: '설정' };
-    $('#panelTitle').textContent = titles[this.panel];
-    body.innerHTML = '';
-    this['p_' + this.panel](body);
-    body.scrollTop = scroll;
-    if (focusId) { const el = body.querySelector(`[data-fid="${focusId}"]`); if (el) el.focus(); }
-  }
-  act(fn) {
-    fn();
-    this.g.calc();
-    this.renderPanel();
-    this.updateBar();
-  }
-  btn(label, onClick, opts = {}) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'pbtn' + (opts.cls ? ' ' + opts.cls : '');
-    b.innerHTML = label;
-    if (opts.fid) b.dataset.fid = opts.fid;
-    b.disabled = !!opts.disabled;
-    b.addEventListener('click', () => this.act(onClick));
-    return b;
-  }
-  section(parent, title) {
-    const sec = document.createElement('section');
-    sec.className = 'psec';
-    if (title) {
-      const h = document.createElement('h3');
-      h.textContent = title;
-      sec.appendChild(h);
-    }
-    parent.appendChild(sec);
-    return sec;
-  }
-  html(parent, markup, cls) {
-    const d = document.createElement('div');
-    if (cls) d.className = cls;
-    d.innerHTML = markup;
-    parent.appendChild(d);
-    return d;
-  }
-
-  // ----- Character
-  p_char(body) {
-    const g = this.g, s = g.s, c = s.char, d = g.d;
-    const top = this.html(body, '', 'char-top');
-    const pic = document.createElement('canvas');
-    pic.width = HERO[0].length; pic.height = HERO.length;
-    pic.className = 'px char-pic';
-    pic.getContext('2d').drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
-    top.appendChild(pic);
-    const titles = Object.keys(MASTER_TITLE).filter(k => s.skills[k].lv >= 1000).map(k => MASTER_TITLE[k]);
-    this.html(top, `<div class="char-nm">모험가 <span class="lv">LV ${c.lv}</span></div>
-      <div class="char-sub">윤회 ${s.rb.count}회 · 최고 ${s.rb.bestFloor}층${titles.length ? ' · ' + titles.join(', ') : ''}</div>
-      <div class="char-sub">${s.rb.memory ? `전생의 기억: <b>${esc(MEMORIES[s.rb.memory].name)}</b> (${esc(MEMORIES[s.rb.memory].desc)})` : '전생의 기억 없음'}</div>`, 'char-meta');
-
-    const st = this.section(body, '능력치');
-    const rows = [
-      ['최대 HP', fmt(d.hp)], ['공격력', fmt(d.atk)], ['공격 간격', d.interval.toFixed(2) + '초'],
-      ['치명타 확률', pct(d.critC)], ['치명타 피해', '×' + d.critD.toFixed(2)], ['회피', pct(d.dodge)],
-      ['최대 스태미나', Math.floor(d.sta)], ['행운 배율', `×${d.luck.toFixed(2)} (상한 ×${d.luckCap.toFixed(1)})`],
-      ['도감 보너스', '+' + pct(d.codex)], ['골드', fmt(c.gold)],
-    ];
-    this.html(st, rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join(''), 'statlist');
-
-    const al = this.section(body, `스탯 분배 · 남은 포인트 ${c.pts}`);
-    const grid = this.html(al, '', 'alloc');
-    for (const k of Object.keys(STAT_NAMES)) {
-      const row = this.html(grid, `<span>${STAT_NAMES[k]}</span><b>${c.st[k]}</b>`, 'alloc-row');
-      row.appendChild(this.btn('+1', () => g.allocate(k, 1), { disabled: c.pts < 1, fid: 'a1' + k }));
-      row.appendChild(this.btn('+10', () => g.allocate(k, 10), { disabled: c.pts < 1, fid: 'a10' + k }));
-    }
-    const pr = this.html(al, '', 'chips');
-    for (const [k, p] of Object.entries(PRESETS)) {
-      pr.appendChild(this.btn(p.name, () => { c.preset = k; if (c.auto) g.respec(); }, { cls: c.preset === k ? 'chip on' : 'chip' }));
-    }
-    pr.appendChild(this.btn(c.auto ? '자동 분배 켜짐' : '자동 분배 꺼짐', () => { c.auto = !c.auto; if (c.auto) g.autoAllocate(); }, { cls: c.auto ? 'chip on' : 'chip' }));
-    pr.appendChild(this.btn('초기화', () => g.respec(), { cls: 'chip' }));
-
-    const ge = this.section(body, '장비 (윤회 시 초기화)');
-    for (const slot of ['weapon', 'armor', 'charm']) {
-      const gg = c.gear[slot];
-      const row = this.html(ge, '', 'gear-row');
-      row.appendChild(iconCanvas(slot === 'weapon' ? 'sword' : slot === 'armor' ? 'armor' : 'charm', gg ? TIERS[gg.tier].color : '#5a5a66', 32));
-      if (gg) {
-        const val = slot === 'charm' ? `행운 +${charmValue(gg).luck.toFixed(3)} · 치명 +${pct(charmValue(gg).crit)}` : `${slot === 'weapon' ? '공격력' : 'HP'} +${fmt(gearValue(gg))}`;
-        this.html(row, `<b style="color:${TIERS[gg.tier].color}">[${TIERS[gg.tier].name}] ${esc(gearName(gg))}</b><small>${gg.f}층 · ${val}</small>`, 'gear-txt');
-        const cost = enhanceCost(gg);
-        const btns = this.html(row, '', 'gear-btns');
-        btns.appendChild(this.btn(`강화 ${fmt(cost)}g`, () => g.enhance(slot), { disabled: c.gold < cost, fid: 'en' + slot }));
-        btns.appendChild(this.btn('해제', () => g.unequip(slot), { cls: 'chip', fid: 'uq' + slot }));
-      } else this.html(row, '<b>비어 있음</b><small>가방에서 장비를 골라 착용하세요</small>', 'gear-txt');
-    }
-    const bag = this.section(body, `가방의 장비 ${c.bag.length}/${BAG_MAX}`);
-    const ctl = this.html(bag, '', 'chips');
-    ctl.appendChild(this.btn(s.settings.autoEquip ? '자동 착용 켜짐' : '자동 착용 꺼짐', () => { s.settings.autoEquip = !s.settings.autoEquip; }, { cls: 'chip' + (s.settings.autoEquip ? ' on' : ''), fid: 'autoeq' }));
-    if (c.bag.length) {
-      if (this.confirm === 'sellall') {
-        ctl.appendChild(this.btn(`정말 ${c.bag.length}개 판매`, () => { g.sellAll(); this.confirm = null; }, { cls: 'danger', fid: 'sa2' }));
-        ctl.appendChild(this.btn('취소', () => { this.confirm = null; }, { cls: 'chip', fid: 'sa3' }));
-      } else ctl.appendChild(this.btn('전부 판매', () => { this.confirm = 'sellall'; }, { cls: 'chip', fid: 'sa' }));
-    }
-    if (!c.bag.length) this.html(bag, '<p class="hint">몬스터가 떨어뜨린 장비가 여기에 모입니다. 가방이 가득 차면 가장 약한 장비부터 자동으로 팔려요.</p>');
-    const order = c.bag.map((x, i) => ({ x, i })).sort((a, b) => (a.x.slot > b.x.slot ? 1 : a.x.slot < b.x.slot ? -1 : gearScore(b.x) - gearScore(a.x)));
-    for (const { x, i } of order) {
-      const cur = c.gear[x.slot];
-      const diff = cur ? gearScore(x) / gearScore(cur) - 1 : 1;
-      const row = this.html(bag, '', 'gear-row');
-      row.appendChild(iconCanvas(x.slot === 'weapon' ? 'sword' : x.slot === 'armor' ? 'armor' : 'charm', TIERS[x.tier].color, 28));
-      const val = x.slot === 'charm' ? `행운 +${charmValue(x).luck.toFixed(3)} · 치명 +${pct(charmValue(x).crit)}` : `${x.slot === 'weapon' ? '공격력' : 'HP'} +${fmt(gearValue(x))}`;
-      const cmp = !cur ? '<em class="up">새 부위</em>' : diff > 0.001 ? `<em class="up">▲ ${pct(diff, 0)}</em>` : diff < -0.001 ? `<em class="down">▼ ${pct(-diff, 0)}</em>` : '<em>같음</em>';
-      this.html(row, `<b style="color:${TIERS[x.tier].color}">[${TIERS[x.tier].name}] ${esc(gearName(x))} ${cmp}</b><small>${x.f}층 · ${val}</small>`, 'gear-txt');
-      const btns = this.html(row, '', 'gear-btns');
-      btns.appendChild(this.btn('착용', () => g.equip(i), { cls: diff > 0 ? 'big' : '', fid: 'eq' + i }));
-      btns.appendChild(this.btn(`판매 ${fmt(sellPrice(x))}g`, () => g.sell(i), { cls: 'chip', fid: 'sl' + i }));
-    }
-  }
-
-  // ----- Life skills
-  p_life(body) {
-    const g = this.g, s = g.s;
-    const sl = this.section(body, '배치 · 야영 중에는 야영 슬롯, 분신은 항상 일합니다');
-    const chips = this.html(sl, '', 'slots');
-    s.slots.forEach((x, i) => {
-      const el = this.html(chips, `<small>${i === 0 ? '야영' : '분신 ' + i}</small><b>${SKILLS[x.k].name}</b>${x.blocked ? '<em>재료 부족</em>' : ''}`, 'slot' + (i === 0 ? ' main' : ''));
-      el.prepend(skillIcon(x.k, 26));
-    });
-    if (s.slots.length < 3) this.html(sl, `<p class="hint">분신 슬롯은 윤회 특성 「분신술」로 늘어납니다 (${s.slots.length - 1}/2)</p>`);
-
-    const pick = this.html(body, '', 'chips');
-    this.html(pick, '<small class="hint">상세 보기:</small>');
-    for (const k of Object.keys(SKILLS)) pick.appendChild(this.btn(SKILLS[k].short, () => { this.sel.skill = k; }, { cls: 'chip' + (this.sel.skill === k ? ' on' : ''), fid: 'dv' + k }));
-    const grid = this.html(body, '', 'skill-grid');
-    for (const k of Object.keys(SKILLS)) {
-      const sk = s.skills[k];
-      const card = document.createElement('button');
-      card.type = 'button';
-      const open = g.unlocked(k), u = UNLOCKS[k];
-      card.className = 'skill-card' + (this.sel.skill === k ? ' sel' : '') + (open ? '' : ' locked');
-      card.dataset.fid = 'sk' + k;
-      card.appendChild(open ? skillIcon(k, 30) : iconCanvas(SKILL_ICON[k][0], '#3a3a48', 30));
-      const need = xpNeed(sk.lv);
-      card.title = open && k !== 'combat' ? '누르면 바로 이 일을 하러 갑니다' : '';
-      card.insertAdjacentHTML('beforeend', open ? `<div class="sc-nm">${SKILLS[k].name}</div><div class="sc-lv">Lv.${sk.lv}</div>
-        <div class="sc-bar"><i style="width:${(sk.xp / need) * 100}%"></i></div>
-        <div class="sc-tool">${k === 'combat' ? '처치로 성장' : TOOL_TIERS[toolTier(sk.lv)].name + ' 도구'}</div>` : `<div class="sc-nm">🔒 ${SKILLS[k].name}</div><div class="sc-lv">잠김</div>
-        <div class="sc-lock">${SKILLS[u.skill].name} Lv.${u.lv} 필요 (지금 ${s.skills[u.skill].lv})</div>`);
-      card.addEventListener('click', () => { this.sel.skill = k; if (k === 'combat' || !open) this.renderPanel(); else this.goSkill(k); });
-      if (open && k !== 'combat') card.insertAdjacentHTML('beforeend', '<span class="sc-go">▶ 하러 가기</span>');
-      grid.appendChild(card);
-    }
-    this.skillDetail(body, this.sel.skill);
-  }
-
-  skillDetail(body, k) {
-    const g = this.g, s = g.s, sk = s.skills[k];
-    const det = this.section(body, `${SKILLS[k].name} Lv.${sk.lv}`);
-    const need = xpNeed(sk.lv);
-    const pb = skillPassive(sk.lv);
-    const speed = k === 'combat' ? null : g.skillSpeed(k);
-    const mult = g.rareMult(k);
-    const eP = 1 / (1e-6 * Math.sqrt(mult));
-    this.html(det, `
-      <div><span>경험치</span><b>${fmt(sk.xp)} / ${fmt(need)}</b></div>
-      <div><span>패시브 (${esc(SKILLS[k].stat)})</span><b>+${k === 'fish' ? (sk.lv * 0.0005 + Math.floor(sk.lv / 10) * 0.005).toFixed(3) + ' 행운' : pct(pb)}</b></div>
-      ${speed ? `<div><span>작업 속도</span><b>×${speed.toFixed(2)}</b></div>` : ''}
-      <div><span>희귀 이상 확률 배율</span><b>×${mult.toFixed(2)}</b></div>
-      <div><span>누적 행동</span><b>${sk.n.toLocaleString()}회</b></div>
-      <div><span>불운 게이지 (태초)</span><b>${((sk.dryP / eP) * 100).toFixed(1)}%${pity(sk.dryP / eP) > 1 ? ` · 확률 ×${pity(sk.dryP / eP).toFixed(2)}` : ''}</b></div>`, 'statlist');
-    if (k !== 'combat' && !g.unlocked(k)) {
-      const u = UNLOCKS[k];
-      this.html(det, `<p class="warn">🔒 ${SKILLS[u.skill].name}을(를) Lv.${u.lv}까지 올리면 열립니다 (지금 Lv.${s.skills[u.skill].lv}).</p>`);
-    } else if (k !== 'combat') {
-      const row = this.html(det, '', 'chips');
-      s.slots.forEach((x, i) => {
-        row.appendChild(this.btn(x.k === k ? `${i === 0 ? '야영' : '분신 ' + i} 배치됨` : `${i === 0 ? '야영' : '분신 ' + i}에 배치`, () => g.setSlotSkill(i, k), { cls: x.k === k ? 'chip on' : 'chip', fid: 'as' + i }));
-      });
-    }
-    // Milestones
-    const ms = nextMilestones(k, sk.lv, 5);
-    this.html(det, `<h4>다음 보상</h4><ul class="ms">${ms.map(m => `<li class="${m.lv % 100 === 0 || m.lv >= 250 ? 'big' : ''}"><b>Lv.${m.lv}</b> ${esc(m.text)}</li>`).join('')}</ul>`);
-    // Spots
-    if (SPOTS[k]) {
-      const sp = this.section(body, '장소');
-      const unlocked = spotsUnlocked(sk.lv);
-      SPOTS[k].forEach((spot, i) => {
-        const locked = i >= unlocked;
-        const row = this.html(sp, '', 'spot' + (s.spots[k] === i ? ' on' : '') + (locked ? ' locked' : ''));
-        const icons = this.html(row, '', 'spot-icons');
-        for (const id of spot.items) icons.appendChild(s.codex[id] || !locked ? itemIcon(id, 22) : iconCanvas(ITEMS[id].icon, '#2a2a34', 22));
-        this.html(row, `<b>${esc(spot.name)}</b><small>${locked ? `Lv.${SPOT_LV[i]} 필요` : `경험치 ${[8, 14, 24, 40, 65][i]}/회`}</small>`, 'spot-txt');
-        if (!locked) row.appendChild(this.btn(s.spots[k] === i ? '선택됨' : '선택', () => { s.spots[k] = i; }, { cls: 'chip' + (s.spots[k] === i ? ' on' : ''), fid: 'sp' + i }));
-      });
-    }
-    if (k === 'alchemy') this.alchemyDetail(body);
-    // Skill-wide rares
-    const rr = this.section(body, '희귀 보상 (모든 장소 공통)');
-    const ul = this.html(rr, '', 'rares');
-    SKILL_RARES[k].forEach((id, i) => {
-      const it = ITEMS[id], known = s.codex[id];
-      const r = this.html(ul, `<div><b style="color:${TIERS[it.tier].color}">${known ? esc(it.name) : '???'}</b><small>${TIERS[it.tier].name} · ${{ 3: '0.3%', 4: '0.02%', 5: '0.002%', 6: '0.0001%' }[it.tier]}${it.effect && known ? ' · ' + esc(it.effect) : ''}${known ? ` · 보유 ${s.items[id] || 0}` : ''}</small></div>`, 'rare-row');
-      r.prepend(known ? itemIcon(id, 26) : iconCanvas(it.icon, '#2a2a34', 26));
-    });
-  }
-
-  alchemyDetail(body) {
-    const g = this.g, s = g.s, lv = s.skills.alchemy.lv;
-    const sec = this.section(body, '레시피');
-    for (const r of RECIPES) {
-      if (r.secret && !s.secret) continue;
-      const it = ITEMS[r.id];
-      const locked = lv < r.lv;
-      const done = r.max && g.crafted(r) >= r.max;
-      const row = this.html(sec, '', 'recipe' + (s.recipe === r.id ? ' on' : '') + (locked ? ' locked' : ''));
-      row.appendChild(itemIcon(r.id, 30));
-      const ins = Object.entries(r.in).map(([id, n]) => {
-        const have = s.items[id] || 0;
-        return `<span class="${have >= n ? 'ok' : 'no'}">${esc(ITEMS[id].name)} ${fmt(have)}/${n}</span>`;
-      }).join('');
-      this.html(row, `<b>${esc(it.name)}${r.max ? ` <small>(${g.crafted(r)}/${r.max})</small>` : ` <small>보유 ${s.items[r.id] || 0}</small>`}</b>
-        <small>${esc(it.desc || '')}</small><div class="ins">${locked ? `연금술 Lv.${r.lv} 필요` : ins}</div>`, 'recipe-txt');
-      if (!locked && !done) row.appendChild(this.btn(s.recipe === r.id ? '제작 중' : '선택', () => { s.recipe = r.id; }, { cls: 'chip' + (s.recipe === r.id ? ' on' : ''), fid: 'rc' + r.id }));
-    }
-    const pa = this.section(body, '물약 자동 사용 (전투 시작 시 1개씩)');
-    const chips = this.html(pa, '', 'chips');
-    for (const id of ['p_str', 'p_hp', 'p_sta', 'p_luck', 'p_haste', 'p_focus', 'p_wisdom', 'p_antidote', 'p_warm']) {
-      const type = ITEMS[id].potion;
-      chips.appendChild(this.btn(`${ITEMS[id].name} ${s.potAuto[type] ? 'ON' : 'OFF'} · ${s.items[id] || 0}`, () => { s.potAuto[type] = !s.potAuto[type]; }, { cls: 'chip' + (s.potAuto[type] ? ' on' : ''), fid: 'pa' + id }));
-    }
-    this.html(pa, '<p class="hint">해독·온기 물약은 해당 지역에서 저항이 부족할 때만 사용됩니다. 실패해도 경험치는 1.5배를 받습니다.</p>');
-  }
-
-  // ----- Bag
-  p_bag(body) {
+  cost(c) {
     const s = this.g.s;
-    const tabs = this.html(body, '', 'chips');
-    const cats = { mat: '재료', pot: '물약·영약', rare: '영웅 이상' };
-    for (const [k, v] of Object.entries(cats)) tabs.appendChild(this.btn(v, () => { this.sel.bag = k; this.sel.item = null; }, { cls: 'chip' + (this.sel.bag === k ? ' on' : ''), fid: 'bt' + k }));
-    const ids = Object.keys(s.items).filter(id => s.items[id] > 0).filter(id => {
-      const it = ITEMS[id];
-      if (this.sel.bag === 'rare') return it.tier >= 3;
-      if (this.sel.bag === 'pot') return it.skill === 'alchemy' && it.tier < 3;
-      return it.tier < 3 && it.skill !== 'alchemy';
-    }).sort((a, b) => ITEMS[b].tier - ITEMS[a].tier || (ITEMS[a].skill > ITEMS[b].skill ? 1 : -1));
-    const grid = this.html(body, '', 'slotgrid');
-    if (!ids.length) this.html(grid, '<p class="hint">아직 비어 있어요. 야영지에서 생활 스킬을 돌려보세요.</p>');
-    for (const id of ids) {
-      const cell = document.createElement('button');
-      cell.type = 'button';
-      cell.className = 'cell t' + ITEMS[id].tier + (this.sel.item === id ? ' sel' : '');
-      cell.dataset.fid = 'it' + id;
-      cell.appendChild(itemIcon(id, 34));
-      cell.insertAdjacentHTML('beforeend', `<span class="cnt">${fmt(s.items[id])}</span>`);
-      cell.addEventListener('click', () => { this.sel.item = id; this.renderPanel(); });
-      grid.appendChild(cell);
-    }
-    if (this.sel.item && s.items[this.sel.item] > 0) this.itemInfo(body, this.sel.item);
-  }
-  itemInfo(body, id) {
-    const s = this.g.s, it = ITEMS[id];
-    const box = this.section(body);
-    box.classList.add('iteminfo');
-    box.appendChild(itemIcon(id, 40));
-    const src = it.skill === 'combat' ? '전투' : SKILLS[it.skill].name;
-    this.html(box, `<b style="color:${TIERS[it.tier].color}">${esc(it.name)}</b>
-      <small>${TIERS[it.tier].name} · ${src} · 보유 ${fmt(s.items[id] || 0)}${s.records[id] ? ` · 최고 ${s.records[id]}kg` : ''}</small>
-      <small>${esc(it.effect || it.desc || '도감 보너스 +' + pct(TIERS[it.tier].codex))}</small>`, 'ii-txt');
-    if (id === 'x_cat' || it.use) box.appendChild(this.btn('사용', () => this.g.useItem(id), { fid: 'use' }));
+    return `<span class="cost">${Object.entries(c).map(([k, v]) => `<span class="${s.res[k] >= v ? '' : 'no'}">${resIc(k, 14)}${fmt(v)}</span>`).join('')}</span>`;
   }
 
-  // ----- Codex
-  p_codex(body) {
+  p_craft() {
     const g = this.g, s = g.s;
-    const all = Object.keys(ITEMS);
-    const found = all.filter(id => s.codex[id]).length;
-    this.html(body, `<div class="codex-head"><b>${found} / ${all.length}</b> 등록 · 도감 보너스 <b>+${pct(g.d.codex)}</b> (공격력·HP)</div>`);
-    const tabs = this.html(body, '', 'chips');
-    for (const k of Object.keys(SKILLS)) tabs.appendChild(this.btn(SKILLS[k].short, () => { this.sel.codex = k; this.sel.item = null; }, { cls: 'chip' + (this.sel.codex === k ? ' on' : ''), fid: 'cx' + k }));
-    const ids = all.filter(id => ITEMS[id].skill === this.sel.codex);
-    const n = ids.filter(id => s.codex[id]).length;
-    this.html(body, `<p class="hint">${SKILLS[this.sel.codex].name}: ${n}/${ids.length} · 등급별 보너스 일반 +0.2% … 태초 +20%${this.sel.codex === 'fish' ? ' · 계절 물고기는 해당 계절에만 낚입니다' : ''}</p>`);
-    const grid = this.html(body, '', 'slotgrid');
-    for (const id of ids) {
-      const it = ITEMS[id], known = s.codex[id];
-      const cell = document.createElement('button');
-      cell.type = 'button';
-      cell.className = 'cell t' + it.tier + (known ? '' : ' unknown') + (this.sel.item === id ? ' sel' : '');
-      cell.dataset.fid = 'cx' + id;
-      cell.appendChild(known ? itemIcon(id, 34) : iconCanvas(it.icon, '#22222c', 34));
-      cell.addEventListener('click', () => { this.sel.item = id; this.renderPanel(); });
-      grid.appendChild(cell);
-    }
-    const id = this.sel.item;
-    if (id && ITEMS[id].skill === this.sel.codex) {
-      if (s.codex[id]) this.itemInfo(body, id);
-      else {
-        const it = ITEMS[id];
-        const season = it.season !== undefined ? ` · ${SEASON_NAME[it.season]} 한정` : '';
-        this.html(this.section(body), `<b>??? </b><small>${TIERS[it.tier].name}${season} · 아직 발견하지 못했습니다</small>`, 'ii-txt');
-      }
-    }
-    if (this.sel.codex === 'fish') {
-      const recs = Object.entries(s.records).sort((a, b) => b[1] / ITEMS[b[0]].w - a[1] / ITEMS[a[0]].w).slice(0, 8);
-      if (recs.length) this.html(this.section(body, '어종별 최고 기록'), recs.map(([fid, w]) => `<div><span>${esc(ITEMS[fid].name)}</span><b>${w}kg</b></div>`).join(''), 'statlist');
-    }
+    const ups = Object.entries(UPGRADES).map(([id, u]) => {
+      const c = g.upgradeCostOf(id), lv = s.up[id];
+      return `<div class="row">${ic(u.icon, '#c8c8d0', 26)}<div class="txt"><b>${u.name} <em>Lv ${lv}</em></b><small>${u.text(lv)} → ${u.text(lv + 1)}</small></div>
+        <button type="button" class="pbtn" data-act="up" data-id="${id}" ${g.afford(c) ? '' : 'disabled'}>${this.cost(c)}</button></div>`;
+    }).join('');
+    const gear = GEAR_SLOTS.map(k => {
+      const G = GEAR[k], t = s.gear[k], c = g.craftCost(k);
+      const next = c ? `${G.fmt(fmtV(G.val(t)))} → <b>${G.fmt(fmtV(G.val(t + 1)))}</b>` : '최고 등급';
+      const seen = !c || s.stats.deepest >= (t) * 100 - 100 || s.res[ORES[t].id] > 0;
+      return `<div class="row">${ic(G.icon, TIER_COL[t], 26)}<div class="txt"><b>${GEAR_TIERS[t]} ${G.name}</b><small>${next}</small>${c && !seen ? `<small class="warn">${ORES[t].name}은(는) ${t * 100}F 근처부터 나와요</small>` : ''}</div>
+        ${c ? `<button type="button" class="pbtn" data-act="craft" data-id="${k}" ${g.afford(c) ? '' : 'disabled'}>${GEAR_TIERS[t + 1]}<br>${this.cost(c)}</button>` : ''}</div>`;
+    }).join('');
+    return `<section class="psec"><h3>강화 <small>돌로 올리는 영구 능력치</small></h3>${ups}</section>
+      <section class="psec"><h3>장비 제작 <small>더 깊은 광석으로 다음 등급을 만듭니다</small></h3>${gear}</section>`;
   }
 
-  // ----- Rebirth
-  p_rebirth(body) {
-    const g = this.g, s = g.s, rb = s.rb, c = s.char;
-    if (rb.choices) {
-      const sec = this.section(body, '전생의 기억을 하나 고르세요 (이번 회차 동안 적용)');
-      const row = this.html(sec, '', 'memories');
-      for (const k of rb.choices) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'memory';
-        b.innerHTML = `<b>${esc(MEMORIES[k].name)}</b><small>${esc(MEMORIES[k].desc)}</small>`;
-        b.addEventListener('click', () => this.act(() => g.chooseMemory(k)));
-        row.appendChild(b);
-      }
+  p_equip() {
+    const g = this.g, s = g.s, d = g.d;
+    const tiers = [1, 2, 3, 4, 5].map(tier => `<div class="tier"><span>T${tier}</span>${ABILITIES.filter(a => a.tier === tier).map(a => {
+      const lv = s.abil[a.id] || 0, open = g.abilityOpen(a);
+      return `<button type="button" class="abtn ${lv ? 'on' : ''} ${this.selAbil === a.id ? 'sel' : ''}" data-act="abil" data-id="${a.id}">${open ? ic(a.icon, a.color, 24) : '🔒'}<small>${lv ? 'Lv' + lv : open ? '배우기' : abilityUnlockFloor(a) + 'F'}</small></button>`;
+    }).join('')}</div>`).join('');
+    let detail = '<p class="hint">어빌리티를 누르면 설명이 나옵니다. 배운 어빌리티는 채굴 중 저절로 발동해요.</p>';
+    const a = ABILITY[this.selAbil];
+    if (a) {
+      const lv = s.abil[a.id] || 0, open = g.abilityOpen(a), c = { gems: abilityCost(a, lv) };
+      const every = Math.max(4, Math.round((a.every - Math.max(0, lv - 1)) * d.cd));
+      detail = `<div class="detail">${ic(a.icon, a.color, 30)}<div class="txt"><b>${a.name} <em>${lv}/${ABIL_MAX}</em></b>
+        <small>T${a.tier} · ${a.desc} · ${every}번 휘두를 때마다 · 피해 공격력 ×${(a.mult * (1 + 0.3 * Math.max(0, lv - 1)) * d.abil).toFixed(1)}</small>
+        ${!open ? `<small class="warn">${abilityUnlockFloor(a)}F에 도달하면 배울 수 있어요</small>` : ''}</div>
+        ${open && lv < ABIL_MAX ? `<button type="button" class="pbtn" data-act="learn" data-id="${a.id}" ${g.afford(c) ? '' : 'disabled'}>${lv ? '강화' : '배우기'}<br>${this.cost(c)}</button>` : ''}</div>`;
     }
-    const gain = ashFor(c.maxFloor);
-    const top = this.section(body, '모닥불의 재');
-    this.html(top, `<div class="ash"><b>${fmt(rb.ash)}</b><small>보유 · 누적 ${fmt(rb.totalAsh)}</small></div>
-      <div class="statlist"><div><span>이번 회차 최고층</span><b>${c.maxFloor}층</b></div>
-      <div><span>지금 윤회하면</span><b>재 +${gain}</b></div>
-      <div><span>영구 경험치 보너스</span><b>+${Math.round((g.rebirthXp() - 1) * 100)}% (윤회 1회마다 +5%)</b></div>
-      <div><span>전생 기억 회복</span><b>최고 Lv ${s.rb.bestLv}의 95%까지 경험치 ×5, 처치마다 최소 레벨업의 20%</b></div></div>
-      <p class="hint">유지: 생활·전투 숙련 레벨, 도감, 재료, 영약, 기록 · 초기화: 캐릭터 레벨, 스탯, 장비, 골드, 층</p>`);
-    if (!g.canRebirth()) this.html(top, '<p class="hint">21층에 도달하면 윤회할 수 있습니다. 재는 (최고층 ÷ 5)^1.5 만큼 얻습니다.</p>');
-    else if (this.confirm === 'rebirth') {
-      const row = this.html(top, '<p class="warn">정말 윤회할까요? 장비와 레벨이 초기화됩니다.</p>', 'confirm');
-      row.appendChild(this.btn('윤회한다', () => { g.rebirth(); this.confirm = null; }, { cls: 'danger', fid: 'rbyes' }));
-      row.appendChild(this.btn('취소', () => { this.confirm = null; }, { fid: 'rbno' }));
-    } else top.appendChild(this.btn(`윤회하기 (재 +${gain})`, () => { this.confirm = 'rebirth'; }, { cls: 'big', fid: 'rb' }));
-
-    const trees = this.html(body, '', 'perk-trees');
-    for (const [tk, tname] of Object.entries(PERK_TREES)) {
-      const col = this.section(trees, tname);
-      col.classList.add('tree-' + tk);
-      for (const [id, p] of Object.entries(PERKS)) {
-        if (p.tree !== tk) continue;
-        const lv = rb.perks[id] || 0;
-        const maxed = p.max && lv >= p.max;
-        const cost = perkCost(id, lv);
-        const row = this.html(col, `<div><b>${esc(p.name)} <small>Lv.${lv}${p.max ? '/' + p.max : ''}</small></b><small>${esc(p.desc)}</small></div>`, 'perk');
-        row.appendChild(this.btn(maxed ? '최대' : `재 ${fmt(cost)}`, () => g.buyPerk(id), { disabled: maxed || rb.ash < cost, fid: 'pk' + id }));
-      }
-    }
+    return `<section class="psec equip"><canvas class="px heropic" id="heroPic" width="${HERO[0].length}" height="${HERO.length}"></canvas>
+        <div class="slots">${GEAR_SLOTS.map(k => `<div class="slot">${ic(GEAR[k].icon, TIER_COL[s.gear[k]], 22)}<span>${GEAR_TIERS[s.gear[k]]} ${GEAR[k].name}</span></div>`).join('')}</div></section>
+      <section class="psec"><div class="stats">
+        <div>${ic('pick', '#c8c8d0', 18)}<span>공격</span><b>${fmt(d.atk)}</b></div><div>${ic('armor', '#5a8ae0', 18)}<span>내구</span><b>${fmt(d.dur)}</b></div>
+        <div>${ic('boots', '#b07a44', 18)}<span>간격</span><b>${d.interval.toFixed(2)}초</b></div><div>${ic('clover', '#6bbf5a', 18)}<span>행운</span><b>×${d.luck.toFixed(2)}</b></div></div></section>
+      <section class="psec"><h3>어빌리티 <small>보석 ${fmt(s.res.gems)}개</small></h3><div class="tiers">${tiers}</div>${detail}</section>`;
+  }
+  drawHeroPic() {
+    const c = $('#heroPic');
+    if (c) c.getContext('2d').drawImage(sprite('hero', HERO, HERO_PAL), 0, 0);
   }
 
-  // ----- Log
-  p_log(body) {
+  p_town() {
+    const g = this.g, s = g.s;
+    const rows = BUILDINGS.map(b => {
+      const lv = s.town[b.id] || 0, c = g.buildCostOf(b.id);
+      return `<div class="card">${ic(b.icon, b.color, 32)}<div class="txt"><b>${b.name} <em>Lv ${lv}/${BUILD_MAX}</em></b><small>${b.desc}</small>
+        <small>${lv ? b.text(b.per * lv) : '아직 없음'}${lv < BUILD_MAX ? ` → <b>${b.text(b.per * (lv + 1))}</b>` : ''}</small></div>
+        ${lv < BUILD_MAX ? `<button type="button" class="pbtn" data-act="build" data-id="${b.id}" ${g.afford(c) ? '' : 'disabled'}>${lv ? '확장' : '건설'}<br>${this.cost(c)}</button>` : ''}</div>`;
+    }).join('');
+    const hut = g.d.idle ? `<p class="hint">광부 오두막: 시간당 돌 약 ${fmt(g.d.idle * (1 + s.stats.deepest / 50))}개와 ${ORES[Math.min(ORES.length - 1, Math.floor(s.stats.deepest / 100))].name} ${((s.town.hut || 0) * 1.5).toFixed(1)}개 (창을 닫아도 계속)</p>` : '';
+    return `<section class="psec"><h3>마을 시설 <small>영구 보너스</small></h3>${hut}${rows}</section>`;
+  }
+
+  p_chest() {
     const s = this.g.s;
-    const hall = this.section(body, '명예의 전당 (전설 이상)');
-    if (!s.hall.length) this.html(hall, '<p class="hint">아직 기록이 없습니다. 전설 등급(0.02%)부터 이곳에 영원히 남습니다.</p>');
-    for (const h of s.hall.slice(0, 20)) {
-      const it = ITEMS[h.id];
-      const row = this.html(hall, `<div><b style="color:${TIERS[it.tier].color}">[${TIERS[it.tier].name}] ${esc(it.name)}</b>
-        <small>${new Date(h.at).toLocaleString('ko-KR')} · ${esc(SKILLS[h.src] ? SKILLS[h.src].name : '')} ${h.n.toLocaleString()}번째 시도</small></div>`, 'hall-row');
-      row.prepend(itemIcon(h.id, 28));
+    const res = this.lastOpen.length ? `<div class="opened">${this.lastOpen.map(r => {
+      const R = RELIC[r.id];
+      return `<div class="relic r${R.r}">${ic(R.icon, R.color, 26)}<small>${R.name}</small><em>${r.maxed ? `+보석 ${r.gems}` : r.isNew ? 'NEW' : r.up ? `Lv ${r.lv}!` : '+1'}</em></div>`;
+    }).join('')}</div>` : '';
+    const grid = RELICS.map(R => {
+      const o = s.relics[R.id];
+      if (!o) return `<button type="button" class="relic unk" data-act="relic" data-id="${R.id}"><span>?</span></button>`;
+      const next = RELIC_COPIES[o.lv] ?? o.copies, prev = RELIC_COPIES[o.lv - 1] ?? 0;
+      return `<button type="button" class="relic r${R.r} ${this.selRelic === R.id ? 'sel' : ''}" data-act="relic" data-id="${R.id}">${ic(R.icon, R.color, 26)}<em>Lv${o.lv}</em><i class="cp"><i style="width:${o.lv >= RELIC_MAX ? 100 : ((o.copies - prev) / (next - prev)) * 100}%"></i></i></button>`;
+    }).join('');
+    let detail = '<p class="hint">유물은 영구 효과를 줍니다. 같은 유물을 또 얻으면 레벨이 올라 효과가 커져요.</p>';
+    const R = RELIC[this.selRelic];
+    if (R) {
+      const o = s.relics[R.id];
+      detail = o ? `<div class="detail">${ic(R.icon, R.color, 30)}<div class="txt"><b style="color:${RARITY[R.r].color}">${R.name} <em>Lv ${o.lv}/${RELIC_MAX}</em></b>
+        <small>${fxText(R.fx, o.lv)}${o.lv < RELIC_MAX ? ` → 다음: ${fxText(R.fx, o.lv + 1)}` : ''}</small>
+        <small>${RARITY[R.r].name} · 보유 ${o.copies}개${o.lv < RELIC_MAX ? ` · 다음 레벨까지 ${RELIC_COPIES[o.lv] - o.copies}개` : ' · 최대 레벨'}</small></div></div>`
+        : `<p class="hint">아직 발견하지 못한 ${RARITY[R.r].name} 유물이에요.</p>`;
     }
-    const lg = this.section(body, '최근 일지');
-    this.html(lg, s.log.slice(0, 40).map(l => `<li><time>${new Date(l.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time><span style="color:${TIERS[Math.min(6, l.tier)].color}">${esc(l.text)}</span></li>`).join('') || '<li>아직 기록이 없습니다.</li>', 'loglist');
-    const st = s.stats;
-    this.html(this.section(body, '누적 기록'), `<div><span>처치</span><b>${st.kills.toLocaleString()}</b></div><div><span>보스</span><b>${st.bosses}</b></div>
-      <div><span>쓰러짐</span><b>${st.deaths}</b></div><div><span>생활 행동</span><b>${st.actions.toLocaleString()}</b></div>
-      <div><span>플레이 시간</span><b>${(s.time / 3600).toFixed(1)}시간</b></div>`, 'statlist');
+    const owned = RELICS.filter(r => s.relics[r.id]).length;
+    return `<section class="psec chestbox"><div class="big">${ic('chest', '#c8913a', 40)}<b>${fmt(s.res.chests)}</b></div>
+        <div class="btns"><button type="button" class="pbtn big" data-act="open" data-n="1" ${s.res.chests ? '' : 'disabled'}>1개 열기</button>
+        <button type="button" class="pbtn big" data-act="open" data-n="10" ${s.res.chests ? '' : 'disabled'}>10개 열기</button></div>${res}</section>
+      <section class="psec"><h3>유물 도감 <small>${owned}/${RELICS.length}</small></h3>
+        <p class="hint">${RARITY.map(r => `<span style="color:${r.color}">${r.name}</span>`).join(' · ')}</p><div class="relics">${grid}</div>${detail}</section>`;
   }
 
-  // ----- Settings
-  p_menu(body) {
-    const g = this.g, s = g.s;
-    const sv = this.section(body, '저장');
-    const cl = this.hooks.cloudStatus();
-    const ls = this.hooks.lastSave();
-    this.html(sv, `<div class="statlist"><div><span>자동 저장</span><b>10분마다 · 창을 닫거나 다른 탭으로 갈 때</b></div>
-      <div><span>마지막 저장</span><b>${ls ? new Date(ls).toLocaleString('ko-KR') : '아직 없음'}</b></div>
-      <div><span>클라우드 저장</span><b>${esc(cl.ok ? '연결됨' + (cl.lastAt ? ' · ' + new Date(cl.lastAt).toLocaleTimeString('ko-KR') : '') : cl.status)}</b></div></div>
-      <p class="hint">저장은 이 브라우저와, 로그인한 claude.ai 계정의 클라우드에 함께 됩니다. 다른 기기에서 같은 계정으로 열면 이어집니다. 갑자기 꺼져도 마지막 저장 이후 시간은 오프라인 진행으로 계산됩니다.</p>`);
-    sv.appendChild(this.btn('지금 저장', () => this.manualSave(), { cls: 'big', fid: 'save' }));
-    const ex = this.section(body, '내보내기');
-    const ta = document.createElement('textarea');
-    ta.id = 'exportBox';
-    ta.readOnly = true;
-    ta.rows = 3;
-    ta.value = this.hooks.exportSave();
-    ta.dataset.fid = 'ex';
-    ex.appendChild(ta);
-    ex.appendChild(this.btn('복사', () => {
-      const t = $('#exportBox');
-      navigator.clipboard.writeText(t.value).then(() => this.toast('복사했습니다'), () => { t.select(); this.toast('텍스트를 선택했습니다. 직접 복사하세요'); });
-    }, { fid: 'copy' }));
-    const im = this.section(body, '가져오기');
-    const ti = document.createElement('textarea');
-    ti.id = 'importBox';
-    ti.rows = 3;
-    ti.placeholder = '내보낸 문자열을 붙여넣으세요';
-    ti.dataset.fid = 'im';
-    im.appendChild(ti);
-    im.appendChild(this.btn('불러오기', () => {
-      const ok = this.hooks.importSave($('#importBox').value.trim());
-      this.toast(ok ? '불러왔습니다' : '문자열을 읽을 수 없습니다. 내보내기로 만든 문자열 전체를 붙여넣었는지 확인하세요', ok ? 2 : 5);
-    }, { fid: 'load' }));
-    const tu = this.section(body, '안내');
-    tu.appendChild(this.btn('튜토리얼 다시 보기', () => this.restartTutorial(), { fid: 'tut' }));
-    const rs = this.section(body, '새로 하기');
-    if (this.confirm === 'reset') {
-      const row = this.html(rs, '<p class="warn">모든 진행이 사라지고 튜토리얼부터 다시 시작합니다. 정말 새로 할까요?</p>', 'confirm');
-      row.appendChild(this.btn('새로 하기', () => this.hooks.reset(), { cls: 'danger', fid: 'rsyes' }));
-      row.appendChild(this.btn('취소', () => { this.confirm = null; }, { fid: 'rsno' }));
-    } else rs.appendChild(this.btn('새로 하기', () => { this.confirm = 'reset'; }, { cls: 'danger', fid: 'rs' }));
+  p_missions() {
+    const g = this.g;
+    return `<section class="psec">${MISSIONS.map(m => {
+      const st = g.mission(m);
+      if (st.done) return `<div class="row"><div class="txt"><b>${m.name}</b><small>모두 달성!</small></div></div>`;
+      const rw = Object.entries(st.reward).filter(([, v]) => v).map(([k, v]) => `${resIc(k, 14)}${v}`).join(' ');
+      return `<div class="row"><div class="txt"><b>${m.name} ${fmt(st.goal)}${m.id === 'deep' ? 'F' : ''}</b>
+        <div class="meter mini"><i style="width:${Math.min(100, (st.cur / st.goal) * 100)}%"></i><span>${fmt(Math.min(st.cur, st.goal))} / ${fmt(st.goal)}</span></div><small>보상 ${rw}</small></div>
+        <button type="button" class="pbtn" data-act="claim" data-id="${m.id}" ${st.ready ? '' : 'disabled'}>받기</button></div>`;
+    }).join('')}</section>`;
   }
 
-  // ---------- Modals ----------
-  showModal(html, buttons = [], locked = false) {
-    const m = $('#modal');
-    m.innerHTML = `<div class="modal-box">${html}<div class="modal-btns"></div></div>`;
-    const row = m.querySelector('.modal-btns');
-    for (const [label, fn] of buttons) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'pbtn big';
-      b.textContent = label;
-      b.addEventListener('click', () => { if (fn) fn(); this.closeModal(); });
-      row.appendChild(b);
-    }
-    this.modalLocked = locked;
+  p_menu() {
+    const cloud = this.hooks.cloudStatus();
+    const s = this.g.s;
+    return `<section class="psec"><h3>저장</h3><p class="hint">자동 저장: 5분마다, 창을 닫거나 숨길 때. 클라우드: ${esc(cloud.status)}</p>
+        <button type="button" class="pbtn" data-act="save">지금 저장</button>
+        <textarea id="saveText" rows="3" placeholder="내보내기 문자열"></textarea>
+        <div class="btns"><button type="button" class="pbtn" data-act="export">내보내기</button><button type="button" class="pbtn" data-act="import">불러오기</button></div></section>
+      <section class="psec"><h3>기록</h3><p class="hint">최고 ${s.stats.deepest}F · 출발 ${s.stats.runs}회 · 블록 ${fmt(s.stats.blocks)}개 · 상자 ${s.stats.opened}개 개봉</p></section>
+      <section class="psec"><h3>도움말</h3><ul class="tips">${TIPS.map(t => `<li>${t}</li>`).join('')}</ul></section>
+      <section class="psec"><button type="button" class="pbtn danger" data-act="reset">처음부터 다시 하기</button></section>`;
+  }
+
+  // ---------- Modal, toasts, one-time tips ----------
+  showModal(html, buttons = [['확인', 'modal-close']]) {
+    const m = this.el.modal;
+    m.innerHTML = `<div class="modal-box">${html}<div class="modal-btns">${buttons.map(([t, act]) => `<button type="button" class="pbtn big" data-act="${act}">${t}</button>`).join('')}</div></div>`;
+    hydrate(m);
     m.hidden = false;
-    const first = row.querySelector('button');
-    if (first) first.focus();
+    m.querySelector('.modal-btns button')?.focus();
   }
-  closeModal() { $('#modal').hidden = true; this.modalLocked = false; }
-
-  offlineReport(sm, rng) {
-    const h = sm.sec / 3600;
-    const time = h >= 48 ? `${Math.floor(h / 24)}일 ${Math.floor(h % 24)}시간` : h >= 1 ? `${Math.floor(h)}시간 ${Math.round((h % 1) * 60)}분` : `${Math.round(sm.sec / 60)}분`;
-    const jokes = [
-      `모닥불에 소시지를 ${1 + Math.floor(rng() * Math.max(1, h * 3))}번 태웠습니다.`,
-      `슬라임에게 ${Math.floor(sm.kills / 37) + 1}번 미끄러졌습니다.`,
-      `별을 ${Math.floor(h * 11) + 3}개 세다가 잠들었습니다.`,
-      `전설의 메기를 ${Math.floor(rng() * 3) + 1}번 놓쳤습니다.`,
-      `혼잣말을 ${Math.floor(h * 40) + 5}번 했습니다.`,
-    ];
-    const joke = jokes[Math.floor(rng() * jokes.length)];
-    const drops = sm.drops.map((n, i) => (n ? `<span style="color:${TIERS[i].color}">${TIERS[i].name} ${fmt(n)}</span>` : '')).filter(Boolean).join(' · ');
-    const best = [...new Set(sm.best)].sort((a, b) => ITEMS[b].tier - ITEMS[a].tier).slice(0, 6)
-      .map(id => `<li style="color:${TIERS[ITEMS[id].tier].color}">[${TIERS[ITEMS[id].tier].name}] ${esc(ITEMS[id].name)}</li>`).join('');
-    const skills = sm.skills.map(x => `<li>${esc(SKILLS[x.k].name)} Lv.${x.from} → <b>${x.to}</b></li>`).join('');
-    this.showModal(`
-      <h2>📜 귀환 일지</h2>
-      <p class="lead">당신이 자리를 비운 <b>${time}</b> 동안, 모험가는…</p>
-      <ul class="report">
-        <li>몬스터 <b>${sm.kills.toLocaleString()}</b>마리를 쓰러뜨렸고${sm.deaths ? `, ${sm.deaths}번 쓰러졌다가 일어났습니다` : '습니다'}.</li>
-        ${sm.charLv[1] > sm.charLv[0] ? `<li>레벨이 ${sm.charLv[0]} → <b>${sm.charLv[1]}</b> 올랐습니다.</li>` : ''}
-        ${sm.floor[1] > sm.floor[0] ? `<li>최고 ${sm.floor[0]}층 → <b>${sm.floor[1]}층</b>까지 올랐습니다.</li>` : ''}
-        <li>골드 <b>${fmt(sm.gold)}</b>를 모았습니다.</li>
-        ${sm.records ? `<li>물고기 크기 신기록을 <b>${sm.records}</b>번 세웠습니다.</li>` : ''}
-        <li>${joke}</li>
-      </ul>
-      ${skills ? `<h4>성장한 스킬</h4><ul class="report">${skills}</ul>` : ''}
-      ${drops ? `<h4>얻은 것</h4><p>${drops}</p>` : ''}
-      ${best ? `<h4>눈에 띄는 획득</h4><ul class="report">${best}</ul>` : ''}
-      ${sm.codex.length ? `<p>도감에 <b>${sm.codex.length}</b>종이 새로 등록되었습니다.</p>` : ''}`, [['계속하기', null]]);
+  closeModal() { this.el.modal.hidden = true; this.el.modal.innerHTML = ''; }
+  tip(id, html) {
+    const s = this.g.s;
+    if (s.tips[id]) return;
+    s.tips[id] = 1;
+    this.toast(html, 0, 7000);
+  }
+  toast(html, tier = 0, ms = 3200) {
+    const d = document.createElement('div');
+    d.className = 'toast t' + tier;
+    d.innerHTML = html;
+    d.style.animationDuration = ms + 'ms';
+    this.el.toasts.appendChild(d);
+    setTimeout(() => d.remove(), ms);
+    while (this.el.toasts.children.length > 4) this.el.toasts.firstChild.remove();
+  }
+  offlineReport(r) {
+    if (!r.stone && !r.ore) return;
+    const h = r.sec / 3600;
+    this.showModal(`<h2>광부들이 일했어요</h2><p class="lead">자리를 비운 ${h >= 1 ? h.toFixed(1) + '시간' : Math.round(r.sec / 60) + '분'} 동안</p>
+      <div class="lootgrid"><div>${resIc('stone', 22)}<span>돌</span><b>+${fmt(r.stone)}</b></div>${r.ore ? `<div>${resIc(r.oreId, 22)}<span>${ORE[r.oreId].name}</span><b>+${fmt(r.ore)}</b></div>` : ''}</div>`);
+  }
+  // Pointer on the mine canvas: hold on a block next to the miner to dig that way.
+  canvasDir(clientX, clientY, rect) {
+    const run = this.g.run;
+    if (!run) return null;
+    const x = Math.floor((((clientX - rect.left) / rect.width) * W) / T);
+    const yPix = ((clientY - rect.top) / rect.height) * H;
+    const y = Math.floor(yPix / T + this.r.cam);
+    if (y === run.y + 1 && Math.abs(x - run.x) <= 1) return x === run.x ? 'down' : x < run.x ? 'left' : 'right';
+    if (y === run.y && x !== run.x) return x < run.x ? 'left' : 'right';
+    if (y > run.y) return 'down';
+    return null;
   }
 }
+
+const fmtV = v => (v < 10 && v % 1 ? Math.round(v * 100) / 100 : Math.round(v));

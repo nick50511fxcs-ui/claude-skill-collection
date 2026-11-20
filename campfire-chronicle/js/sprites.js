@@ -1294,10 +1294,30 @@ export const ICONS = {
   ],
 };
 
+// 10x10 fills padded to the 12x12 icon grid with the shared outline.
+function ic(rows) {
+  const pad = Math.floor((10 - rows.length) / 2);
+  return ol([...Array(pad).fill(''), ...rows, ...Array(10 - rows.length - pad).fill('')].map(r => r.padEnd(10, '.')));
+}
+Object.assign(ICONS, {
+  bomb: ic(['.......yy.', '......y...', '.....4....', '...aaaa...', '..acaaab..', '.acaaaaab.', '.aaaaaaab.', '.aaaaaabb.', '..abbbbb..', '...bbbb...']),
+  flame: ic(['....a.....', '...aa..a..', '...aaa.aa.', '..aayaaaa.', '..ayyyaaa.', '.aayyyyaa.', '.ayyywyya.', '.ayywwwya.', '..ayywya..', '...aaaa...']),
+  bolt: ic(['.....aaaa.', '....aaaa..', '...aaaa...', '..aaaa....', '.aaaaaaa..', '....aaa...', '...aaa....', '..aaa.....', '.aa.......', 'a.........']),
+  snow: ic(['....a.....', '.a..a..a..', '..a.a.a...', '...awa....', 'aaawwwaaa.', '...awa....', '..a.a.a...', '.a..a..a..', '....a.....']),
+  dyn: ic(['..y.y.y...', '..4.4.4...', '.aaaaaaa..', '.acacaca..', '.aaaaaaa..', '.4444444..', '.aaaaaaa..', '.abababa..']),
+  drill: ic(['..444444..', '..4cccc4..', '..aaaaaa..', '...caaa...', '...caab...', '....cab...', '....ca....', '.....a....']),
+  meteor: ic(['yy........', 'kyy.......', '.kyy......', '..kkaaa...', '...acaaa..', '..acaaaab.', '..aaaaabb.', '...abbbb..', '....bbb...']),
+  swirl: ic(['...aaaa...', '.aaccccaa.', '.acceeeca.', 'aceeeeeeca', 'aceeeeeeca', 'aceeeeeeca', '.acceeeca.', '.aaccccaa.', '...aaaa...']),
+  helm: ic(['...aaaa...', '..acccaa..', '.acaaaaab.', '.aaaaaaab.', '.aaaaaaab.', 'bbbbbbbbbb', '.b......b.']),
+  boots: ic(['..aaaa....', '..acaa....', '..acaa....', '..acaa....', '..acaaaaa.', '..aaaaaaab', '.bbbbbbbbb']),
+  lamp: ic(['....aa....', '...a..a...', '..aaaaaa..', '..ayyyya..', '..aywyya..', '..ayyyya..', '..aaaaaa..', '...bbbb...']),
+  stone: ic(['..........', '...aaaa...', '..acccaa..', '.acaaaaab.', '.aaaaaaab.', 'aaaaaaaabb', 'abbbbbbbbb']),
+});
+
 export function icon(template, color, extra = {}) {
   if (template === 'person') return sprite('icon:person', ICONS.person, HERO_PAL);
   return sprite('icon:' + template, ICONS[template] || ICONS.orb, {
-    a: color, y: '#ffd34d', s: '#f6e6cc', h: '#3f9a5c', t: '#efe9d8', b2: '#7a4a2a', ...extra,
+    a: color, y: '#ffd34d', s: '#f6e6cc', h: '#3f9a5c', t: '#efe9d8', b2: '#7a4a2a', k: '#ff6a3a', ...extra,
   });
 }
 

@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>모닥불 연대기</title>
+<title>끝없는 광산</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="한 명의 모험가를 키우는 방치형 픽셀 RPG">
+<meta name="description" content="모닥불 곁의 광부가 끝없이 파 내려가는 픽셀 채굴 게임">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700&family=Silkscreen&display=swap">
@@ -14,25 +14,16 @@
 <body>
 <div id="app">
   <div id="stage">
-    <canvas id="scene" width="384" height="216" aria-label="모험 장면"></canvas>
-    <div id="overlay"></div>
-    <div id="hudTL"></div>
-    <div id="hudTR"><div class="q-title">QUEST</div><ul id="goals"></ul></div>
-    <div id="clones"></div>
+    <canvas id="scene" width="216" height="384" aria-label="광산 화면"></canvas>
+    <div id="top"></div>
+    <div id="side"></div>
     <div id="toasts" aria-live="polite"></div>
+    <div id="bottom"></div>
     <div id="panel" hidden>
       <div class="panel-head"><h2 id="panelTitle"></h2><button type="button" class="x" id="panelClose" aria-label="닫기">✕</button></div>
       <div class="panel-body" id="panelBody"></div>
     </div>
   </div>
-  <div id="actionBar">
-    <div class="dock" id="skillDock" role="toolbar" aria-label="할 일 고르기"></div>
-    <div class="fight-tools">
-      <div class="fever" id="fever"><span id="feverTxt">열정</span><div class="fv-track"><i id="feverFill"></i></div></div>
-      <div class="cskills" id="combatSkills"></div>
-    </div>
-  </div>
-  <div id="bar"></div>
 </div>
 <div id="modal" hidden></div>
 <script type="module" src="js/main.js"></script>

@@ -1,23 +1,14 @@
 <div id="app">
   <div id="stage">
-    <canvas id="scene" width="384" height="216" aria-label="모험 장면"></canvas>
-    <div id="overlay"></div>
-    <div id="hudTL"></div>
-    <div id="hudTR"><div class="q-title">QUEST</div><ul id="goals"></ul></div>
-    <div id="clones"></div>
+    <canvas id="scene" width="216" height="384" aria-label="광산 화면"></canvas>
+    <div id="top"></div>
+    <div id="side"></div>
     <div id="toasts" aria-live="polite"></div>
+    <div id="bottom"></div>
     <div id="panel" hidden>
       <div class="panel-head"><h2 id="panelTitle"></h2><button type="button" class="x" id="panelClose" aria-label="닫기">✕</button></div>
       <div class="panel-body" id="panelBody"></div>
     </div>
   </div>
-  <div id="actionBar">
-    <div class="dock" id="skillDock" role="toolbar" aria-label="할 일 고르기"></div>
-    <div class="fight-tools">
-      <div class="fever" id="fever"><span id="feverTxt">열정</span><div class="fv-track"><i id="feverFill"></i></div></div>
-      <div class="cskills" id="combatSkills"></div>
-    </div>
-  </div>
-  <div id="bar"></div>
 </div>
 <div id="modal" hidden></div>

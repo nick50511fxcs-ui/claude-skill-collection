@@ -23,9 +23,9 @@ function transform(name, src) {
 const bundle = `(() => {\n'use strict';\nconst __m = {};\n${ORDER.map(n => transform(n, read(`js/${n}.js`))).join('\n')}})();`;
 const css = read('css/game.css');
 const markup = read('page.html');
-const head = `<title>모닥불 연대기</title>
+const head = `<title>끝없는 광산</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="한 명의 모험가를 키우는 방치형 픽셀 RPG">
+<meta name="description" content="모닥불 곁의 광부가 끝없이 파 내려가는 픽셀 채굴 게임">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700&family=Silkscreen&display=swap">`;

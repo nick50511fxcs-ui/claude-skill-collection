@@ -1,37 +1,15 @@
-
-# 1. 한 스킬만 계속 돌릴 때 레벨 도달 시간 (24시간 기준)
-Lv	보너스 없음	경험치 +50%
-10	4분		3분
-50	5.4시간		3.6시간
-100	25.4시간		16.9시간
-250	8.4일		5.6일
-500	33.6일		22.4일
-750	64.9일		43.2일
-1000	116.3일		77.5일
-
-# 2. 등급별 기대 대기 시간 (한 Task 3초/회, 24시간)
-고급	15%	0분
-희귀	3.0%	2분
-영웅	0.30%	17분
-전설	0.020%	4.2시간
-신화	0.0020%	41.7시간
-태초	0.00010%	34.7일
-
-# 3. 1년 동안 태초급을 한 번도 못 얻을 확률
-시간 비중 100%	천장 없음 0.0%	천장 있음 0.0%
-시간 비중 50%	천장 없음 0.5%	천장 있음 0.0%
-시간 비중 20%	천장 없음 12.6%	천장 있음 8.5%
-
-# 4. 엔진 전체 시뮬레이션 (365일, 109초 소요)
-21층 첫 도달: 2.2시간 · 첫 윤회: 3.3시간
-첫 전설급 획득: 27.0시간
-첫 신화급 획득: 3.3시간
-첫 태초급 획득: 11.1일
-일	최고층	윤회	총Lv	도감	전설	신화	태초	스킬
-0.04	20	0	58	29	0	0	0	combat:12 mining:14 wood:15 forage:14 fish:1 hunt:1 alchemy:1
-1	38	9	233	72	0	1	0	combat:57 mining:31 wood:31 forage:31 fish:30 hunt:30 alchemy:23
-7	50	60	809	118	86	4	0	combat:135 mining:122 wood:122 forage:122 fish:121 hunt:121 alchemy:66
-30	134	176	2793	195	1166	105	4	combat:316 mining:434 wood:433 forage:434 fish:433 hunt:433 alchemy:310
-90	240	422	6265	227	10925	629	34	combat:607 mining:1045 wood:1045 forage:1044 fish:1044 hunt:1043 alchemy:437
-180	292	736	9792	230	46569	2305	111	combat:908 mining:1666 wood:1645 forage:1666 fish:1666 hunt:1665 alchemy:576
-365	339	1393	15667	233	139021	6131	291	combat:1480 mining:2695 wood:2600 forage:2695 fish:2695 hunt:2695 alchemy:807
+  0.27h  deepest    47  runs   17  gear 0/1/1/1/0  up 5/6/5/5  abil 2  relicLv 12  town 0/0/0/0/0/0  atk 3 dur 127
+  0.38h  deepest    65  runs   24  gear 0/1/1/1/1  up 7/8/8/7  abil 2  relicLv 13  town 0/0/0/0/0/0  atk 3 dur 138
+  0.57h  deepest   181  runs   35  gear 1/1/1/1/1  up 10/10/10/10  abil 4  relicLv 20  town 2/2/2/2/2/1  atk 10 dur 163
+  0.86h  deepest   237  runs   50  gear 1/2/2/2/1  up 16/17/16/16  abil 4  relicLv 30  town 3/2/2/2/2/2  atk 14 dur 220
+  1.27h  deepest   367  runs   73  gear 2/3/2/2/2  up 21/22/21/21  abil 6  relicLv 45  town 4/4/3/3/3/3  atk 40 dur 282
+  1.92h  deepest   518  runs  104  gear 3/4/4/3/3  up 25/26/26/26  abil 8  relicLv 70  town 5/5/5/5/4/4  atk 107 dur 369
+  2.86h  deepest   653  runs  143  gear 4/5/5/4/4  up 30/30/30/30  abil 9  relicLv 94  town 6/6/6/6/6/6  atk 297 dur 453
+  4.30h  deepest   797  runs  199  gear 5/6/6/5/5  up 34/35/35/35  abil 9  relicLv 133  town 7/7/7/7/7/7  atk 832 dur 566
+  6.42h  deepest   941  runs  276  gear 6/7/7/6/6  up 38/39/39/39  abil 9  relicLv 157  town 8/8/8/8/8/8  atk 2338 dur 649
+  9.61h  deepest  1065  runs  389  gear 7/8/8/7/7  up 42/42/42/42  abil 9  relicLv 172  town 9/9/9/9/9/9  atk 6408 dur 721
+ 14.44h  deepest  1161  runs  551  gear 8/8/8/8/8  up 45/46/46/46  abil 9  relicLv 179  town 10/9/9/9/9/9  atk 17176 dur 760
+ 21.64h  deepest  1183  runs  787  gear 8/9/9/9/9  up 48/48/48/48  abil 9  relicLv 185  town 10/10/10/10/10/10  atk 19924 dur 828
+ 32.45h  deepest  1276  runs 1126  gear 9/9/9/9/9  up 51/52/51/51  abil 9  relicLv 190  town 10/10/10/10/10/10  atk 51360 dur 869
+ 40.00h  deepest  1281  runs 1357  gear 9/10/10/10/10  up 51/52/52/52  abil 9  relicLv 190  town 10/10/10/10/10/10  atk 51360 dur 903
+구리 34433, 철 34417, 은 34930, 금 36097, 사파이어 36623, 미스릴 37206, 아다만타이트 38026, 오리할콘 43596, 에테르 87411, 태초석 131720

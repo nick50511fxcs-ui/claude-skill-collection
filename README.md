@@ -40,7 +40,7 @@ skills/<name>/SKILL.md            the skills (add new ones as folders here)
 hooks/                            long-conversation reminder hook (/new)
 scripts/check-skills.sh           skill count cap and format checks
 install.sh / install.ps1          one-shot installers
-campfire-chronicle/               idle pixel RPG prototype (separate project; see its README)
+campfire-chronicle/               pixel mining game "끝없는 광산" (separate project; see its README)
 ```
 
 ## Usage

@@ -1,89 +1,56 @@
-# Campfire Chronicle (모닥불 연대기)
+# 끝없는 광산 (Campfire Chronicle: mining)
 
-An idle pixel-art RPG for the browser about a single adventurer. The hero fights
-until out of stamina, then rests at a campfire and works a life skill (mining,
-woodcutting, foraging, fishing, hunting, alchemy). Life-skill levels are never
-lost on rebirth and permanently strengthen combat. Every action rolls for loot,
-down to 0.0001% primordial drops. Player-facing text is Korean.
+A browser pixel-art mining game. A miner by the campfire digs down an endless
+9-wide shaft until the pickaxe's durability runs out, then comes back to the
+surface with stone, ore, gems and treasure chests. Player-facing text is Korean.
 
-Visual direction follows Legends of Idleon (side-view pixel scenes, navy panels,
-slot grids, bottom command bar); all art here is original and drawn in code.
-Characters use a chibi anime style (big head and eyes, 1px black outline added by `ol()` in
-`js/sprites.js`) with every sprite drawn at native size on one pixel grid; bosses have their own
-large sprites. Style references (not copied) are in `art-refs/`.
+The folder keeps its old name; the game was rebuilt from the earlier idle RPG
+(see git history up to `485ea8e`). Art is original and drawn in code: chibi
+characters with a 1px outline (`ol()` in `js/sprites.js`), procedural block tiles.
 
 ## Play
 
 - Open `dist/play.html` in a browser (no server needed), or
-- serve the folder (`python3 -m http.server`) and open `index.html` (dev build that loads the ES modules directly).
+- serve the folder (`python3 -m http.server`) and open `index.html` (dev build with ES modules).
 
-Progress autosaves every 10 minutes and whenever the tab is hidden or closed (browser storage, plus the
-viewer's claude.ai cloud save when published as an artifact). The **저장** button saves at once.
-Use **설정 → 내보내기** to keep a backup string; browsers may clear site data.
+Controls: hold ← ↓ → (buttons, arrow keys, or press the block next to the miner) to dig
+that way; **자동** mines on its own toward the best nearby ore; **🔥** (space) starts a
+6-second frenzy when the gauge is full. **귀환** ends a run early and keeps the loot.
 
-## What is in the MVP
+## Systems
 
-| System | Status |
+| System | Notes |
 |---|---|
-| Campfire cycle (fight → tired → camp + life skill → fight), "life focus" toggle | done |
-| Active play: skill dock (switch activity in one click), combat skills (strike / heal / rage, keys 1-3, auto-cast at combat Lv 100), click the monster for extra hits, a chance event per life skill (weak spot, timing bar, bite, hidden herbs, running target, stirring), a wandering wisp with gifts, fever gauge (x2 speed for 30 s) | done |
-| 1-on-1 duel combat: opponent drops in, both sides lunge, knockback, hit flash on the sprite, hero HP bar, spotlight | done |
-| Each life skill has its own place per spot (mine shafts, crystal cave, meteor crater, forests, swamp, alpine, fairy garden, stream to deep sea, hunting grounds, alchemy workshop); clones show their own place | done |
-| Gear goes to a bag (40 slots); equip / unequip / sell by hand, opt-in auto-equip, upgrade dot on the character button | done |
-| Combat: 3 regions × 10 floors + endless tower (31+), unique bosses every 10 floors (warning banner, boss HP bar, slam every 4th hit), elites every 5 floors, first-kill gear reward, golden / giant / ancient variants | done |
-| Guided tutorial (10 steps, replayable from settings) and one-time tips; life skills unlock in a chain | done |
-| Region walls that slow instead of stop: poison fog (stamina ×2.5), ice (attack speed −40%), countered by life skills or potions | done |
-| 7 leveled tasks (combat mastery + 6 life skills), uncapped levels, tool tier every 100, awakenings at 250/500/750, master at 1000 | done |
-| 5 spots per gathering skill, each drawn differently (crystal cave, meteor crater, world tree, deep sea, unicorn ...), seasonal fish, fish weight records | done |
-| Alchemy: 10 recipes, potions auto-used per fight, permanent elixirs, great success / miracle / failure, secret recipe | done |
-| Rarity: common → primordial (0.0001%), luck stat with cap, sqrt luck on myth/primordial, soft pity, stacking primordials | done |
-| Rebirth (ash, 3 perk trees, clone slots, all permanent), memory cards (1 of 3 per life), permanent +5% character XP per rebirth, past-life recall (x5 XP and at least 20% of a level per kill until 95% of the best level; back in ~25 min) | done |
-| Offline progress with no cap (long absences compute in one-day chunks behind a progress note), "return journal" report, replay of big drops | done |
-| 234 items (5 per spot, 8 rares per skill, boss trophies, 8 seasonal fish, 21 alchemy products), gear affixes; codex with permanent bonuses, hall of fame, log, export / import, seeded RNG stored in the save | done |
-| Second and third prestige layers, crafting gear from materials, cooking, cloud save, sound | not yet |
+| Runs | Start at any 25-floor checkpoint up to your best floor. One swing = 1 durability. Gravity, side digging, auto miner, frenzy gauge |
+| Endless depth | A new ore every 100 floors (구리 → 철 → 은 → 금 → 사파이어 → 미스릴 → 아다만타이트 → 오리할콘 → 에테르 → 태초석); block HP ×3 per 100 floors; layer colours cycle and darken past 1000F |
+| Blocks | rock, hard rock, ore, gem ore (보석), treasure chest |
+| 제작 | Stat upgrades with stone (공격, 내구, 속도, 행운; uncapped) and 5 gear slots (곡괭이, 헬멧, 갑옷, 장화, 랜턴) crafted tier by tier from each ore |
+| 어빌리티 | 9 abilities in 5 tiers (폭탄, 화염구, 번개, 냉기, 다이너마이트, 드릴, 메테오, 블랙홀, 초신성), auto-cast every N swings, learned and levelled to 5 with gems |
+| 유물 | 19 relics in 4 rarities from treasure chests (opened at the base). Duplicates level a relic up to Lv 10 (1/3/6/10/…/55 copies); maxed duplicates turn into gems |
+| 마을 | 6 buildings, Lv 1-10: 대장간, 식당, 제련소, 보물 창고, 행상인의 집, 광부 오두막 (idle stone and ore, also while the page is closed) |
+| 미션 | 5 mission ladders with gem and chest rewards |
+| Save | Browser storage, plus a per-viewer cloud save when published as an artifact; export/import. A run in progress is banked when the tab closes |
 
 ## Layout
 
 ```
-index.html          dev page (ES modules)
-page.html           shared markup used by the build
-css/game.css        all styles
-js/data.js          items, skills, spots, recipes, monsters, regions, perks
-js/engine.js        pure game logic (no DOM), shared with the simulator
-js/rng.js           seeded RNG
-js/sprites.js       pixel art grids, icon templates, bitmap font
-js/render.js        canvas scenes, stations, effects
-js/ui.js            panels, bar, toasts, modals
-js/main.js          boot, loops, save, offline catch-up
-build.mjs           bundles everything into dist/*.html
-sim/simulate.mjs    balance simulator (runs the real engine for a simulated year)
-sim/last-run.txt    latest simulator output
+page.html / css/game.css   portrait 9:16 stage, HUD, panels
+js/data.js       ores, layers, gear, upgrades, abilities, relics, buildings, missions
+js/engine.js     pure game logic (no DOM), shared with the simulator
+js/rng.js        seeded RNG
+js/sprites.js    pixel grids, ol() outline, icons, bitmap font
+js/render.js     block tiles, mine view, ability effects, surface camp
+js/ui.js         base screen, run HUD and controls, panels, modals
+js/main.js       boot, loops, input, save, idle payout
+build.mjs        bundles everything into dist/*.html
+sim/simulate.mjs balance check: greedy auto miner (node sim/simulate.mjs [hours])
 ```
 
-## Build and balance
+## Balance (sim, greedy auto play with no time between runs)
 
-```bash
-node build.mjs                 # -> dist/play.html, dist/campfire-chronicle.html, index.html
-node sim/simulate.mjs          # 1-year run, ~90 s
-node sim/simulate.mjs --days 7 # quick check
-```
-
-The simulator uses an "always online, sensible idle player" policy, so its times
-are a lower bound for real players. Key results of the last run
-(`sim/last-run.txt`):
-
-| Milestone | Simulated time |
-|---|---|
-| One skill to Lv 1000, focused (life-focus mode, no bonuses) | 116 days (target: 3-4 months) |
-| All six life skills unlocked (mining 10 -> wood 10 -> forage 15 -> fish 15 -> hunt 20 -> alchemy) | < 1 day |
-| Floor 21 (rebirth unlocked) | 2.2 h |
-| First rebirth | 3.3 h |
-| First myth / legend / primordial | 3.3 h / 27 h / 11 days |
-| Gathering skills at Lv 430 / 1000 / 1660 (bot with maxed rebirth perks) | 30 / ~88 / 180 days |
-| Best floor | 134 (30 d), 292 (180 d), 339 (365 d) |
-| Codex 233/234 | 1 year |
+100F ≈ 30 min, 500F ≈ 2 h, 1000F ≈ 8 h, then slow endless progress (≈1370F at 70 h).
+Real players take longer. Latest output: `sim/last-run.txt`.
 
 ## Debug
 
-Open the page with `#debug` to expose `window.__cc` (game, renderer, ui), e.g.
-`__cc.game().fastForward(3600)` or `__cc.renderer.queueFx({ tier: 6, id: 's_prim' })`.
+Open the page with `#debug` to expose `window.__cc` (game, renderer, ui).
