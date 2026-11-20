@@ -27,8 +27,8 @@ command on any machine or in any cloud session.
 | `webapp-testing` | Skill (`skills/`) | Tests local web apps with Playwright: screenshots, console logs, UI checks; handy for browser games ([upstream](https://github.com/anthropics/skills), Apache-2.0) | Part of the plugin |
 | `astryx` | External plugin | Meta's Astryx design system: tells the agent to build UI from templates through the `astryx` CLI; the skill is only a pointer, so the CLI (`@astryxdesign/cli`) must be installed in the project ([meta/astryx](https://github.com/meta/astryx), MIT) | Registered in the marketplace: `claude plugin install astryx@claude-skill-collection` |
 | `chrome-devtools-mcp` | External plugin (MCP) | Lets the agent drive a real Chrome: open pages, screenshot, read the console, audit accessibility and performance; ships 8 skills ([ChromeDevTools/chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp), Apache-2.0) | Registered in the marketplace: `claude plugin install chrome-devtools-mcp@claude-skill-collection` |
-| `impeccable` | External plugin | Design vocabulary and 24 commands (`/impeccable polish`, `audit`, `critique`) for frontend work. Adds session/edit/stop hooks that run its own binary, which it may download from GitHub Releases ([pbakaus/impeccable](https://github.com/pbakaus/impeccable), Apache-2.0) | Registered in the marketplace: `claude plugin install impeccable@claude-skill-collection` |
-| `hallmark` | External plugin | Design skill for new pages that avoid generic AI-looking output. Image generation is opt-in and sends prompts to Together AI only if `TOGETHER_API_KEY` is set ([Nutlope/hallmark](https://github.com/Nutlope/hallmark), MIT) | Registered in the marketplace: `claude plugin install hallmark@claude-skill-collection` |
+| `impeccable` | External plugin | Design vocabulary and 24 commands (`/impeccable polish`, `audit`, `critique`) for frontend work. Adds session/edit/stop hooks that run its own binary, which it may download from GitHub Releases ([pbakaus/impeccable](https://github.com/pbakaus/impeccable), Apache-2.0) | Optional (`--with-impeccable`) |
+| `hallmark` | External plugin | Design skill for new pages that avoid generic AI-looking output. Image generation is opt-in and sends prompts to Together AI only if `TOGETHER_API_KEY` is set ([Nutlope/hallmark](https://github.com/Nutlope/hallmark), MIT) | Optional (`--with-hallmark`) |
 | `plannotator` | External plugin | Browser UI to annotate plans and documents and send feedback to the agent. Hooks into plan mode and needs the `plannotator` binary, installed by a `curl \| bash` script ([backnotprop/plannotator](https://github.com/backnotprop/plannotator), MIT/Apache-2.0) | Registered in the marketplace: `claude plugin install plannotator@claude-skill-collection` |
 | `claude-mem` | External plugin | Memory that persists across sessions ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | Optional (`--with-claude-mem`) |
 | Headroom | External tool (MCP) | Context compression ([headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom)) | Optional (`--with-headroom`) |
@@ -64,7 +64,7 @@ install.sh / install.ps1          one-shot installers
 macOS / Linux:
 ```bash
 git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
-cd claude-skill-collection && bash install.sh              # optional: --with-claude-mem --with-headroom --with-playwright
+cd claude-skill-collection && bash install.sh              # optional: --with-claude-mem --with-impeccable --with-hallmark --with-headroom --with-playwright
 ```
 
 Windows PowerShell:
