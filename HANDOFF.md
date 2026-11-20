@@ -1,40 +1,36 @@
 # Handoff (2026-11-20)
 
 ## Goal
-- Keep the user's Claude skills in this public GitHub repo so they work in every
-  cloud session (claude.ai/code) and on any machine, with low token overhead.
-- This session: pick useful items from GitHub weekly/monthly trending for the user's work
-  (games, documents, PPT/Word design) and add them.
+- Repo: keep the user's Claude skills/plugins in this public marketplace repo for cloud sessions.
+- Main work this session: "AI 첫걸음", a Korean beginner AI guide site published as a claude.ai Artifact:
+  https://claude.ai/artifact/BgbdKLtEhEs9mhkzeRttV3 (version 11; capability `sample` declared).
 
 ## Decisions
-- Repo is a plugin marketplace; skills live in `skills/`. Default branch is `master`. Keep it **public**.
-- Plugins/tools with hooks or binaries are registered in `.claude-plugin/marketplace.json` (not copied);
-  plain skills are copied with `UPSTREAM.txt`. Optional installs via `install.sh` flags.
-- Cloud setup script (saved on the "Claude Skill" environment, changed through `update_environment` approval cards):
-  `git clone ... /tmp/skills && bash /tmp/skills/install.sh --copy --with-headroom --with-impeccable --with-hallmark --with-stitch || true`
-- From now on, propose environment changes (hosts, setup script) with `update_environment` and let the user approve; secrets are entered by the user in the environment's Network secrets.
-- pixelfx: the upstream "Publish it on Patch" section (curl | sh CLI install) was removed on purpose (user will not publish); re-apply when updating.
-- `claude-mem` entry renamed to `session-memory` (names starting with `claude-` are reserved); the `--with-claude-mem` flag name is unchanged.
-- modern-web-guidance is only documented in `docs/external-tools.md` (npm CLI, mandatory-on-every-web-task skill): not installed.
-- Not added: last30days-skill (user excluded), cloudflare/security-audit-skill, doc-coauthoring (no license file), docx/pptx/pdf/xlsx (built in).
-- Merge PRs only when the user asks.
+- Skills: removed `design-taste-frontend` (overlapped); keep `impeccable` (broad) + `hallmark` (new pages).
+- Site: formal Korean tone (~합니다), audience = every adult new to AI. Fonts IBM Plex Sans KR (heads) + Noto Sans KR.
+  Palette from the Stitch draft (paper / ink navy / amber), light + dark tokens. Stitch only for the first draft.
+- Every AI name in body text gets its brand icon (`<span class="ai b-xxx">`); brand colors per AI.
+  Icons: Simple Icons paths (ChatGPT from v13.21; Claude/Gemini/Perplexity/GitHub v16.30); Grok, Higgsfield, Midjourney
+  traced from user-supplied images; Runway/Kling/Genspark use letter badges (no official icon yet).
+- Clawd (Claude Code mascot) drawn as pixel SVG, one pose per page, wiggles on hover/tap.
+- Prompt scoring page uses `sample` (Claude) with a rule-based fallback.
+- Sharing: the user handles it themselves; leave as is. Do not commit the site HTML to this public repo.
 
 ## Current state
-- Merged: #11 (theme-factory, canvas-design, webapp-testing skills; plugins astryx, chrome-devtools-mcp, impeccable, hallmark, plannotator registered),
-  #12 (session-memory rename, `--with-stitch`, stitch-design/stitch-utilities entries), #13 (pixelfx skill). No open PRs.
-- 11 skills (cap 50); `design-taste-frontend` removed (overlapped with hallmark/impeccable; user does portfolios/game UI, not a design profession). `claude plugin validate` and `scripts/check-skills.sh` pass.
-- Stitch: MCP `https://stitch.googleapis.com/mcp`, key header `X-Goog-Api-Key`. The key is a Network secret on the environment (never in the repo);
-  authenticated `list_projects` returned HTTP 200 via curl. `install.sh --with-stitch` registers the MCP with a placeholder header.
+- Views (hash routes): home, about-ai, compare, ai-claude, ai-chatgpt, ai-gemini, prompt, score, advanced, vibe, faq, glossary.
+- Content: 6-AI comparison + image/video AIs, star recommendations by persona, "손을 쫙 펴" prompt section,
+  12 prompt templates, 40 glossary terms, 22 FAQs, vibe-coding page, GitHub skill install (Claude / Codex).
+- Checked on 15 device profiles and widths 320-1440: no overflow, no script errors.
+- Repo branch `claude/inspiring-cannon-ygx5em`: removal of design-taste-frontend (no PR yet).
 
 ## Next steps
-1. In a fresh session, verify the setup script worked: `claude plugin list` (impeccable, hallmark, stitch-design, stitch-utilities) and `claude mcp get stitch`.
-2. Done: keep `impeccable` (broad) + `hallmark` (new pages only); `design-taste-frontend` removed.
-3. Parked: small custom skills for repeated work tasks (e.g. online-store product pages).
+1. To edit the site: `Artifact` action `read` on the URL above to get the HTML, edit, republish to the same URL.
+2. If the user wants: official icons for Runway/Kling/Genspark (ask for images); re-check model names (2026-11 data).
+3. Ask before opening a PR for the skill removal branch.
 
 ## Notes
-- The user pasted a Stitch API key in chat once; it should be rotated and the environment secret updated.
-- Allowed hosts added to the environment: stitch.withgoogle.com, stitch.google.com.
-- Force-push is denied in this environment; when the work branch has old merged history, merge it with `git merge -s ours FETCH_HEAD` and push normally.
-- Plannotator is registered but needs a browser UI and a `curl | bash` binary install; probably impractical in cloud sessions.
-- The user works only in cloud sessions (desktop app) and prefers plain-language Korean explanations.
-- User text after /new: none.
+- Pitfall: never use class names `ai`, `pick` for other things (`.ai` = nowrap brand span). Twice caused text overflow.
+- Name-wrapper regex must skip already-wrapped spans (`\bai\b`) and handle Korean particles (no `\b` after names).
+- Grid/flex children need `minmax(0,1fr)` / `min-width:0`; `.stack`/`.stack-lg` already set.
+- Stitch MCP times out at 60s on generate; calling the MCP endpoint with curl works (proxy injects the key).
+- User works in cloud sessions only, prefers plain-language Korean, wants questions/opinions raised proactively.
