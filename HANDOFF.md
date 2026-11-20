@@ -1,39 +1,36 @@
-# Handoff (2026-09-23, updated)
+# Handoff (2026-11-20)
 
 ## Goal
-- Keep the user's Claude skills in this public GitHub repo so they work in every
-  cloud session (claude.ai/code) and on any machine, with low token overhead.
+- Repo: keep the user's Claude skills/plugins in this public marketplace repo for cloud sessions.
+- Main work this session: "AI 첫걸음", a Korean beginner AI guide site published as a claude.ai Artifact:
+  https://claude.ai/artifact/BgbdKLtEhEs9mhkzeRttV3 (version 11; capability `sample` declared).
 
 ## Decisions
-- The repo is a Claude Code plugin marketplace; skills live in `skills/`. Default branch is `master`.
-- Cloud setup script (already saved in the user's environment):
-  `git clone --depth 1 https://github.com/nick50511fxcs-ui/claude-skill-collection.git /tmp/skills && bash /tmp/skills/install.sh --copy --with-headroom || true`
-- The repo must stay **public**: the setup script has no GitHub credentials (a private repo failed with exit 128).
-- task-observer is **not** auto-started (it costs ~15k tokens per session and cloud logs reset per session).
-  It is turned on on demand with `/task`. Its upstream description told Claude to invoke it
-  before the first tool call of every session, so it still auto-ran; the vendored copy now has
-  a replaced description (recorded in its `UPSTREAM.txt`; re-apply when updating from upstream). The upstream feedback report was drafted, and the user chose not to file it.
-- Cap of 50 skills (`scripts/check-skills.sh` plus the `check-skills` CI on every PR).
-- Everything committed is in **English**; CI fails on Korean text outside vendored skills and HANDOFF.md.
-- Headroom is installed as `headroom-ai[mcp]` (~430MB), not `[all]` (~7GB).
-- OmniRoute is not installed: it sends prompts to third-party models.
-- No CLAUDE.md for now (the user agreed it is not needed).
-- Merge PRs only when the user asks.
+- Skills: removed `design-taste-frontend` (overlapped); keep `impeccable` (broad) + `hallmark` (new pages).
+- Site: formal Korean tone (~합니다), audience = every adult new to AI. Fonts IBM Plex Sans KR (heads) + Noto Sans KR.
+  Palette from the Stitch draft (paper / ink navy / amber), light + dark tokens. Stitch only for the first draft.
+- Every AI name in body text gets its brand icon (`<span class="ai b-xxx">`); brand colors per AI.
+  Icons: Simple Icons paths (ChatGPT from v13.21; Claude/Gemini/Perplexity/GitHub v16.30); Grok, Higgsfield, Midjourney
+  traced from user-supplied images; Runway/Kling/Genspark use letter badges (no official icon yet).
+- Clawd (Claude Code mascot) drawn as pixel SVG, one pose per page, wiggles on hover/tap.
+- Prompt scoring page uses `sample` (Claude) with a rule-based fallback.
+- Sharing: the user handles it themselves; leave as is. Do not commit the site HTML to this public repo.
 
 ## Current state
-- Merged: PR #1 (marketplace, task-observer, installers), #3 (README setup notes),
-  #4 (`/task` shortcut), #5 (`skill-intake` skill, 50-skill cap and CI).
-- Closed without merging: PR #2 (task-observer autostart).
-- Merged: PR #6 (`/new` skill, long-conversation reminder hook at 100k tokens, English-only convention).
-- Merged: PR #7 (task-observer no longer auto-runs; it loads only via `/task`).
-- No open PRs.
+- Views (hash routes): home, about-ai, compare, ai-claude, ai-chatgpt, ai-gemini, prompt, score, advanced, vibe, faq, glossary.
+- Content: 6-AI comparison + image/video AIs, star recommendations by persona, "손을 쫙 펴" prompt section,
+  12 prompt templates, 40 glossary terms, 22 FAQs, vibe-coding page, GitHub skill install (Claude / Codex).
+- Checked on 15 device profiles and widths 320-1440: no overflow, no script errors.
+- Repo branch `claude/inspiring-cannon-ygx5em`: removal of design-taste-frontend (no PR yet).
 
 ## Next steps
-1. Parked, per the user: build small custom skills for their repeated work tasks (e.g. online-store product pages).
+1. To edit the site: `Artifact` action `read` on the URL above to get the HTML, edit, republish to the same URL.
+2. If the user wants: official icons for Runway/Kling/Genspark (ask for images); re-check model names (2026-11 data).
+3. Ask before opening a PR for the skill removal branch.
 
 ## Notes
-- User request with /new: "지금까지 대화 핵심들만 요약해서 저장해줘" (summarize only the key points so far).
-- The user works only in cloud sessions: no always-on local PC, and Remote Control is not an option.
-- The user is token-conscious and prefers plain-language Korean explanations in chat.
-- `.claude/` writes trigger an approval prompt; that is why the note lives at the repo root.
-- Windows (`install.ps1`) is untested and does not register the reminder hook.
+- Pitfall: never use class names `ai`, `pick` for other things (`.ai` = nowrap brand span). Twice caused text overflow.
+- Name-wrapper regex must skip already-wrapped spans (`\bai\b`) and handle Korean particles (no `\b` after names).
+- Grid/flex children need `minmax(0,1fr)` / `min-width:0`; `.stack`/`.stack-lg` already set.
+- Stitch MCP times out at 60s on generate; calling the MCP endpoint with curl works (proxy injects the key).
+- User works in cloud sessions only, prefers plain-language Korean, wants questions/opinions raised proactively.
