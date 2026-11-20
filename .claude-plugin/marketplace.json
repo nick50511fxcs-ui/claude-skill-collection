@@ -20,6 +20,23 @@
         "source": "github",
         "repo": "thedotmack/claude-mem"
       }
+    },
+    {
+      "name": "astryx",
+      "description": "Astryx design system: guides the agent to build UI from templates via the astryx CLI (meta/astryx)",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/meta/astryx.git",
+        "path": "plugins/astryx"
+      }
+    },
+    {
+      "name": "chrome-devtools-mcp",
+      "description": "Chrome DevTools for agents: run, screenshot, debug and profile pages in a real browser (ChromeDevTools/chrome-devtools-mcp)",
+      "source": {
+        "source": "github",
+        "repo": "ChromeDevTools/chrome-devtools-mcp"
+      }
     }
   ]
 }
