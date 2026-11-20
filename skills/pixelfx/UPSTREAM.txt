@@ -1,0 +1,3 @@
+upstream: https://github.com/patch-gg/pixelfx (skills/pixelfx)
+commit: 5294518ce7c72e48b6100a744596e0acf57f2826
+license: MIT (Patch)
