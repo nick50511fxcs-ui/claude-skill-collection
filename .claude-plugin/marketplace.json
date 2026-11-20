@@ -37,6 +37,31 @@
         "source": "github",
         "repo": "ChromeDevTools/chrome-devtools-mcp"
       }
+    },
+    {
+      "name": "impeccable",
+      "description": "Design fluency for frontend work: one skill with 24 design commands (polish, audit, critique) plus anti-pattern detection (pbakaus/impeccable)",
+      "source": {
+        "source": "github",
+        "repo": "pbakaus/impeccable"
+      }
+    },
+    {
+      "name": "hallmark",
+      "description": "Design skill that avoids template-looking AI output; optional image generation via Together AI (Nutlope/hallmark)",
+      "source": {
+        "source": "github",
+        "repo": "Nutlope/hallmark"
+      }
+    },
+    {
+      "name": "plannotator",
+      "description": "Annotate and review plans and documents in a browser UI and send feedback back to the agent; needs the plannotator binary (backnotprop/plannotator)",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/backnotprop/plannotator.git",
+        "path": "apps/hook"
+      }
     }
   ]
 }
