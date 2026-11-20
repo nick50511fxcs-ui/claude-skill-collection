@@ -22,6 +22,14 @@ command on any machine or in any cloud session.
 | `web-design-guidelines` | Skill (`skills/`) | Audits UI code against Vercel's Web Interface Guidelines (accessibility, forms, layout); triggers on "review my UI" ([upstream](https://github.com/vercel-labs/agent-skills), MIT) | Part of the plugin |
 | `6-1-sol-orch` | Skill (`skills/`) | Root agent delegates bounded work to explorer / researcher / worker subagents and adds an independent review only when risk justifies it; run with `/6-1-sol-orch <task>`. User-invoked only ([upstream](https://github.com/Kimhyuntae9665/codex-skill-6-1-sol-orch), Apache-2.0, adapted from Codex) | Part of the plugin |
 | `claude-code-setup` | Official plugin | Scans a project and recommends hooks, skills, MCP servers (Anthropic) | Installed by default |
+| `theme-factory` | Skill (`skills/`) | 10 ready-made color/font themes to apply to slides, docs, reports and landing pages ([upstream](https://github.com/anthropics/skills), Apache-2.0) | Part of the plugin |
+| `canvas-design` | Skill (`skills/`) | Creates posters and static visual designs as .png/.pdf from a written design philosophy; bundles fonts (~5.6MB) ([upstream](https://github.com/anthropics/skills), Apache-2.0) | Part of the plugin |
+| `webapp-testing` | Skill (`skills/`) | Tests local web apps with Playwright: screenshots, console logs, UI checks; handy for browser games ([upstream](https://github.com/anthropics/skills), Apache-2.0) | Part of the plugin |
+| `astryx` | External plugin | Meta's Astryx design system: tells the agent to build UI from templates through the `astryx` CLI; the skill is only a pointer, so the CLI (`@astryxdesign/cli`) must be installed in the project ([meta/astryx](https://github.com/meta/astryx), MIT) | Registered in the marketplace: `claude plugin install astryx@claude-skill-collection` |
+| `chrome-devtools-mcp` | External plugin (MCP) | Lets the agent drive a real Chrome: open pages, screenshot, read the console, audit accessibility and performance; ships 8 skills ([ChromeDevTools/chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp), Apache-2.0) | Registered in the marketplace: `claude plugin install chrome-devtools-mcp@claude-skill-collection` |
+| `impeccable` | External plugin | Design vocabulary and 24 commands (`/impeccable polish`, `audit`, `critique`) for frontend work. Adds session/edit/stop hooks that run its own binary, which it may download from GitHub Releases ([pbakaus/impeccable](https://github.com/pbakaus/impeccable), Apache-2.0) | Optional (`--with-impeccable`) |
+| `hallmark` | External plugin | Design skill for new pages that avoid generic AI-looking output. Image generation is opt-in and sends prompts to Together AI only if `TOGETHER_API_KEY` is set ([Nutlope/hallmark](https://github.com/Nutlope/hallmark), MIT) | Optional (`--with-hallmark`) |
+| `plannotator` | External plugin | Browser UI to annotate plans and documents and send feedback to the agent. Hooks into plan mode and needs the `plannotator` binary, installed by a `curl \| bash` script ([backnotprop/plannotator](https://github.com/backnotprop/plannotator), MIT/Apache-2.0) | Registered in the marketplace: `claude plugin install plannotator@claude-skill-collection` |
 | `claude-mem` | External plugin | Memory that persists across sessions ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | Optional (`--with-claude-mem`) |
 | Headroom | External tool (MCP) | Context compression ([headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom)) | Optional (`--with-headroom`) |
 | Playwright MCP | External tool (MCP) | Lets Claude open a browser, screenshot its own UI and fix what looks off ([microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)) | Optional (`--with-playwright`) |
@@ -56,7 +64,7 @@ install.sh / install.ps1          one-shot installers
 macOS / Linux:
 ```bash
 git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
-cd claude-skill-collection && bash install.sh              # optional: --with-claude-mem --with-headroom --with-playwright
+cd claude-skill-collection && bash install.sh              # optional: --with-claude-mem --with-impeccable --with-hallmark --with-headroom --with-playwright
 ```
 
 Windows PowerShell:

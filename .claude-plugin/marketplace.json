@@ -20,6 +20,48 @@
         "source": "github",
         "repo": "thedotmack/claude-mem"
       }
+    },
+    {
+      "name": "astryx",
+      "description": "Astryx design system: guides the agent to build UI from templates via the astryx CLI (meta/astryx)",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/meta/astryx.git",
+        "path": "plugins/astryx"
+      }
+    },
+    {
+      "name": "chrome-devtools-mcp",
+      "description": "Chrome DevTools for agents: run, screenshot, debug and profile pages in a real browser (ChromeDevTools/chrome-devtools-mcp)",
+      "source": {
+        "source": "github",
+        "repo": "ChromeDevTools/chrome-devtools-mcp"
+      }
+    },
+    {
+      "name": "impeccable",
+      "description": "Design fluency for frontend work: one skill with 24 design commands (polish, audit, critique) plus anti-pattern detection (pbakaus/impeccable)",
+      "source": {
+        "source": "github",
+        "repo": "pbakaus/impeccable"
+      }
+    },
+    {
+      "name": "hallmark",
+      "description": "Design skill that avoids template-looking AI output; optional image generation via Together AI (Nutlope/hallmark)",
+      "source": {
+        "source": "github",
+        "repo": "Nutlope/hallmark"
+      }
+    },
+    {
+      "name": "plannotator",
+      "description": "Annotate and review plans and documents in a browser UI and send feedback back to the agent; needs the plannotator binary (backnotprop/plannotator)",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/backnotprop/plannotator.git",
+        "path": "apps/hook"
+      }
     }
   ]
 }
