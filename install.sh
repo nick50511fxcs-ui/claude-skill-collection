@@ -6,6 +6,7 @@
 #   bash install.sh --with-claude-mem   # also install the claude-mem memory plugin
 #   bash install.sh --with-impeccable   # also install the impeccable design plugin (hooks run its own binary)
 #   bash install.sh --with-hallmark     # also install the hallmark design plugin
+#   bash install.sh --with-stitch       # also register the Stitch MCP (key comes from the environment, never this repo) + stitch plugins
 #   bash install.sh --with-headroom     # also install Headroom (context-compression MCP, needs Python 3.10+)
 #   bash install.sh --with-playwright   # also register the Playwright MCP (browser + screenshots, needs Node.js)
 #   bash install.sh --no-new-reminder   # skip the hook that suggests /new when a conversation gets long
@@ -17,6 +18,7 @@ MODE="plugin"
 WITH_MEM=0
 WITH_IMPECCABLE=0
 WITH_HALLMARK=0
+WITH_STITCH=0
 WITH_HEADROOM=0
 WITH_PLAYWRIGHT=0
 NEW_REMINDER=1
@@ -27,10 +29,11 @@ for arg in "$@"; do
     --with-claude-mem) WITH_MEM=1 ;;
     --with-impeccable) WITH_IMPECCABLE=1 ;;
     --with-hallmark) WITH_HALLMARK=1 ;;
+    --with-stitch) WITH_STITCH=1 ;;
     --with-headroom) WITH_HEADROOM=1 ;;
     --with-playwright) WITH_PLAYWRIGHT=1 ;;
     --no-new-reminder) NEW_REMINDER=0 ;;
-    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
 done
@@ -61,7 +64,7 @@ fi
 if [ "$WITH_MEM" = 1 ]; then
   if command -v claude >/dev/null 2>&1; then
     claude plugin marketplace add "$REPO"
-    claude plugin install claude-mem@claude-skill-collection
+    claude plugin install session-memory@claude-skill-collection
   else
     echo "claude-mem needs the claude CLI; skipping." >&2
   fi
@@ -79,6 +82,31 @@ for pair in "$WITH_IMPECCABLE:impeccable" "$WITH_HALLMARK:hallmark"; do
     echo "⚠ $plugin install failed; everything else was installed." >&2
   fi
 done
+
+if [ "$WITH_STITCH" = 1 ]; then
+  # The API key is NOT stored here. In cloud sessions it is a network secret on the environment
+  # (host stitch.googleapis.com, header X-Goog-Api-Key) that the proxy adds to requests.
+  # The header below is a placeholder so the CLI sends one; the proxy replaces it with the real key.
+  # On a local PC, re-add the server with your real key: claude mcp add ... --header "X-Goog-Api-Key: <key>"
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "Stitch needs the claude CLI; skipping." >&2
+  else
+    if claude mcp get stitch >/dev/null 2>&1; then
+      echo "✓ Stitch MCP already registered"
+    elif claude mcp add stitch --transport http https://stitch.googleapis.com/mcp --header "X-Goog-Api-Key: placeholder-set-in-environment" -s user; then
+      echo "✓ Stitch MCP registered"
+    else
+      echo "⚠ Stitch MCP registration failed; everything else was installed." >&2
+    fi
+    for plugin in stitch-design stitch-utilities; do
+      if claude plugin marketplace add "$REPO" && claude plugin install "$plugin@claude-skill-collection"; then
+        echo "✓ installed plugin: $plugin"
+      else
+        echo "⚠ $plugin install failed; everything else was installed." >&2
+      fi
+    done
+  fi
+fi
 
 if [ "$WITH_HEADROOM" = 1 ]; then
   # Install into a dedicated venv so it cannot conflict with system Python packages.

@@ -37,7 +37,7 @@ if ($Copy) {
 
 if ($WithClaudeMem -and $HasClaude) {
     claude plugin marketplace add $Repo
-    claude plugin install claude-mem@claude-skill-collection
+    claude plugin install session-memory@claude-skill-collection
 }
 
 if ($WithHeadroom) {

@@ -30,7 +30,8 @@ command on any machine or in any cloud session.
 | `impeccable` | External plugin | Design vocabulary and 24 commands (`/impeccable polish`, `audit`, `critique`) for frontend work. Adds session/edit/stop hooks that run its own binary, which it may download from GitHub Releases ([pbakaus/impeccable](https://github.com/pbakaus/impeccable), Apache-2.0) | Optional (`--with-impeccable`) |
 | `hallmark` | External plugin | Design skill for new pages that avoid generic AI-looking output. Image generation is opt-in and sends prompts to Together AI only if `TOGETHER_API_KEY` is set ([Nutlope/hallmark](https://github.com/Nutlope/hallmark), MIT) | Optional (`--with-hallmark`) |
 | `plannotator` | External plugin | Browser UI to annotate plans and documents and send feedback to the agent. Hooks into plan mode and needs the `plannotator` binary, installed by a `curl \| bash` script ([backnotprop/plannotator](https://github.com/backnotprop/plannotator), MIT/Apache-2.0) | Registered in the marketplace: `claude plugin install plannotator@claude-skill-collection` |
-| `claude-mem` | External plugin | Memory that persists across sessions ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | Optional (`--with-claude-mem`) |
+| `stitch-design`, `stitch-utilities` | External plugins | Google Stitch skills (generate screens, code-to-design, DESIGN.md, prompt enhancement). They only work with the Stitch MCP server and a Stitch API key kept in the environment, never in this repo ([google-labs-code/stitch-skills](https://github.com/google-labs-code/stitch-skills), Apache-2.0; not an officially supported Google product) | Optional (`--with-stitch`) |
+| `session-memory` | External plugin | Memory that persists across sessions; the marketplace entry is named `session-memory` because plugin names starting with `claude-` are reserved ([thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)) | Optional (`--with-claude-mem`) |
 | Headroom | External tool (MCP) | Context compression ([headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom)) | Optional (`--with-headroom`) |
 | Playwright MCP | External tool (MCP) | Lets Claude open a browser, screenshot its own UI and fix what looks off ([microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)) | Optional (`--with-playwright`) |
 | awesome-design-md | Reference files | 70+ `DESIGN.md` design systems of well-known sites to drop into a project ([VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md)) | Not installed → [docs/external-tools.md](docs/external-tools.md) |
@@ -64,7 +65,7 @@ install.sh / install.ps1          one-shot installers
 macOS / Linux:
 ```bash
 git clone https://github.com/nick50511fxcs-ui/claude-skill-collection.git
-cd claude-skill-collection && bash install.sh              # optional: --with-claude-mem --with-impeccable --with-hallmark --with-headroom --with-playwright
+cd claude-skill-collection && bash install.sh              # optional: --with-claude-mem --with-impeccable --with-hallmark --with-stitch --with-headroom --with-playwright
 ```
 
 Windows PowerShell:
